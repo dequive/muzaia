@@ -1,0 +1,62 @@
+# Core FastAPI and ASGI
+fastapi>=0.104.0,<0.105.0
+uvicorn[standard]>=0.24.0,<0.25.0
+
+# Data validation and serialization
+pydantic>=2.5.0,<3.0.0
+pydantic-settings>=2.1.0,<3.0.0
+
+# HTTP client
+httpx>=0.25.0,<0.26.0
+
+# Database drivers
+asyncpg>=0.29.0,<0.30.0
+sqlalchemy>=2.0.0,<3.0.0
+alembic>=1.13.0,<2.0.0
+
+# Redis
+redis>=5.0.0,<6.0.0
+aioredis>=2.0.0,<3.0.0
+
+# Supabase
+supabase>=2.3.0,<3.0.0
+
+# Environment and configuration
+python-dotenv>=1.0.0,<2.0.0
+
+# Security
+python-jose[cryptography]>=3.3.0,<4.0.0
+passlib[bcrypt]>=1.7.4,<2.0.0
+python-multipart>=0.0.6,<1.0.0
+
+# Logging and monitoring
+structlog>=23.2.0,<24.0.0
+sentry-sdk[fastapi]>=1.39.0,<2.0.0
+
+# Data processing
+pandas>=2.1.0,<3.0.0
+numpy>=1.25.0,<2.0.0
+
+# Email (if needed)
+fastapi-mail>=1.4.0,<2.0.0
+
+# Background tasks
+celery>=5.3.0,<6.0.0
+
+# File handling
+python-magic>=0.4.27,<1.0.0
+pillow>=10.1.0,<11.0.0
+
+# Testing (development)
+pytest>=7.4.0,<8.0.0
+pytest-asyncio>=0.21.0,<1.0.0
+httpx>=0.25.0,<0.26.0
+
+# Development tools
+black>=23.11.0,<24.0.0
+isort>=5.12.0,<6.0.0
+flake8>=6.1.0,<7.0.0
+mypy>=1.7.0,<2.0.0
+
+# Production WSGI server (alternative to uvicorn)
+gunicorn>=21.2.0,<22.0.0
