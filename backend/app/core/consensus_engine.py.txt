@@ -1,0 +1,445 @@
+# backend/app/core/consensus_engine.py
+import difflib
+from statistics import mean
+from typing import List, Dict, Any, Optional, Tuple
+from dataclasses import dataclass, field
+import logging
+import re
+from collections import defaultdict
+
+logger = logging.getLogger(__name__)
+
+@dataclass
+class ConsensusConfig:
+    """
+    Configuração para o motor de consenso.
+    Define parâmetros ajustáveis para o cálculo de similaridade,
+    fusão de respostas e extração de informação adicional.
+    """
+    min_similarity_threshold: float = 0.6
+    max_additional_info_sentences: int = 2
+    similarity_boost_factor: float = 1.2
+    min_responses_for_consensus: int = 2
+    min_confidence_for_valid_response: float = 0.5
+    sentence_similarity_threshold: float = 0.8 # Limiar para considerar frases similares à principal
+    min_sentence_length: int = 30 # Comprimento mínimo para uma frase ser considerada para informação adicional
+    cache_max_size: int = 1000 # Tamanho máximo do cache de similaridade
+
+@dataclass
+class LLMResponse:
+    """
+    Representa uma resposta individual de um Modelo de Linguagem Grande (LLM).
+    Inclui o texto, a pontuação de confiança e metadados relevantes.
+    """
+    model_name: str # Nome do modelo que gerou a resposta
+    text: str # O texto da resposta do LLM
+    confidence_score: float = 0.0 # Pontuação de confiança atribuída pelo LLM, de 0.0 a 1.0
+    metadata: Dict[str, Any] = field(default_factory=dict) # Metadados adicionais (ex: fontes)
+    latency: float = 0.0 # Latência da resposta do modelo em segundos
+    tokens_used: int = 0 # Número de tokens utilizados para gerar a resposta
+    error: Optional[str] = None # Mensagem de erro, se a resposta falhou
+
+class ConsensusEngine:
+    """
+    O ConsensusEngine orquestra e funde respostas de múltiplos LLMs
+    para gerar uma resposta consolidada e de alta qualidade.
+    Utiliza cálculo de similaridade textual e ponderação por confiança.
+    """
+    def __init__(self, config: Optional[ConsensusConfig] = None):
+        """
+        Inicializa o ConsensusEngine com uma configuração opcional.
+        
+        Args:
+            config (Optional[ConsensusConfig]): Objeto de configuração. Se None,
+                                               utiliza a configuração por omissão.
+        """
+        self.config = config or ConsensusConfig()
+        self.similarity_cache: Dict[Tuple[str, str], float] = {} # Cache para armazenar similaridades calculadas
+        self._cache_keys = [] # Mantém a ordem das chaves para política LRU do cache
+
+    def _add_to_cache(self, key: Tuple[str, str], value: float):
+        """
+        Gere o cache de similaridade com uma política de expulsão LRU (Least Recently Used).
+        
+        Args:
+            key (Tuple[str, str]): A chave da similaridade (par de textos normalizados).
+            value (float): O valor da similaridade.
+        """
+        if key in self.similarity_cache:
+            # Se a chave já existe, move-a para o fim (mais recentemente usada)
+            self._cache_keys.remove(key)
+        elif len(self._cache_keys) >= self.config.cache_max_size:
+            # Se o cache está cheio, remove a chave mais antiga (LRU)
+            oldest_key = self._cache_keys.pop(0)
+            del self.similarity_cache[oldest_key]
+            
+        self.similarity_cache[key] = value
+        self._cache_keys.append(key) # Adiciona a chave ao fim (mais recente)
+
+    def calculate_similarity(self, text1: str, text2: str) -> float:
+        """
+        Calcula a similaridade textual entre duas strings usando `difflib.SequenceMatcher`.
+        Utiliza um cache para otimização de performance.
+        
+        Args:
+            text1 (str): O primeiro texto para comparação.
+            text2 (str): O segundo texto para comparação.
+        
+        Returns:
+            float: A pontuação de similaridade entre 0.0 e 1.0. Retorna 0.0 se qualquer texto for vazio.
+        """
+        if not text1 or not text2:
+            return 0.0
+
+        # Normaliza os textos para comparação consistente (minúsculas, sem excesso de espaços)
+        norm1 = self._normalize_text(text1)
+        norm2 = self._normalize_text(text2)
+        # Cria uma chave de cache consistente, independentemente da ordem dos textos
+        cache_key = tuple(sorted((norm1, norm2)))
+
+        if cache_key in self.similarity_cache:
+            # Move a chave para o fim da lista LRU e retorna valor do cache
+            self._add_to_cache(cache_key, self.similarity_cache[cache_key])
+            return self.similarity_cache[cache_key]
+
+        # Calcula a similaridade e armazena no cache
+        similarity = difflib.SequenceMatcher(None, norm1, norm2).ratio()
+        self._add_to_cache(cache_key, similarity)
+        return similarity
+
+    def _normalize_text(self, text: str) -> str:
+        """
+        Normaliza o texto para garantir comparações de similaridade consistentes.
+        Converte para minúsculas, remove espaços em branco extras e leading/trailing.
+        
+        Args:
+            text (str): O texto a ser normalizado.
+            
+        Returns:
+            str: O texto normalizado.
+        """
+        text = text.lower().strip()
+        text = re.sub(r'\s+', ' ', text) # Colapsa múltiplos espaços para um único espaço
+        return text
+
+    def calculate_consensus_score(self, responses: List[LLMResponse]) -> float:
+        """
+        Calcula a pontuação de consenso agregada com base na similaridade textual
+        entre as respostas válidas e a confiança individual dos modelos.
+        
+        Args:
+            responses (List[LLMResponse]): Lista de respostas dos LLMs.
+            
+        Returns:
+            float: Pontuação de consenso entre 0.0 e 1.0. Retorna 0.0 se não houver
+                   respostas válidas suficientes.
+        """
+        # Filtra respostas que não têm erro e atendem ao limiar de confiança mínimo
+        valid_responses = [
+            r for r in responses 
+            if not r.error and r.confidence_score >= self.config.min_confidence_for_valid_response
+        ]
+        num_responses = len(valid_responses)
+
+        # Verifica se o número de respostas válidas atinge o mínimo para cálculo de consenso
+        if num_responses < self.config.min_responses_for_consensus:
+            logger.debug(f"Número insuficiente de respostas válidas para consenso: {num_responses} (mínimo: {self.config.min_responses_for_consensus})")
+            return 0.0
+
+        texts = [r.text for r in valid_responses]
+        
+        # Constrói a matriz de similaridade para todos os pares de textos
+        similarity_matrix = self._build_similarity_matrix(texts)
+        
+        # Calcula a similaridade média entre todos os pares válidos
+        if not similarity_matrix:
+            # Se apenas uma resposta ou nenhuma, assume similaridade 1.0 se houver pelo menos 1 resposta
+            avg_similarity = 1.0 if num_responses >= 1 else 0.0
+        else:
+            avg_similarity = mean(similarity_matrix.values())
+            
+        # Calcula a confiança média das respostas válidas
+        avg_confidence = mean(r.confidence_score for r in valid_responses)
+        
+        # Calcula a pontuação de consenso final, aplicando o fator de boost e limitando a 1.0
+        consensus_score = min(
+            avg_similarity * self.config.similarity_boost_factor * avg_confidence,
+            1.0
+        )
+        
+        logger.debug(f"Consenso calculado: {consensus_score:.2f} (similaridade média: {avg_similarity:.2f}, confiança média: {avg_confidence:.2f})")
+        return consensus_score
+
+    def _build_similarity_matrix(self, texts: List[str]) -> Dict[Tuple[int, int], float]:
+        """
+        Constrói uma matriz de similaridade contendo as pontuações de similaridade
+        para todos os pares de textos na lista.
+        
+        Args:
+            texts (List[str]): Lista de textos para comparação.
+            
+        Returns:
+            Dict[Tuple[int, int], float]: Dicionário onde as chaves são tuplos (índice_texto1, índice_texto2)
+                                          e os valores são as pontuações de similaridade.
+        """
+        matrix = {}
+        n = len(texts)
+        
+        # Itera sobre todos os pares únicos de textos para calcular a similaridade
+        for i in range(n):
+            for j in range(i + 1, n): # Garante que cada par é calculado apenas uma vez
+                similarity = self.calculate_similarity(texts[i], texts[j])
+                matrix[(i, j)] = similarity
+                
+        return matrix
+
+    def merge_responses(self, responses: List[LLMResponse]) -> Dict[str, Any]:
+        """
+        Funde múltiplas respostas de LLMs numa única resposta consolidada.
+        O processo envolve filtragem de respostas válidas, cálculo de consenso,
+        seleção da resposta primária e agregação de informação adicional e metadados.
+        
+        Args:
+            responses (List[LLMResponse]): Lista de respostas dos LLMs a serem fundidas.
+            
+        Returns:
+            Dict[str, Any]: Um dicionário contendo a resposta consolidada, incluindo
+                            texto, pontuação de confiança, fontes, modelos usados e metadados.
+        """
+        # Trata o caso em que não são fornecidas respostas
+        if not responses:
+            return self._build_error_response("Nenhuma resposta fornecida para consolidação.")
+
+        # Filtra as respostas para incluir apenas as consideradas válidas
+        valid_responses = self._filter_valid_responses(responses)
+        
+        # Trata o caso em que não há respostas válidas após a filtragem
+        if not valid_responses:
+            return self._build_error_response(
+                "Nenhuma resposta válida disponível para consolidação.",
+                models_used=[r.model_name for r in responses], # Regista os modelos que tentaram responder
+                tokens_used=sum(r.tokens_used or 0 for r in responses) # Soma de tokens mesmo com erro
+            )
+
+        # Calcula a pontuação de consenso para as respostas válidas
+        consensus_score = self.calculate_consensus_score(valid_responses)
+        # Seleciona a resposta considerada "primária" para a fusão
+        primary_response = self._select_primary_response(valid_responses)
+
+        # Se a pontuação de consenso for baixa e houver múltiplas respostas válidas,
+        # indica uma divergência significativa.
+        if consensus_score < self.config.min_similarity_threshold and len(valid_responses) > 1:
+            return self._build_divergent_response(valid_responses, primary_response, consensus_score)
+
+        # Constrói a resposta consolidada quando o consenso é suficiente ou há apenas uma resposta
+        return self._build_consensus_response(
+            valid_responses,
+            primary_response,
+            consensus_score
+        )
+
+    def _filter_valid_responses(self, responses: List[LLMResponse]) -> List[LLMResponse]:
+        """
+        Filtra uma lista de respostas de LLMs, retornando apenas aquelas
+        que não contêm erros e cuja pontuação de confiança atinge o limiar mínimo.
+        
+        Args:
+            responses (List[LLMResponse]): Lista de respostas a serem filtradas.
+            
+        Returns:
+            List[LLMResponse]: Lista de respostas válidas.
+        """
+        return [
+            r for r in responses
+            if not r.error and r.confidence_score >= self.config.min_confidence_for_valid_response
+        ]
+
+    def _select_primary_response(self, responses: List[LLMResponse]) -> LLMResponse:
+        """
+        Seleciona a resposta primária de uma lista de respostas válidas.
+        A seleção é baseada primeiramente na pontuação de confiança mais alta,
+        e em caso de empate, no maior número de tokens utilizados.
+        
+        Args:
+            responses (List[LLMResponse]): Lista de respostas válidas.
+            
+        Returns:
+            LLMResponse: A resposta selecionada como primária.
+        """
+        return max(
+            responses,
+            key=lambda r: (r.confidence_score, r.tokens_used or 0) # Ordena por confiança (principal), depois por tokens (desempate)
+        )
+
+    def _build_error_response(self, message: str, **kwargs) -> Dict[str, Any]:
+        """
+        Constrói um dicionário de resposta padronizado para cenários de erro.
+        
+        Args:
+            message (str): A mensagem de erro.
+            **kwargs: Argumentos adicionais a serem incluídos na resposta (ex: models_used, tokens_used).
+            
+        Returns:
+            Dict[str, Any]: O dicionário de resposta formatado para erro.
+        """
+        response = {
+            "text": message,
+            "confidence": 0.0,
+            "sources": [],
+            "models_used": kwargs.get("models_used", []),
+            "tokens_used": kwargs.get("tokens_used", 0),
+            "error": True,
+            "reasoning": message,
+            "has_additional_info": False,
+            "consensus_score": 0.0
+        }
+        logger.warning(f"Resposta de erro: {message}")
+        return response
+
+    def _build_divergent_response(self, responses: List[LLMResponse], 
+                                  primary: LLMResponse, score: float) -> Dict[str, Any]:
+        """
+        Constrói um dicionário de resposta para o cenário em que as respostas dos LLMs
+        são divergentes (baixo consenso).
+        
+        Args:
+            responses (List[LLMResponse]): Lista de respostas válidas.
+            primary (LLMResponse): A resposta primária selecionada.
+            score (float): A pontuação de consenso calculada.
+            
+        Returns:
+            Dict[str, Any]: O dicionário de resposta formatado para divergência.
+        """
+        return {
+            "text": f"Respostas divergentes. Resposta principal: {primary.text}",
+            "confidence": primary.confidence_score, # Confiança da resposta principal, não o consenso
+            "sources": primary.metadata.get("sources", []),
+            "models_used": [r.model_name for r in responses],
+            "tokens_used": sum(r.tokens_used or 0 for r in responses),
+            "error": True, # Sinaliza que o consenso foi baixo
+            "reasoning": f"Consenso baixo ({score:.2f}). As respostas foram divergentes.",
+            "has_additional_info": False,
+            "consensus_score": score
+        }
+
+    def _build_consensus_response(self, responses: List[LLMResponse],
+                                  primary: LLMResponse, score: float) -> Dict[str, Any]:
+        """
+        Constrói um dicionário de resposta consolidada quando um consenso é alcançado.
+        Inclui a resposta principal e, se aplicável, informação adicional de outras fontes.
+        
+        Args:
+            responses (List[LLMResponse]): Lista de respostas válidas.
+            primary (LLMResponse): A resposta primária selecionada.
+            score (float): A pontuação de consenso calculada.
+            
+        Returns:
+            Dict[str, Any]: O dicionário de resposta consolidada.
+        """
+        consolidated_text = primary.text
+        additional_info = ""
+        
+        # Adiciona informação complementar se o consenso for bom ou se houver apenas uma resposta
+        if score >= self.config.min_similarity_threshold or len(responses) == 1:
+            # Extrai informação adicional de outras respostas, se houver mais de uma
+            if len(responses) > 1:
+                additional_info = self._extract_additional_info(responses, primary)
+                if additional_info:
+                    consolidated_text += f"\n\nContexto Adicional:\n{additional_info}"
+
+        # Consolida todas as fontes de todas as respostas válidas (removendo duplicados)
+        all_sources = list(set(
+            src for r in responses
+            for src in r.metadata.get("sources", []) if r.metadata.get("sources") is not None
+        ))
+        # Consolida todos os modelos que contribuíram para a resposta
+        all_models_used = list(set(r.model_name for r in responses))
+        # Soma o total de tokens usados por todas as respostas
+        total_tokens_used = sum(r.tokens_used or 0 for r in responses)
+        # Calcula a confiança média da resposta consolidada
+        avg_confidence = mean(r.confidence_score for r in responses) if responses else 0.0
+
+        logger.info(f"Respostas consolidadas com pontuação {score:.2f}. Modelos usados: {all_models_used}")
+        return {
+            "text": consolidated_text,
+            "confidence": avg_confidence,
+            "sources": all_sources,
+            "models_used": all_models_used,
+            "tokens_used": total_tokens_used,
+            "error": False, # Indica que a resposta foi consolidada com sucesso
+            "consensus_score": score,
+            "reasoning": f"Consenso baseado em {len(responses)} modelos. Pontuação: {score:.2f}. "
+                         f"Resposta principal do '{primary.model_name}'.",
+            "has_additional_info": bool(additional_info) # Indica se foi adicionada informação complementar
+        }
+
+    def _extract_additional_info(self, responses: List[LLMResponse], primary: LLMResponse) -> str:
+        """
+        Extrai informações complementares e não redundantes de outras respostas
+        para enriquecer a resposta principal. As frases são selecionadas com base
+        na sua singularidade em relação à resposta primária e na confiança dos modelos.
+        
+        Args:
+            responses (List[LLMResponse]): Todas as respostas válidas.
+            primary (LLMResponse): A resposta primária.
+            
+        Returns:
+            str: Um texto contendo as frases adicionais selecionadas, ou uma string vazia.
+        """
+        primary_sentences = self._split_into_sentences(primary.text.lower())
+        sentence_scores = defaultdict(float) # Soma das confianças para cada frase única
+        sentence_counts = defaultdict(int) # Contagem de ocorrências de cada frase única
+        
+        for response in responses:
+            if response == primary:
+                continue # Ignora a resposta primária na extração de informação adicional
+                
+            for sentence in self._split_into_sentences(response.text.lower()):
+                # Ignora frases muito curtas para não poluir a informação adicional
+                if len(sentence) < self.config.min_sentence_length:
+                    continue
+                    
+                # Calcula a similaridade máxima da frase atual com qualquer frase da resposta primária
+                max_similarity = max(
+                    (self.calculate_similarity(sentence, ps) for ps in primary_sentences),
+                    default=0.0 # Se primary_sentences estiver vazia, similaridade é 0
+                )
+                
+                # Se a frase não for muito similar à principal, considera-a como informação adicional
+                if max_similarity < self.config.sentence_similarity_threshold:
+                    sentence_scores[sentence] += response.confidence_score
+                    sentence_counts[sentence] += 1
+
+        # Cria uma lista de tuplos (frase, pontuação_ponderada)
+        # A pontuação é a soma das confianças multiplicada pela frequência
+        scored_sentences = [
+            (s, score * count) 
+            for s, (score, count) in zip(sentence_scores.keys(), zip(sentence_scores.values(), sentence_counts.values()))
+        ]
+        # Ordena as frases pela pontuação ponderada em ordem decrescente
+        scored_sentences.sort(key=lambda x: -x[1])
+        
+        # Seleciona o número máximo de frases adicionais configurado
+        selected = [s.capitalize() for s, _ in scored_sentences[:self.config.max_additional_info_sentences]]
+        
+        # Junta as frases selecionadas num único texto
+        return ". ".join(selected) + ("." if selected else "") # Garante que termina com ponto se houver frases
+
+    def _split_into_sentences(self, text: str) -> List[str]:
+        """
+        Divide um texto em frases utilizando uma expressão regular para detecção de pontuação.
+        Retorna uma lista de frases limpas.
+        
+        Args:
+            text (str): O texto a ser dividido.
+            
+        Returns:
+            List[str]: Uma lista de frases. Retorna uma lista vazia se o texto for vazio.
+        """
+        if not text or not text.strip(): # Verifica se o texto é vazio ou contém apenas espaços
+            return []
+            
+        # Expressão regular para dividir o texto em frases, considerando . ! ?
+        # e o espaço seguinte.
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        return [s.strip() for s in sentences if s.strip()] # Remove espaços e garante frases não vazias
