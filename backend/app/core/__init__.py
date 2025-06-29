@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Módulo core da aplicação Mozaia.
+Módulo core da aplicação Muzaia.
 
 Contém os componentes principais do sistema:
 - Configurações centralizadas
@@ -43,12 +43,11 @@ from .protocols import (
     AbstractOrchestrator,
     LLMError,
     LLMConnectionError,
-    LLMTimeoutError,
     LLMRateLimitError,
     LLMInvalidResponseError,
 )
 from .exceptions import (
-    MozaiaError,
+    MuzaiaError,
     InvalidInputError,
     LLMServiceError,
     ConsensusError,
@@ -59,6 +58,7 @@ from .exceptions import (
     RateLimitError,
     CircuitBreakerError,
     RetryExhaustedError,
+    LLMTimeoutError,
 )
 
 # Exports principais
@@ -106,7 +106,7 @@ __all__ = [
     "LLMInvalidResponseError",
     
     # Exceções da aplicação
-    "MozaiaError",
+    "MuzaiaError",
     "InvalidInputError",
     "LLMServiceError",
     "ConsensusError", 
@@ -121,4 +121,4 @@ __all__ = [
 
 # Informações do módulo
 __version__ = "2.0.0"
-__author__ = "Mozaia Team"
+__author__ = "Muzaia Team"
