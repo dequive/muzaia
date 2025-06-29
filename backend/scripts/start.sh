@@ -1,10 +1,10 @@
 #!/bin/bash
 # backend/scripts/start.sh
-# Script de inicialização do backend Mozaia
+# Script de inicialização do backend Muzaia
 
 set -e  # Exit on any error
 
-echo "🚀 Iniciando Mozaia LLM Orchestrator Backend..."
+echo "🚀 Iniciando Muzaia LLM Orchestrator Backend..."
 
 # Cores para output
 RED='\033[0;31m'
@@ -36,100 +36,59 @@ if [ ! -f "main.py" ]; then
     exit 1
 fi
 
-# Carregar variáveis de ambiente
-if [ -f ".env" ]; then
-    log_info "Carregando variáveis de ambiente de .env"
-    set -a
-    source .env
-    set +a
-else
-    log_warning "Arquivo .env não encontrado. Usando .env.example como base"
-    if [ -f ".env.example" ]; then
-        cp .env.example .env
-        log_info "Arquivo .env criado a partir de .env.example"
-        log_warning "⚠️  IMPORTANTE: Configure as variáveis em .env antes de continuar"
+# Verificar ambiente virtual
+if [ -z "$VIRTUAL_ENV" ] && [ ! -d "venv" ] && [ ! -d ".venv" ]; then
+    log_warning "Ambiente virtual não detectado. Recomenda-se usar um ambiente virtual."
+    read -p "Deseja continuar sem ambiente virtual? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Executando 'python -m venv venv' para criar ambiente virtual..."
+        python -m venv venv
+        
+        if [ $? -eq 0 ]; then
+            log_success "Ambiente virtual criado. Ative-o com:"
+            echo "  source venv/bin/activate  # Linux/macOS"
+            echo "  .\\venv\\Scripts\\activate  # Windows"
+            exit 0
+        else
+            log_error "Falha ao criar ambiente virtual. Verifique se python3-venv está instalado."
+            exit 1
+        fi
     fi
 fi
 
-# Verificar dependências do Python
-log_info "Verificando dependências do Python..."
-if [ ! -d "venv" ] && [ ! -n "$VIRTUAL_ENV" ]; then
-    log_warning "Ambiente virtual não detectado. Criando venv..."
-    python3 -m venv venv
-    source venv/bin/activate
-    log_success "Ambiente virtual criado e ativado"
+# Verificar dependências
+log_info "Verificando dependências..."
+if [ ! -f "requirements.txt" ]; then
+    log_error "requirements.txt não encontrado"
+    exit 1
 fi
 
-# Ativar ambiente virtual se existe
-if [ -d "venv" ] && [ ! -n "$VIRTUAL_ENV" ]; then
-    log_info "Ativando ambiente virtual..."
-    source venv/bin/activate
-fi
-
-# Instalar/atualizar dependências
-log_info "Instalando dependências..."
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# Verificar se Ollama está rodando (opcional)
-log_info "Verificando se Ollama está disponível..."
-if command -v curl &> /dev/null; then
-    if curl -s "${OLLAMA_BASE_URL:-http://localhost:11434}/api/tags" > /dev/null 2>&1; then
-        log_success "✅ Ollama está rodando"
-    else
-        log_warning "⚠️  Ollama não está rodando ou não está acessível"
-        log_info "Para instalar Ollama: curl -fsSL https://ollama.ai/install.sh | sh"
-    fi
-else
-    log_warning "curl não encontrado, pulando verificação do Ollama"
-fi
-
-# Verificar conectividade com PostgreSQL
-log_info "Verificando conectividade com PostgreSQL..."
-if command -v pg_isready &> /dev/null; then
-    if pg_isready -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" > /dev/null 2>&1; then
-        log_success "✅ PostgreSQL está acessível"
-    else
-        log_error "❌ PostgreSQL não está acessível"
-        log_info "Verifique se PostgreSQL está rodando e as configurações em .env"
-        exit 1
-    fi
-else
-    log_warning "pg_isready não encontrado, pulando verificação do PostgreSQL"
-fi
-
-# Verificar conectividade com Redis
-log_info "Verificando conectividade com Redis..."
-if command -v redis-cli &> /dev/null; then
-    if redis-cli -u "${REDIS_URL:-redis://localhost:6379}" ping > /dev/null 2>&1; then
-        log_success "✅ Redis está acessível"
-    else
-        log_warning "⚠️  Redis não está acessível"
-        log_info "Redis é opcional, mas recomendado para cache"
-    fi
-else
-    log_warning "redis-cli não encontrado, pulando verificação do Redis"
-fi
-
-# Setup do banco de dados
-log_info "Configurando banco de dados..."
-if python scripts/setup_db.py --verify-only > /dev/null 2>&1; then
-    log_success "✅ Banco de dados já está configurado"
-else
-    log_info "Executando setup do banco de dados..."
-    python scripts/setup_db.py
+# Instalar ou atualizar dependências se necessário
+if [ "$1" = "--update-deps" ] || [ ! -f ".deps_installed" ]; then
+    log_info "Instalando/atualizando dependências..."
+    pip install -r requirements.txt
+    
     if [ $? -eq 0 ]; then
-        log_success "✅ Banco de dados configurado com sucesso"
+        touch .deps_installed
+        log_success "✅ Dependências instaladas com sucesso"
     else
-        log_error "❌ Falha no setup do banco de dados"
+        log_error "❌ Falha na instalação das dependências"
         exit 1
     fi
 fi
 
-# Executar migrações do Alembic (se disponível)
-if [ -f "alembic.ini" ]; then
+# Verificar configuração
+if [ ! -f ".env" ] && [ ! -f ".env.development" ]; then
+    log_warning "Arquivo .env não encontrado. Criando .env padrão..."
+    cp .env.example .env || true
+fi
+
+# Executar migrações do banco se solicitado
+if [ "$1" = "--migrate" ] || [ "$2" = "--migrate" ]; then
     log_info "Executando migrações do banco de dados..."
-    alembic upgrade head
+    python scripts/setup_db.py
+    
     if [ $? -eq 0 ]; then
         log_success "✅ Migrações executadas com sucesso"
     else
@@ -148,44 +107,35 @@ if curl -s "${OLLAMA_BASE_URL:-http://localhost:11434}/api/tags" > /dev/null 2>&
         if ! curl -s "${OLLAMA_BASE_URL:-http://localhost:11434}/api/tags" | grep -q "\"name\":\"$model\""; then
             log_info "Baixando modelo $model..."
             curl -X POST "${OLLAMA_BASE_URL:-http://localhost:11434}/api/pull" \
-                -H "Content-Type: application/json" \
-                -d "{\"name\":\"$model\"}" &
+                 -H "Content-Type: application/json" \
+                 -d "{\"name\":\"$model\"}" \
+                 --silent
+            
+            if [ $? -eq 0 ]; then
+                log_success "✅ Modelo $model baixado com sucesso"
+            else
+                log_warning "⚠️ Falha ao baixar modelo $model"
+            fi
         else
-            log_success "✅ Modelo $model já está disponível"
+            log_info "✅ Modelo $model já está disponível"
         fi
     done
-    
-    # Aguardar downloads terminarem
-    wait
 fi
 
-# Definir configurações de execução
-HOST=${HOST:-0.0.0.0}
-PORT=${PORT:-8000}
-WORKERS=${WORKERS:-1}
-RELOAD=${DEBUG:-false}
-
-log_info "Configurações de execução:"
-log_info "  Host: $HOST"
-log_info "  Port: $PORT"
-log_info "  Workers: $WORKERS"
-log_info "  Reload: $RELOAD"
-log_info "  Environment: ${ENVIRONMENT:-development}"
-
-# Executar testes rápidos (opcional)
-if [ "$1" = "--test" ]; then
-    log_info "Executando testes..."
-    python -m pytest tests/ -v --tb=short
-    exit 0
-fi
-
-# Inicializar servidor
-log_success "🎉 Iniciando servidor Mozaia LLM Orchestrator..."
-log_info "API docs disponível em: http://$HOST:$PORT/docs"
-log_info "Health check em: http://$HOST:$PORT/health"
-
-if [ "$RELOAD" = "true" ]; then
-    exec uvicorn main:app --host "$HOST" --port "$PORT" --reload
+# Determinar o modo de execução
+if [ "$1" = "--production" ] || [ "$APP_ENV" = "production" ]; then
+    log_info "Iniciando servidor em modo de produção..."
+    uvicorn main:app --host=0.0.0.0 --port=${PORT:-8000} --workers=${WORKERS:-4} --proxy-headers
+elif [ "$1" = "--dev" ] || [ "$APP_ENV" = "development" ]; then
+    log_info "Iniciando servidor em modo de desenvolvimento com auto-reload..."
+    uvicorn main:app --reload --host=0.0.0.0 --port=${PORT:-8000}
 else
-    exec uvicorn main:app --host "$HOST" --port "$PORT" --workers "$WORKERS"
+    # Modo padrão (detectar automaticamente)
+    if [ -f ".env" ] && grep -q "APP_ENV=production" .env; then
+        log_info "Iniciando servidor em modo de produção (detectado de .env)..."
+        uvicorn main:app --host=0.0.0.0 --port=${PORT:-8000} --workers=${WORKERS:-4} --proxy-headers
+    else
+        log_info "Iniciando servidor em modo de desenvolvimento..."
+        uvicorn main:app --reload --host=0.0.0.0 --port=${PORT:-8000}
+    fi
 fi
