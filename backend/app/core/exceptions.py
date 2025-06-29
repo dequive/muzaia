@@ -1,43 +1,89 @@
 # backend/app/core/exceptions.py
-
 # -*- coding: utf-8 -*-
 """
-Módulo central para as exceções personalizadas da aplicação.
+Exceções customizadas da aplicação.
 """
 
-# Exceções da Aplicação Principal
-class LLMOrchestratorError(Exception):
-    """Exceção base para erros no orquestrador."""
+
+class MozaiaError(Exception):
+    """Exceção base para todas as exceções da aplicação."""
+    
+    def __init__(self, message: str, error_code: str = "UNKNOWN_ERROR"):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(self.message)
+
+
+class LLMError(MozaiaError):
+    """Exceção base para erros relacionados ao LLM."""
     pass
 
-class InvalidInputError(LLMOrchestratorError):
-    """Erro para entradas inválidas do utilizador."""
-    pass
-
-class ConsensusError(LLMOrchestratorError):
-    """Erro quando o consenso entre modelos não é alcançado."""
-    pass
-
-# --- Nova Hierarquia de Exceções para os Clientes LLM ---
-
-class LLMError(Exception):
-    """Exceção base para todos os erros relacionados a um cliente LLM específico."""
-    def __init__(self, message: str, model_name: str = "unknown"):
-        self.model_name = model_name
-        super().__init__(f"[{model_name}] {message}")
 
 class LLMConnectionError(LLMError):
-    """Erro de conexão com o serviço LLM (ex: DNS, falha de rede)."""
-    pass
+    """Erro de conexão com o serviço LLM."""
+    
+    def __init__(self, message: str = "Erro de conexão com LLM"):
+        super().__init__(message, "LLM_CONNECTION_ERROR")
+
 
 class LLMRateLimitError(LLMError):
     """Erro de limite de taxa excedido."""
-    pass
+    
+    def __init__(self, message: str = "Limite de taxa excedido"):
+        super().__init__(message, "LLM_RATE_LIMIT_ERROR")
+
 
 class LLMInvalidResponseError(LLMError):
-    """Erro de resposta mal formada ou inesperada do LLM."""
-    pass
+    """Erro de resposta inválida do LLM."""
+    
+    def __init__(self, message: str = "Resposta inválida do LLM"):
+        super().__init__(message, "LLM_INVALID_RESPONSE_ERROR")
 
-class ModelNotFoundError(LLMError):
-    """Erro quando o modelo especificado não é encontrado no serviço."""
-    pass
+
+class ConsensusError(MozaiaError):
+    """Erro no sistema de consenso."""
+    
+    def __init__(self, message: str = "Erro no sistema de consenso"):
+        super().__init__(message, "CONSENSUS_ERROR")
+
+
+class LLMServiceError(MozaiaError):
+    """Erro no serviço LLM."""
+    
+    def __init__(self, message: str = "Erro no serviço LLM"):
+        super().__init__(message, "LLM_SERVICE_ERROR")
+
+
+class InvalidInputError(MozaiaError):
+    """Erro de entrada inválida."""
+    
+    def __init__(self, message: str = "Entrada inválida"):
+        super().__init__(message, "INVALID_INPUT_ERROR")
+
+
+class ValidationError(MozaiaError):
+    """Erro de validação."""
+    
+    def __init__(self, message: str = "Erro de validação"):
+        super().__init__(message, "VALIDATION_ERROR")
+
+
+class DatabaseError(MozaiaError):
+    """Erro de banco de dados."""
+    
+    def __init__(self, message: str = "Erro de banco de dados"):
+        super().__init__(message, "DATABASE_ERROR")
+
+
+class AuthenticationError(MozaiaError):
+    """Erro de autenticação."""
+    
+    def __init__(self, message: str = "Erro de autenticação"):
+        super().__init__(message, "AUTHENTICATION_ERROR")
+
+
+class AuthorizationError(MozaiaError):
+    """Erro de autorização."""
+    
+    def __init__(self, message: str = "Erro de autorização"):
+        super().__init__(message, "AUTHORIZATION_ERROR")
