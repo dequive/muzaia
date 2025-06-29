@@ -8,10 +8,21 @@ garantindo consistência e permitindo extensibilidade.
 from __future__ import annotations
 
 import abc
-from typing import Dict, Any, Optional, List, AsyncGenerator
+from typing import Dict, Any, Optional, List, AsyncGenerator, TypedDict
 from contextlib import asynccontextmanager
 
 from app.schemas import LLMResponse, GenerationParams
+
+
+class LLMStreamChunk(TypedDict, total=False):
+    """Estrutura de dados para chunks de streaming."""
+    content: str
+    is_final: bool
+    model: Optional[str]
+    metadata: Optional[Dict[str, Any]]
+    error: Optional[str]
+    token_count: Optional[int]
+    processing_time: Optional[float]
 
 
 class AbstractLLM(abc.ABC):
@@ -54,7 +65,7 @@ class AbstractLLM(abc.ABC):
         context: str = "",
         system_prompt: Optional[str] = None,
         params: Optional[GenerationParams] = None
-    ) -> AsyncGenerator[Dict[str, Any], None]:
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
         """
         Gera resposta em streaming.
         
@@ -65,7 +76,7 @@ class AbstractLLM(abc.ABC):
             params: Parâmetros de geração
             
         Yields:
-            Dict contendo chunks da resposta com metadados
+            LLMStreamChunk contendo chunks da resposta com metadados
         """
         pass
     
