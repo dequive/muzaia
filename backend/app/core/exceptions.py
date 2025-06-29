@@ -4,7 +4,7 @@ Exceções customizadas da aplicação.
 """
 
 
-class MozaiaError(Exception):
+class MuzaiaError(Exception):
     """Exceção base para todas as exceções da aplicação."""
     
     def __init__(self, message: str, error_code: str = "UNKNOWN_ERROR"):
@@ -13,7 +13,7 @@ class MozaiaError(Exception):
         super().__init__(self.message)
 
 
-class LLMError(MozaiaError):
+class LLMError(MuzaiaError):
     """Exceção base para erros relacionados ao LLM."""
     pass
 
@@ -32,6 +32,13 @@ class LLMRateLimitError(LLMError):
         super().__init__(message, "LLM_RATE_LIMIT_ERROR")
 
 
+class LLMTimeoutError(LLMError):
+    """Erro de timeout na comunicação com LLM."""
+    
+    def __init__(self, message: str = "Timeout na comunicação com LLM"):
+        super().__init__(message, "LLM_TIMEOUT_ERROR")
+
+
 class LLMInvalidResponseError(LLMError):
     """Erro de resposta inválida do LLM."""
     
@@ -39,70 +46,70 @@ class LLMInvalidResponseError(LLMError):
         super().__init__(message, "LLM_INVALID_RESPONSE_ERROR")
 
 
-class ConsensusError(MozaiaError):
+class ConsensusError(MuzaiaError):
     """Erro no sistema de consenso."""
     
     def __init__(self, message: str = "Erro no sistema de consenso"):
         super().__init__(message, "CONSENSUS_ERROR")
 
 
-class LLMServiceError(MozaiaError):
+class LLMServiceError(MuzaiaError):
     """Erro no serviço LLM."""
     
     def __init__(self, message: str = "Erro no serviço LLM"):
         super().__init__(message, "LLM_SERVICE_ERROR")
 
 
-class InvalidInputError(MozaiaError):
+class InvalidInputError(MuzaiaError):
     """Erro de entrada inválida."""
     
     def __init__(self, message: str = "Entrada inválida"):
         super().__init__(message, "INVALID_INPUT_ERROR")
 
 
-class ValidationError(MozaiaError):
+class ValidationError(MuzaiaError):
     """Erro de validação."""
     
     def __init__(self, message: str = "Erro de validação"):
         super().__init__(message, "VALIDATION_ERROR")
 
 
-class DatabaseError(MozaiaError):
+class DatabaseError(MuzaiaError):
     """Erro de banco de dados."""
     
     def __init__(self, message: str = "Erro de banco de dados"):
         super().__init__(message, "DATABASE_ERROR")
 
 
-class AuthenticationError(MozaiaError):
+class AuthenticationError(MuzaiaError):
     """Erro de autenticação."""
     
     def __init__(self, message: str = "Erro de autenticação"):
         super().__init__(message, "AUTHENTICATION_ERROR")
 
 
-class AuthorizationError(MozaiaError):
+class AuthorizationError(MuzaiaError):
     """Erro de autorização."""
     
     def __init__(self, message: str = "Erro de autorização"):
         super().__init__(message, "AUTHORIZATION_ERROR")
 
 
-class RateLimitError(MozaiaError):
+class RateLimitError(MuzaiaError):
     """Erro de limite de taxa excedido (para resiliência)."""
     
     def __init__(self, message: str = "Limite de taxa excedido"):
         super().__init__(message, "RATE_LIMIT_ERROR")
 
 
-class CircuitBreakerError(MozaiaError):
+class CircuitBreakerError(MuzaiaError):
     """Erro quando circuit breaker está aberto."""
     
     def __init__(self, message: str = "Circuit breaker aberto"):
         super().__init__(message, "CIRCUIT_BREAKER_ERROR")
 
 
-class RetryExhaustedError(MozaiaError):
+class RetryExhaustedError(MuzaiaError):
     """Erro quando todas as tentativas de retry foram esgotadas."""
     
     def __init__(self, message: str = "Tentativas de retry esgotadas"):
