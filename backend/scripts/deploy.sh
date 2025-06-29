@@ -4,12 +4,13 @@
 
 set -e
 
-echo "🚀 Iniciando deploy do Mozaia LLM Orchestrator..."
+echo "🚀 Iniciando deploy do Muzaia LLM Orchestrator..."
 
 # Configurações
-PROJECT_NAME="mozaia-llm-orchestrator"
+PROJECT_NAME="muzaia-llm-orchestrator"
 DOCKER_IMAGE="$PROJECT_NAME:latest"
 CONTAINER_NAME="$PROJECT_NAME-backend"
+COMPOSE_FILE="docker-compose.prod.yml"
 
 # Cores
 RED='\033[0;31m'
@@ -42,33 +43,36 @@ if [ ! -f ".env.production" ]; then
     exit 1
 fi
 
+# Criar diretório de backup se não existir
+mkdir -p backups
+
 # Fazer backup do banco de dados atual (se existir)
 log_info "Fazendo backup do banco de dados..."
 if docker ps | grep -q postgres; then
     BACKUP_FILE="backup_$(date +%Y%m%d_%H%M%S).sql"
-    docker exec $(docker ps -qf "name=postgres") pg_dump -U mozaia_user mozaia_db > "backups/$BACKUP_FILE" || true
+    docker exec $(docker ps -qf "name=postgres") pg_dump -U muzaia_user muzaia_db > "backups/$BACKUP_FILE" || true
     log_success "Backup salvo em backups/$BACKUP_FILE"
 fi
 
 # Parar containers existentes
 log_info "Parando containers existentes..."
-docker-compose -f docker-compose.prod.yml down || true
+docker-compose -f $COMPOSE_FILE down || true
 
 # Fazer pull das imagens mais recentes
 log_info "Atualizando imagens Docker..."
-docker-compose -f docker-compose.prod.yml pull
+docker-compose -f $COMPOSE_FILE pull
 
 # Construir nova imagem
 log_info "Construindo nova imagem..."
-docker-compose -f docker-compose.prod.yml build --no-cache backend
+docker-compose -f $COMPOSE_FILE build --no-cache backend
 
 # Executar migrações do banco
 log_info "Executando migrações do banco..."
-docker-compose -f docker-compose.prod.yml run --rm backend python scripts/setup_db.py
+docker-compose -f $COMPOSE_FILE run --rm backend python scripts/setup_db.py
 
 # Iniciar serviços
 log_info "Iniciando serviços..."
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f $COMPOSE_FILE up -d
 
 # Aguardar serviços ficarem prontos
 log_info "Aguardando serviços ficarem prontos..."
@@ -77,25 +81,14 @@ sleep 30
 # Verificar health check
 log_info "Verificando health check..."
 for i in {1..10}; do
-    if curl -f http://localhost:8000/health > /dev/null 2>&1; then
-        log_success "✅ Aplicação está rodando e saudável"
-        break
+    if curl -s "http://localhost:8000/health" | grep -q "status.*ok"; then
+        log_success "✅ Serviço está saudável e pronto!"
+        exit 0
     fi
-    
-    if [ $i -eq 10 ]; then
-        log_error "❌ Aplicação não passou no health check"
-        docker-compose -f docker-compose.prod.yml logs backend
-        exit 1
-    fi
-    
-    log_info "Tentativa $i/10 - aguardando..."
-    sleep 10
+    log_info "Aguardando serviço ficar pronto... ($i/10)"
+    sleep 5
 done
 
-# Limpeza de imagens antigas
-log_info "Limpando imagens Docker antigas..."
-docker image prune -f
-
-log_success "🎉 Deploy concluído com sucesso!"
-log_info "API disponível em: http://localhost:8000"
-log_info "Documentação em: http://localhost:8000/docs"
+log_error "❌ O serviço não está respondendo corretamente após implantação"
+log_info "Verifique os logs: docker-compose -f $COMPOSE_FILE logs"
+exit 1
