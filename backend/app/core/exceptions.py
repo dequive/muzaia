@@ -1,4 +1,3 @@
-# backend/app/core/exceptions.py
 # -*- coding: utf-8 -*-
 """
 Exceções customizadas da aplicação.
@@ -87,3 +86,24 @@ class AuthorizationError(MozaiaError):
     
     def __init__(self, message: str = "Erro de autorização"):
         super().__init__(message, "AUTHORIZATION_ERROR")
+
+
+class RateLimitError(MozaiaError):
+    """Erro de limite de taxa excedido (para resiliência)."""
+    
+    def __init__(self, message: str = "Limite de taxa excedido"):
+        super().__init__(message, "RATE_LIMIT_ERROR")
+
+
+class CircuitBreakerError(MozaiaError):
+    """Erro quando circuit breaker está aberto."""
+    
+    def __init__(self, message: str = "Circuit breaker aberto"):
+        super().__init__(message, "CIRCUIT_BREAKER_ERROR")
+
+
+class RetryExhaustedError(MozaiaError):
+    """Erro quando todas as tentativas de retry foram esgotadas."""
+    
+    def __init__(self, message: str = "Tentativas de retry esgotadas"):
+        super().__init__(message, "RETRY_EXHAUSTED_ERROR")
