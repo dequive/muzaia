@@ -8,6 +8,7 @@ Contém os componentes principais do sistema:
 - Factory e Pool de modelos
 - Motor de consenso
 - Protocolos e interfaces
+- Resiliência e recuperação
 """
 
 from .config import settings
@@ -15,6 +16,16 @@ from .orchestrator import LLMOrchestrator
 from .factory import LLMFactory
 from .pool import LLMPool, PoolConfig
 from .consensus_engine import ConsensusEngine
+from .resilience import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    RateLimiter,
+    RateLimiterConfig,
+    RetryConfig,
+    ResilienceManager,
+    resilience_manager,
+    retry_with_backoff,
+)
 from .protocols import (
     AbstractLLM,
     AbstractLLMFactory,
@@ -36,6 +47,9 @@ from .exceptions import (
     DatabaseError,
     AuthenticationError,
     AuthorizationError,
+    RateLimitError,
+    CircuitBreakerError,
+    RetryExhaustedError,
 )
 
 # Exports principais
@@ -49,6 +63,16 @@ __all__ = [
     "LLMPool",
     "PoolConfig",
     "ConsensusEngine",
+    
+    # Resiliência
+    "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "RateLimiter",
+    "RateLimiterConfig",
+    "RetryConfig",
+    "ResilienceManager",
+    "resilience_manager",
+    "retry_with_backoff",
     
     # Protocolos e interfaces
     "AbstractLLM",
@@ -73,6 +97,9 @@ __all__ = [
     "DatabaseError",
     "AuthenticationError",
     "AuthorizationError",
+    "RateLimitError",
+    "CircuitBreakerError",
+    "RetryExhaustedError",
 ]
 
 # Informações do módulo
