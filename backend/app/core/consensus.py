@@ -1,543 +1,430 @@
 # -*- coding: utf-8 -*-
 """
-Módulo do Motor de Consenso com Embeddings Semânticos.
+Motor de Consenso Avançado - Versão Híbrida.
 
-Responsável por analisar múltiplas respostas de LLMs e determinar a
-melhor resposta com base em heurísticas e similaridade semântica usando
-sentence transformers para análise mais sofisticada.
+Combina o motor de consenso original (heurística avançada) com
+o novo motor semântico (sentence transformers) para máxima precisão.
 """
+from __future__ import annotations
+
 import asyncio
 import logging
 from typing import List, Dict, Any, Optional, Tuple
-import os
-import warnings
+from statistics import mean
 
-import numpy as np
 from app.schemas import LLMResponse, ModelResponse
+from app.core.exceptions import ConsensusError
 
-# Imports opcionais para sentence transformers
+# Import condicional do motor semântico
 try:
-    from sentence_transformers import SentenceTransformer
-    from sklearn.metrics.pairwise import cosine_similarity
-    HAS_SEMANTIC_MODELS = True
+    from app.core.consensus import SemanticConsensusEngine
+    HAS_SEMANTIC_ENGINE = True
 except ImportError:
-    HAS_SEMANTIC_MODELS = False
-    SentenceTransformer = None
-    cosine_similarity = None
+    HAS_SEMANTIC_ENGINE = False
+    SemanticConsensusEngine = None
 
 logger = logging.getLogger(__name__)
 
-# Suprimir warnings do transformers para logs mais limpos
-warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
 
-
-class SemanticConsensusEngine:
+class HybridConsensusEngine:
     """
-    Motor de consenso avançado usando embeddings semânticos.
-
-    Utiliza uma abordagem híbrida, combinando:
-    - Confiança inicial de cada modelo
-    - Similaridade semântica entre respostas (sentence transformers)
-    - Análise de qualidade de texto
-    - Ponderação por performance histórica dos modelos
-
-    Características:
-    - Fallback graceful se sentence-transformers não estiver disponível
-    - Cache de embeddings para performance
-    - Análise assíncrona para não bloquear
-    - Métricas detalhadas de consenso
+    Motor de consenso híbrido que combina múltiplas abordagens.
+    
+    Estratégias disponíveis:
+    1. Consenso Semântico (sentence transformers) - mais preciso
+    2. Consenso Heurístico Avançado - mais rápido
+    3. Consenso Simples - fallback
+    
+    Seleciona automaticamente a melhor estratégia baseada em:
+    - Disponibilidade de dependências
+    - Número de respostas
+    - Configuração do usuário
     """
 
-    def __init__(self, model_name: str = 'all-MiniLM-L6-v2', cache_embeddings: bool = True):
+    def __init__(
+        self,
+        prefer_semantic: bool = True,
+        min_similarity: float = 0.6,
+        min_consensus: float = 0.7,
+        semantic_model: str = 'all-MiniLM-L6-v2'
+    ):
         """
-        Inicializa o motor de consenso com modelo de embeddings.
-
+        Inicializa motor de consenso híbrido.
+        
         Args:
-            model_name: Nome do modelo sentence-transformer
-            cache_embeddings: Se deve cachear embeddings para performance
+            prefer_semantic: Preferir consenso semântico quando disponível
+            min_similarity: Similaridade mínima entre respostas
+            min_consensus: Score mínimo para consenso válido
+            semantic_model: Modelo para embeddings semânticos
         """
-        self.model_name = model_name
-        self.cache_embeddings = cache_embeddings
-        self.embedding_model = None
-        self._embedding_cache: Dict[str, np.ndarray] = {}
-        self._initialized = False
+        self.prefer_semantic = prefer_semantic
+        self.min_similarity = min_similarity
+        self.min_consensus = min_consensus
         
-        # Configuração de pesos para consenso
-        self.semantic_weight = 0.4  # Peso da similaridade semântica
-        self.confidence_weight = 0.3  # Peso da confiança inicial
-        self.quality_weight = 0.2   # Peso da qualidade do texto
-        self.length_weight = 0.1    # Peso do comprimento apropriado
+        # Inicializar motores
+        self.semantic_engine = None
+        if HAS_SEMANTIC_ENGINE and prefer_semantic:
+            self.semantic_engine = SemanticConsensusEngine(
+                model_name=semantic_model,
+                cache_embeddings=True
+            )
         
-        logger.info(f"Semantic Consensus Engine configurado com modelo: {model_name}")
-
-    async def initialize(self) -> bool:
-        """
-        Inicializa o modelo de embeddings de forma assíncrona.
+        self.response_cache: Dict[str, float] = {}
+        self.metrics = {
+            "total_consensus_calls": 0,
+            "semantic_consensus_used": 0,
+            "heuristic_consensus_used": 0,
+            "simple_consensus_used": 0,
+            "avg_processing_time": 0.0
+        }
         
-        Returns:
-            True se inicializado com sucesso, False se usar fallback
-        """
-        if self._initialized:
-            return self.embedding_model is not None
+        logger.info(
+            f"Hybrid Consensus Engine inicializado "
+            f"(semantic: {self.semantic_engine is not None})"
+        )
 
-        if not HAS_SEMANTIC_MODELS:
-            logger.warning(
-                "Sentence-transformers não está disponível. "
-                "Instale com: pip install sentence-transformers scikit-learn"
-            )
-            self._initialized = True
-            return False
+    async def initialize(self) -> None:
+        """Inicializa componentes assíncronos."""
+        if self.semantic_engine:
+            success = await self.semantic_engine.initialize()
+            if not success:
+                logger.warning("Semantic engine falhou, usando apenas heurística")
+                self.semantic_engine = None
 
-        try:
-            # Inicializar em thread separada para não bloquear
-            loop = asyncio.get_event_loop()
-            self.embedding_model = await loop.run_in_executor(
-                None, self._load_model
-            )
-            
-            logger.info(f"Modelo de embedding '{self.model_name}' carregado com sucesso")
-            self._initialized = True
-            return True
-            
-        except Exception as e:
-            logger.error(f"Falha ao carregar modelo '{self.model_name}': {e}")
-            logger.info("Continuando com consenso baseado em heurísticas")
-            self._initialized = True
-            return False
-
-    def _load_model(self) -> Optional[SentenceTransformer]:
-        """Carrega modelo sentence transformer (executado em thread separada)."""
-        try:
-            # Configurar cache local se possível
-            cache_folder = os.path.join(os.getcwd(), '.sentence_transformers_cache')
-            os.makedirs(cache_folder, exist_ok=True)
-            
-            return SentenceTransformer(
-                self.model_name,
-                cache_folder=cache_folder
-            )
-        except Exception as e:
-            logger.error(f"Erro ao carregar modelo: {e}")
-            return None
-
-    async def get_consensus(
+    async def calculate_consensus(
         self, 
         responses: List[LLMResponse],
-        model_weights: Optional[Dict[str, float]] = None
-    ) -> Dict[str, Any]:
+        weights: Optional[Dict[str, float]] = None,
+        strategy: Optional[str] = None
+    ) -> Tuple[float, ModelResponse]:
         """
-        Calcula consenso avançado entre múltiplas respostas.
-
+        Calcula consenso usando estratégia híbrida.
+        
         Args:
             responses: Lista de respostas dos modelos
-            model_weights: Pesos por modelo (opcional)
-
+            weights: Pesos opcionais por modelo
+            strategy: Estratégia específica ('semantic', 'heuristic', 'simple')
+            
         Returns:
-            Dict com texto final, confiança e métricas detalhadas
+            Tuple com (score_consenso, melhor_resposta)
         """
-        if not responses:
-            return {
-                "text": "",
-                "confidence": 0.0,
-                "method": "no_responses",
-                "reasoning": "Nenhuma resposta recebida.",
-                "metrics": {}
-            }
+        import time
+        start_time = time.time()
+        
+        try:
+            self.metrics["total_consensus_calls"] += 1
+            
+            if not responses:
+                raise ConsensusError("Lista de respostas vazia")
+            
+            if len(responses) == 1:
+                return 0.6, self._llm_to_model_response(responses[0])
+            
+            # Determinar estratégia
+            chosen_strategy = self._choose_strategy(responses, strategy)
+            logger.debug(f"Usando estratégia de consenso: {chosen_strategy}")
+            
+            # Executar consenso
+            if chosen_strategy == "semantic":
+                consensus_result = await self._semantic_consensus(responses, weights)
+                self.metrics["semantic_consensus_used"] += 1
+                
+            elif chosen_strategy == "heuristic":
+                consensus_result = await self._heuristic_consensus(responses, weights)
+                self.metrics["heuristic_consensus_used"] += 1
+                
+            else:  # simple
+                consensus_result = await self._simple_consensus(responses, weights)
+                self.metrics["simple_consensus_used"] += 1
+            
+            # Extrair resultado
+            final_consensus = consensus_result["confidence"]
+            best_response = self._create_model_response_from_result(consensus_result)
+            
+            # Atualizar métricas
+            processing_time = time.time() - start_time
+            self._update_processing_metrics(processing_time)
+            
+            logger.info(
+                f"Consenso calculado: {final_consensus:.3f} "
+                f"usando {chosen_strategy} em {processing_time:.3f}s"
+            )
+            
+            return final_consensus, best_response
+            
+        except Exception as e:
+            logger.error(f"Erro no cálculo de consenso: {e}")
+            raise ConsensusError(f"Erro no cálculo de consenso: {str(e)}")
 
-        if len(responses) == 1:
-            response = responses[0]
-            return {
-                "text": response.text,
-                "confidence": float(response.confidence or 0.8),
-                "method": "single_response",
-                "reasoning": f"Única resposta do modelo '{response.model}'.",
-                "metrics": {
-                    "total_responses": 1,
-                    "selected_model": response.model
-                }
-            }
-
-        # Garantir que modelo está inicializado
-        await self.initialize()
-
-        # Escolher método de consenso
-        if self.embedding_model is not None:
-            return await self._semantic_consensus(responses, model_weights)
-        else:
-            return await self._heuristic_consensus(responses, model_weights)
+    def _choose_strategy(
+        self, 
+        responses: List[LLMResponse], 
+        forced_strategy: Optional[str]
+    ) -> str:
+        """Escolhe a melhor estratégia para consenso."""
+        
+        if forced_strategy:
+            return forced_strategy
+        
+        # Se semantic engine disponível e preferido
+        if self.semantic_engine and self.prefer_semantic:
+            # Usar semântico apenas se houver texto suficiente
+            text_lengths = [len(r.text) for r in responses if r.text]
+            if text_lengths and mean(text_lengths) > 50:
+                return "semantic"
+        
+        # Se há pelo menos 2 respostas válidas, usar heurística
+        valid_responses = [r for r in responses if not r.error and r.text.strip()]
+        if len(valid_responses) >= 2:
+            return "heuristic"
+        
+        # Fallback para consenso simples
+        return "simple"
 
     async def _semantic_consensus(
-        self, 
+        self,
         responses: List[LLMResponse],
-        model_weights: Optional[Dict[str, float]] = None
+        weights: Optional[Dict[str, float]] = None
     ) -> Dict[str, Any]:
-        """
-        Consenso usando similaridade semântica com sentence transformers.
-        """
+        """Consenso usando motor semântico."""
         try:
-            texts = [r.text for r in responses if r.text and r.text.strip()]
+            result = await self.semantic_engine.get_consensus(responses, weights)
             
-            if not texts:
-                return await self._heuristic_consensus(responses, model_weights)
-
-            # Gerar embeddings (com cache)
-            embeddings = await self._get_embeddings(texts)
+            # Garantir que temos ModelResponse compatível
+            if "selected_model" in result:
+                # Encontrar resposta original
+                selected_response = None
+                for r in responses:
+                    if r.model == result["selected_model"]:
+                        selected_response = r
+                        break
+                
+                if selected_response:
+                    result["original_response"] = selected_response
             
-            # Calcular matriz de similaridade
-            similarity_matrix = cosine_similarity(embeddings)
+            return result
             
-            # Calcular scores de consenso
-            consensus_scores = await self._calculate_consensus_scores(
-                responses, similarity_matrix, model_weights
-            )
-            
-            # Selecionar melhor resposta
-            best_idx = np.argmax(consensus_scores)
-            best_response = responses[best_idx]
-            final_confidence = float(consensus_scores[best_idx])
-            
-            # Calcular métricas
-            metrics = self._calculate_semantic_metrics(
-                responses, similarity_matrix, consensus_scores
-            )
-            
-            reasoning = (
-                f"Consenso semântico: resposta do '{best_response.model}' "
-                f"selecionada com confiança {final_confidence:.3f}. "
-                f"Similaridade média: {metrics['avg_similarity']:.3f}."
-            )
-
-            return {
-                "text": best_response.text,
-                "confidence": final_confidence,
-                "method": "semantic_consensus",
-                "reasoning": reasoning,
-                "metrics": metrics,
-                "selected_model": best_response.model,
-                "alternatives": self._build_alternatives(responses, consensus_scores)
-            }
-
         except Exception as e:
             logger.error(f"Erro no consenso semântico: {e}")
-            return await self._heuristic_consensus(responses, model_weights)
-
-    async def _get_embeddings(self, texts: List[str]) -> np.ndarray:
-        """
-        Obtém embeddings para textos (com cache).
-        
-        Args:
-            texts: Lista de textos
-            
-        Returns:
-            Array numpy com embeddings
-        """
-        embeddings = []
-        texts_to_encode = []
-        indices_to_encode = []
-        
-        # Verificar cache
-        for i, text in enumerate(texts):
-            cache_key = hash(text)
-            if self.cache_embeddings and cache_key in self._embedding_cache:
-                embeddings.append(self._embedding_cache[cache_key])
-            else:
-                embeddings.append(None)
-                texts_to_encode.append(text)
-                indices_to_encode.append(i)
-        
-        # Encoding de textos não cacheados
-        if texts_to_encode:
-            loop = asyncio.get_event_loop()
-            new_embeddings = await loop.run_in_executor(
-                None, 
-                lambda: self.embedding_model.encode(
-                    texts_to_encode, 
-                    convert_to_tensor=False,
-                    show_progress_bar=False
-                )
-            )
-            
-            # Atualizar cache e lista
-            for i, embedding in enumerate(new_embeddings):
-                idx = indices_to_encode[i]
-                embeddings[idx] = embedding
-                
-                if self.cache_embeddings:
-                    cache_key = hash(texts_to_encode[i])
-                    self._embedding_cache[cache_key] = embedding
-        
-        return np.array(embeddings)
-
-    async def _calculate_consensus_scores(
-        self,
-        responses: List[LLMResponse],
-        similarity_matrix: np.ndarray,
-        model_weights: Optional[Dict[str, float]] = None
-    ) -> np.ndarray:
-        """
-        Calcula scores finais de consenso combinando múltiplas métricas.
-        """
-        n_responses = len(responses)
-        consensus_scores = []
-        
-        # Calcular métricas individuais
-        agreement_scores = np.mean(similarity_matrix, axis=1)
-        confidence_scores = np.array([r.confidence or 0.5 for r in responses])
-        quality_scores = np.array([self._calculate_quality_score(r.text) for r in responses])
-        length_scores = np.array([self._calculate_length_score(r.text) for r in responses])
-        
-        # Normalizar scores para [0, 1]
-        agreement_scores = self._normalize_scores(agreement_scores)
-        confidence_scores = self._normalize_scores(confidence_scores)
-        quality_scores = self._normalize_scores(quality_scores)
-        length_scores = self._normalize_scores(length_scores)
-        
-        # Combinar com pesos
-        for i in range(n_responses):
-            # Peso do modelo (se especificado)
-            model_weight = 1.0
-            if model_weights and responses[i].model in model_weights:
-                model_weight = model_weights[responses[i].model]
-            
-            # Score final ponderado
-            final_score = (
-                self.semantic_weight * agreement_scores[i] +
-                self.confidence_weight * confidence_scores[i] +
-                self.quality_weight * quality_scores[i] +
-                self.length_weight * length_scores[i]
-            ) * model_weight
-            
-            consensus_scores.append(final_score)
-        
-        return np.array(consensus_scores)
-
-    def _calculate_quality_score(self, text: str) -> float:
-        """
-        Calcula score de qualidade do texto baseado em heurísticas.
-        
-        Args:
-            text: Texto a analisar
-            
-        Returns:
-            Score de qualidade entre 0 e 1
-        """
-        if not text or not text.strip():
-            return 0.0
-        
-        text = text.strip()
-        quality_score = 0.5  # Base
-        
-        # Comprimento apropriado (nem muito curto nem muito longo)
-        length = len(text)
-        if 100 <= length <= 2000:
-            quality_score += 0.2
-        elif length < 50:
-            quality_score -= 0.2
-        
-        # Estrutura (frases completas)
-        sentences = text.count('.') + text.count('!') + text.count('?')
-        if sentences >= 2:
-            quality_score += 0.1
-        
-        # Variedade de palavras
-        words = text.split()
-        if len(words) > 0:
-            unique_ratio = len(set(words)) / len(words)
-            if unique_ratio > 0.7:
-                quality_score += 0.1
-        
-        # Penalizar repetições excessivas
-        if len(words) > 10:
-            word_counts = {}
-            for word in words:
-                word_counts[word] = word_counts.get(word, 0) + 1
-            
-            max_repetition = max(word_counts.values()) if word_counts else 1
-            repetition_ratio = max_repetition / len(words)
-            if repetition_ratio > 0.3:
-                quality_score -= 0.2
-        
-        # Presença de caracteres especiais problemáticos
-        if '�' in text or '\ufffd' in text:
-            quality_score -= 0.3
-        
-        return max(0.0, min(1.0, quality_score))
-
-    def _calculate_length_score(self, text: str) -> float:
-        """Calcula score baseado no comprimento apropriado."""
-        if not text:
-            return 0.0
-        
-        length = len(text.strip())
-        
-        # Comprimento ideal entre 200-1000 caracteres
-        if 200 <= length <= 1000:
-            return 1.0
-        elif 100 <= length < 200 or 1000 < length <= 2000:
-            return 0.7
-        elif 50 <= length < 100 or 2000 < length <= 3000:
-            return 0.5
-        else:
-            return 0.2
-
-    def _normalize_scores(self, scores: np.ndarray) -> np.ndarray:
-        """Normaliza scores para intervalo [0, 1]."""
-        if len(scores) == 0:
-            return scores
-        
-        min_score = np.min(scores)
-        max_score = np.max(scores)
-        
-        if max_score == min_score:
-            return np.ones_like(scores) * 0.5
-        
-        return (scores - min_score) / (max_score - min_score)
-
-    def _calculate_semantic_metrics(
-        self,
-        responses: List[LLMResponse],
-        similarity_matrix: np.ndarray,
-        consensus_scores: np.ndarray
-    ) -> Dict[str, Any]:
-        """Calcula métricas detalhadas do consenso semântico."""
-        n_responses = len(responses)
-        
-        # Similaridade média geral
-        avg_similarity = np.mean(similarity_matrix)
-        
-        # Diversidade (1 - similaridade média)
-        diversity = 1.0 - avg_similarity
-        
-        # Consenso (quão próximos estão os scores)
-        consensus_variance = np.var(consensus_scores)
-        consensus_strength = 1.0 - min(consensus_variance, 1.0)
-        
-        # Outliers (respostas muito diferentes)
-        agreement_scores = np.mean(similarity_matrix, axis=1)
-        outlier_threshold = np.mean(agreement_scores) - np.std(agreement_scores)
-        outliers = [
-            responses[i].model for i, score in enumerate(agreement_scores)
-            if score < outlier_threshold
-        ]
-        
-        return {
-            "total_responses": n_responses,
-            "avg_similarity": float(avg_similarity),
-            "diversity": float(diversity),
-            "consensus_strength": float(consensus_strength),
-            "consensus_variance": float(consensus_variance),
-            "outliers": outliers,
-            "similarity_matrix_shape": similarity_matrix.shape,
-            "method": "semantic_transformers"
-        }
+            # Fallback para heurística
+            return await self._heuristic_consensus(responses, weights)
 
     async def _heuristic_consensus(
         self,
         responses: List[LLMResponse],
-        model_weights: Optional[Dict[str, float]] = None
+        weights: Optional[Dict[str, float]] = None
     ) -> Dict[str, Any]:
-        """
-        Consenso baseado em heurísticas (fallback).
-        """
-        # Calcular scores heurísticos
-        scores = []
-        for response in responses:
-            confidence = response.confidence or 0.5
-            quality = self._calculate_quality_score(response.text)
-            length = self._calculate_length_score(response.text)
+        """Consenso usando heurística avançada (motor original)."""
+        
+        # Usar lógica do motor original de consensus_engine
+        valid_responses = [r for r in responses if not r.error and r.text.strip()]
+        
+        if not valid_responses:
+            raise ConsensusError("Nenhuma resposta válida encontrada")
+        
+        if len(valid_responses) == 1:
+            response = valid_responses[0]
+            return {
+                "text": response.text,
+                "confidence": 0.6,
+                "method": "single_valid_response",
+                "reasoning": f"Apenas uma resposta válida de {response.model}",
+                "original_response": response
+            }
+        
+        # Calcular similaridades usando difflib (do motor original)
+        import difflib
+        similarity_matrix = []
+        
+        for i, resp1 in enumerate(valid_responses):
+            row = []
+            for j, resp2 in enumerate(valid_responses):
+                if i == j:
+                    similarity = 1.0
+                else:
+                    similarity = difflib.SequenceMatcher(
+                        None, 
+                        resp1.text.lower(), 
+                        resp2.text.lower()
+                    ).ratio()
+                row.append(similarity)
+            similarity_matrix.append(row)
+        
+        # Calcular scores de consenso
+        consensus_scores = []
+        for i, response in enumerate(valid_responses):
+            # Similaridade média
+            avg_similarity = mean(similarity_matrix[i])
+            
+            # Qualidade do texto
+            quality_score = self._calculate_text_quality(response.text)
             
             # Peso do modelo
-            model_weight = 1.0
-            if model_weights and response.model in model_weights:
-                model_weight = model_weights[response.model]
+            model_weight = weights.get(response.model, 1.0) if weights else 1.0
             
-            # Score combinado
-            score = (
-                0.5 * confidence +
-                0.3 * quality +
-                0.2 * length
-            ) * model_weight
+            # Score final
+            final_score = (
+                0.4 * avg_similarity +
+                0.3 * (response.confidence or 0.5) +
+                0.2 * quality_score +
+                0.1 * model_weight
+            )
             
-            scores.append(score)
+            consensus_scores.append(final_score)
         
-        # Selecionar melhor
-        best_idx = np.argmax(scores)
-        best_response = responses[best_idx]
-        final_confidence = float(scores[best_idx])
-        
-        reasoning = (
-            f"Consenso heurístico: '{best_response.model}' "
-            f"selecionado com score {final_confidence:.3f} "
-            f"(confiança: {best_response.confidence:.3f}, qualidade estimada)."
-        )
+        # Selecionar melhor resposta
+        best_idx = max(range(len(consensus_scores)), key=lambda i: consensus_scores[i])
+        best_response = valid_responses[best_idx]
+        final_confidence = consensus_scores[best_idx]
         
         return {
             "text": best_response.text,
             "confidence": final_confidence,
-            "method": "heuristic_consensus",
-            "reasoning": reasoning,
+            "method": "heuristic_advanced",
+            "reasoning": f"Consenso heurístico: {best_response.model} com score {final_confidence:.3f}",
+            "original_response": best_response,
             "metrics": {
-                "total_responses": len(responses),
-                "selected_model": best_response.model,
-                "avg_confidence": float(np.mean([r.confidence or 0.5 for r in responses])),
-                "method": "heuristics_only"
-            },
-            "alternatives": self._build_alternatives(responses, scores)
-        }
-
-    def _build_alternatives(
-        self, 
-        responses: List[LLMResponse], 
-        scores: List[float]
-    ) -> List[Dict[str, Any]]:
-        """Constrói lista de respostas alternativas ordenadas por score."""
-        alternatives = []
-        
-        # Ordenar por score (descending)
-        sorted_indices = np.argsort(scores)[::-1]
-        
-        for i, idx in enumerate(sorted_indices[:3]):  # Top 3
-            response = responses[idx]
-            alternatives.append({
-                "rank": i + 1,
-                "model": response.model,
-                "score": float(scores[idx]),
-                "confidence": float(response.confidence or 0.5),
-                "text_preview": response.text[:100] + "..." if len(response.text) > 100 else response.text
-            })
-        
-        return alternatives
-
-    def get_cache_stats(self) -> Dict[str, Any]:
-        """Retorna estatísticas do cache de embeddings."""
-        return {
-            "cache_enabled": self.cache_embeddings,
-            "cache_size": len(self._embedding_cache),
-            "model_loaded": self.embedding_model is not None,
-            "model_name": self.model_name,
-            "weights": {
-                "semantic": self.semantic_weight,
-                "confidence": self.confidence_weight,
-                "quality": self.quality_weight,
-                "length": self.length_weight
+                "avg_similarity": mean([mean(row) for row in similarity_matrix]),
+                "total_responses": len(valid_responses)
             }
         }
 
-    def clear_cache(self):
-        """Limpa cache de embeddings."""
-        self._embedding_cache.clear()
-        logger.info("Cache de embeddings limpo")
+    async def _simple_consensus(
+        self,
+        responses: List[LLMResponse],
+        weights: Optional[Dict[str, float]] = None
+    ) -> Dict[str, Any]:
+        """Consenso simples baseado em confiança."""
+        
+        # Filtrar respostas válidas
+        valid_responses = [r for r in responses if r.text and r.text.strip()]
+        
+        if not valid_responses:
+            # Usar qualquer resposta disponível
+            valid_responses = responses
+        
+        if not valid_responses:
+            raise ConsensusError("Nenhuma resposta disponível")
+        
+        # Calcular scores simples
+        scores = []
+        for response in valid_responses:
+            confidence = response.confidence or 0.5
+            length_bonus = min(len(response.text) / 1000, 0.2)  # Bônus por comprimento
+            model_weight = weights.get(response.model, 1.0) if weights else 1.0
+            
+            score = (confidence + length_bonus) * model_weight
+            scores.append(score)
+        
+        # Selecionar melhor
+        best_idx = max(range(len(scores)), key=lambda i: scores[i])
+        best_response = valid_responses[best_idx]
+        
+        return {
+            "text": best_response.text,
+            "confidence": min(scores[best_idx], 1.0),
+            "method": "simple_confidence",
+            "reasoning": f"Consenso simples: maior confiança ({best_response.model})",
+            "original_response": best_response
+        }
+
+    def _calculate_text_quality(self, text: str) -> float:
+        """Calcula qualidade básica do texto."""
+        if not text or not text.strip():
+            return 0.0
+        
+        text = text.strip()
+        score = 0.5
+        
+        # Comprimento apropriado
+        length = len(text)
+        if 100 <= length <= 2000:
+            score += 0.3
+        elif length < 50:
+            score -= 0.2
+        
+        # Estrutura básica
+        sentences = text.count('.') + text.count('!') + text.count('?')
+        if sentences >= 2:
+            score += 0.2
+        
+        return max(0.0, min(1.0, score))
+
+    def _create_model_response_from_result(self, result: Dict[str, Any]) -> ModelResponse:
+        """Cria ModelResponse a partir do resultado do consenso."""
+        
+        original_response = result.get("original_response")
+        
+        if original_response:
+            return ModelResponse(
+                model_name=original_response.model,
+                response_text=result["text"],
+                confidence=result["confidence"],
+                processing_time=original_response.processing_time,
+                tokens_used=original_response.tokens_used or 0,
+                cost=original_response.cost or 0.0
+            )
+        else:
+            return ModelResponse(
+                model_name="consensus",
+                response_text=result["text"],
+                confidence=result["confidence"],
+                processing_time=0.0,
+                tokens_used=0,
+                cost=0.0
+            )
+
+    def _llm_to_model_response(self, llm_response: LLMResponse) -> ModelResponse:
+        """Converte LLMResponse para ModelResponse."""
+        return ModelResponse(
+            model_name=llm_response.model,
+            response_text=llm_response.text,
+            confidence=0.8,
+            processing_time=llm_response.processing_time,
+            tokens_used=llm_response.tokens_used or 0,
+            cost=llm_response.cost or 0.0
+        )
+
+    def _update_processing_metrics(self, processing_time: float):
+        """Atualiza métricas de tempo de processamento."""
+        current_avg = self.metrics["avg_processing_time"]
+        total_calls = self.metrics["total_consensus_calls"]
+        
+        new_avg = ((current_avg * (total_calls - 1)) + processing_time) / total_calls
+        self.metrics["avg_processing_time"] = new_avg
+
+    def get_metrics(self) -> Dict[str, Any]:
+        """Retorna métricas do motor híbrido."""
+        base_metrics = dict(self.metrics)
+        
+        # Adicionar métricas do semantic engine se disponível
+        if self.semantic_engine:
+            base_metrics["semantic_cache_stats"] = self.semantic_engine.get_cache_stats()
+        
+        return {
+            **base_metrics,
+            "semantic_engine_available": self.semantic_engine is not None,
+            "strategy_distribution": {
+                "semantic_percentage": (
+                    self.metrics["semantic_consensus_used"] / 
+                    max(self.metrics["total_consensus_calls"], 1) * 100
+                ),
+                "heuristic_percentage": (
+                    self.metrics["heuristic_consensus_used"] / 
+                    max(self.metrics["total_consensus_calls"], 1) * 100
+                ),
+                "simple_percentage": (
+                    self.metrics["simple_consensus_used"] / 
+                    max(self.metrics["total_consensus_calls"], 1) * 100
+                )
+            }
+        }
 
     async def close(self):
-        """Limpa recursos do modelo."""
-        if self.embedding_model:
-            # Sentence transformers não precisa de cleanup específico
-            self.embedding_model = None
-        
-        self.clear_cache()
-        logger.info("Semantic Consensus Engine fechado")
+        """Limpa recursos."""
+        if self.semantic_engine:
+            await self.semantic_engine.close()
 
 
-# Instância global (opcional)
-semantic_consensus_engine = SemanticConsensusEngine()
+# Alias para backward compatibility
+ConsensusEngine = HybridConsensusEngine
