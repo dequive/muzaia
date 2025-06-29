@@ -22,6 +22,15 @@ class RedisSettings(BaseSettings):
     retry_on_timeout: bool = True
 
 
+class CacheSettings(BaseSettings):
+    """Configurações de cache."""
+    cache_ttl_sec: int = Field(1800, alias="CACHE_TTL_SEC")  # 30 minutos
+    cache_max_size: int = Field(10000, alias="CACHE_MAX_SIZE")  # 10k entries
+    enable_response_caching: bool = Field(True, alias="ENABLE_RESPONSE_CACHING")
+    cleanup_interval_sec: int = Field(300, alias="CACHE_CLEANUP_INTERVAL_SEC")  # 5 minutos
+    cache_compression: bool = Field(True, alias="CACHE_COMPRESSION")
+
+
 class ModelsSettings(BaseSettings):
     """Configurações dos modelos LLM."""
     ollama_base_url: str = Field("http://localhost:11434", alias="OLLAMA_BASE_URL")
@@ -87,6 +96,7 @@ class AppSettings(BaseSettings):
     # Configurações aninhadas
     database: DatabaseSettings = DatabaseSettings()
     redis: RedisSettings = RedisSettings()
+    cache: CacheSettings = CacheSettings()  # Nova seção de cache
     models: ModelsSettings = ModelsSettings()
     orchestrator: OrchestratorSettings = OrchestratorSettings()
     pool: PoolSettings = PoolSettings()
