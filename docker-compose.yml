@@ -1,137 +1,87 @@
-import os
-import logging
-import aiohttp
-import uuid
-from fastapi import FastAPI, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field
-from typing import Optional, List
+version: '3.8'
 
-from app.core.llm_orchestrator import LLMOrchestrator
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - COHERE_API_KEY=${COHERE_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - DATABASE_URL=postgresql://mozaia_user:mozaia_password@postgres:5432/mozaia_db
+      - REDIS_URL=redis://redis:6379
+      - ENVIRONMENT=development
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - CORS_ORIGINS=http://localhost:3000
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - mozaia-network
 
-# --- Logging estruturado e configuração básica ---
-logger = logging.getLogger("mozaia")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s")
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - NEXT_PUBLIC_APP_NAME=Mozaia
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - mozaia-network
 
-# --- Configuração Centralizada ---
-API_KEY_FRONTEND = os.getenv("NEXT_PUBLIC_API_KEY_FRONTEND")
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: mozaia_db
+      POSTGRES_USER: mozaia_user
+      POSTGRES_PASSWORD: mozaia_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - mozaia-network
 
-if not API_KEY_FRONTEND:
-    logger.critical("A variável de ambiente NEXT_PUBLIC_API_KEY_FRONTEND não está definida. A autenticação irá falhar.")
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - mozaia-network
 
-# --- Middleware de Segurança para a Chave de API ---
-async def verify_api_key(request: Request):
-    sent_key = request.headers.get("X-API-Key")
-    if not sent_key or sent_key != API_KEY_FRONTEND:
-        logger.warning(f"Tentativa de acesso com chave de API inválida do IP: {request.client.host}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Chave de API inválida ou ausente."
-        )
-    return True
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - mozaia-network
 
-# --- Gestão de Ciclo de Vida da Aplicação (Lifespan) ---
-async def lifespan(app: FastAPI):
-    logger.info("Iniciando ciclo de vida do servidor Mozaia.")
-    # Inicializar recursos partilhados
-    app.state.http_session = aiohttp.ClientSession()
-    app.state.orchestrator = LLMOrchestrator(http_session=app.state.http_session)
-    yield
-    logger.info("Finalizando ciclo de vida do servidor Mozaia.")
-    # Terminar recursos partilhados
-    await app.state.http_session.close()
+volumes:
+  postgres_data:
+  redis_data:
+  ollama_data:
 
-app = FastAPI(
-    title="Mozaia Legal Assistant API",
-    description="Plataforma Jurídica Autônoma para Moçambique",
-    version="1.0.0",
-    lifespan=lifespan
-)
-
-# --- Middleware para gerar Request ID e logs por requisição (Registo Direto) ---
-@app.middleware("http")
-async def add_request_id_and_log(request: Request, call_next):
-    request_id = str(uuid.uuid4())
-    request.state.request_id = request_id
-    
-    logger.info(f"[{request_id}] Requisição recebida: {request.method} {request.url.path} de {request.client.host}")
-    
-    response = await call_next(request)
-    
-    response.headers["X-Request-ID"] = request_id
-    logger.info(f"[{request_id}] Resposta enviada com status: {response.status_code}")
-    return response
-
-# --- Instância do Orquestrador (Injeção de Dependência) ---
-def get_orchestrator(request: Request) -> LLMOrchestrator:
-    orchestrator = getattr(request.app.state, "orchestrator", None)
-    if orchestrator is None:
-        req_id = getattr(request.state, "request_id", "N/A")
-        logger.error(f"[{req_id}] Orquestrador não foi inicializado corretamente no ciclo de vida da aplicação.")
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Serviço temporariamente indisponível.")
-    return orchestrator
-
-# --- Modelos de Dados (Pydantic) ---
-class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=2, max_length=2000, description="A pergunta do utilizador.", example="Quais são os requisitos para abrir uma empresa em Moçambique?")
-    context: Optional[str] = Field("general", description="O contexto jurídico da pergunta para roteamento do modelo.", example="direitoempresarial")
-    min_confidence: Optional[float] = Field(75.0, ge=0, le=100, description="O limiar mínimo de confiança para a resposta.", example=85.0)
-    user_id: Optional[str] = Field(None, description="Identificador único do utilizador.", example="user_12345")
-
-class ChatResponse(BaseModel):
-    response: str
-    confidence_score: float
-    models_used: List[str]
-    requires_human_review: bool
-    sources: Optional[List[str]] = []
-    context: str
-    conversation_id: Optional[str] = None
-
-# --- Endpoint Público (Healthcheck) ---
-@app.get("/", tags=["Status"], summary="Verifica o estado da API (Endpoint Público)")
-async def root():
-    return {"message": "Mozaia Legal Assistant API", "version": "1.0.0", "status": "active"}
-
-# --- Endpoint Protegido (/chat) ---
-@app.post(
-    "/chat",
-    tags=["Chat"],
-    summary="Processa uma mensagem de chat jurídico (Endpoint Protegido)",
-    response_model=ChatResponse,
-    dependencies=[Depends(verify_api_key)]
-)
-async def legal_chat(
-    # Acesso direto ao objeto Request para obter o estado (ex: request_id)
-    request_obj: Request,
-    # O corpo da requisição é automaticamente mapeado para este modelo Pydantic
-    chat_request: ChatRequest,
-    orchestrator: LLMOrchestrator = Depends(get_orchestrator)
-):
-    req_id = request_obj.state.request_id
-    logger.info(f"[{req_id}] Nova consulta recebida: {chat_request.dict()}")
-    
-    try:
-        result = await orchestrator.get_legal_response(
-            query=chat_request.message,
-            context=chat_request.context,
-            min_confidence=chat_request.min_confidence,
-            user_id=chat_request.user_id
-        )
-        if result.get("error"):
-            logger.error(f"[{req_id}] Erro retornado pelo orquestrador LLM: {result.get('text')}")
-            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=result.get("text"))
-
-        response = ChatResponse(**result)
-        logger.info(f"[{req_id}] Resposta enviada com confiança de {response.confidence_score:.2f}%")
-        return response
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"[{req_id}] Erro inesperado no endpoint /chat: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ocorreu um erro inesperado no servidor.")
-
-# --- Execução local ---
-if __name__ == "__main__":
-    import uvicorn
-    logger.info("Iniciando servidor Uvicorn para desenvolvimento local do Mozaia.")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+networks:
+  mozaia-network:
+    driver: bridge
