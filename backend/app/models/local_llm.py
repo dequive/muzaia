@@ -1,275 +1,337 @@
-#backend/app/models/local_llm.py
 # -*- coding: utf-8 -*-
 """
-Cliente para modelos LLM locais via Ollama.
+Implementação de clientes para modelos LLM locais (Ollama).
 """
-import asyncio
-import logging
-from typing import Dict, Any, Optional
+import json
+from typing import Optional, Dict, Any, AsyncGenerator
+
 import aiohttp
-from tenacity import retry, stop_after_attempt, wait_exponential
 
-from app.core.config import settings
-from app.core.exceptions import LLMConnectionError, LLMInvalidResponseError
+from app.models.base_llm import BaseLLM
+from app.core.protocols import LLMStreamChunk
 from app.schemas import LLMResponse, GenerationParams
+from app.core.exceptions import LLMConnectionError, LLMTimeoutError, LLMInvalidResponseError
 
-logger = logging.getLogger(__name__)
 
+class OllamaLLM(BaseLLM):
+    """
+    Cliente para modelos Ollama (local).
+    
+    Características:
+    - Conexão com servidor Ollama local
+    - Suporte completo a streaming
+    - Health checks automáticos
+    - Pull automático de modelos
+    """
 
-class OllamaLLM:
-    """Cliente para modelos Ollama locais."""
+    def __init__(
+        self,
+        model_name: str,
+        session: Optional[aiohttp.ClientSession] = None,
+        base_url: str = "http://localhost:11434",
+        **kwargs
+    ):
+        """
+        Inicializa cliente Ollama.
+        
+        Args:
+            model_name: Nome do modelo Ollama
+            session: Sessão HTTP opcional
+            base_url: URL base do servidor Ollama
+            **kwargs: Argumentos adicionais
+        """
+        super().__init__(model_name, session, **kwargs)
+        self.base_url = base_url.rstrip('/')
+        
+        # URLs específicas do Ollama
+        self.generate_url = f"{self.base_url}/api/generate"
+        self.chat_url = f"{self.base_url}/api/chat"
+        self.tags_url = f"{self.base_url}/api/tags"
+        self.pull_url = f"{self.base_url}/api/pull"
+        self.show_url = f"{self.base_url}/api/show"
 
-    def __init__(self, model_name: str, session: aiohttp.ClientSession):
-        self.model_name = model_name
-        self.base_url = settings.models.ollama_base_url
-        self._session = session
-        self.timeout = aiohttp.ClientTimeout(total=settings.orchestrator.request_timeout)
+    @property
+    def provider(self) -> str:
+        """Nome do provedor."""
+        return "ollama"
 
-    async def __aenter__(self):
-        """Context manager entry."""
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
-        pass
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
-    )
-    async def generate(
+    async def _generate_impl(
         self,
         prompt: str,
         context: str = "",
         system_prompt: Optional[str] = None,
         params: Optional[GenerationParams] = None
     ) -> LLMResponse:
-        """
-        Gera uma resposta usando Ollama.
+        """Implementação da geração para Ollama."""
         
-        Args:
-            prompt: Prompt principal
-            context: Contexto adicional
-            system_prompt: Prompt do sistema
-            params: Parâmetros de geração
-            
-        Returns:
-            LLMResponse com a resposta gerada
-        """
-        try:
-            # Construir prompt completo
-            full_prompt = self._build_prompt(prompt, context, system_prompt)
-            
-            # Parâmetros de geração
-            generation_params = self._build_params(params)
-            
-            payload = {
-                "model": self.model_name,
-                "prompt": full_prompt,
-                "stream": False,
-                "options": generation_params
-            }
+        # Construir prompt completo
+        full_prompt = self._build_full_prompt(prompt, context, system_prompt)
+        
+        # Preparar payload
+        payload = {
+            "model": self.model_name,
+            "prompt": full_prompt,
+            "stream": False
+        }
+        
+        # Adicionar parâmetros se fornecidos
+        if params:
+            if params.temperature is not None:
+                payload["options"] = payload.get("options", {})
+                payload["options"]["temperature"] = params.temperature
+            if params.max_tokens is not None:
+                payload["options"] = payload.get("options", {})
+                payload["options"]["num_predict"] = params.max_tokens
+            if params.top_p is not None:
+                payload["options"] = payload.get("options", {})
+                payload["options"]["top_p"] = params.top_p
 
-            start_time = asyncio.get_event_loop().time()
-            
+        try:
             async with self._session.post(
-                f"{self.base_url}/api/generate",
+                self.generate_url,
                 json=payload,
-                timeout=self.timeout
+                timeout=aiohttp.ClientTimeout(total=self._timeout)
             ) as response:
                 
                 if response.status != 200:
                     error_text = await response.text()
                     raise LLMConnectionError(
-                        f"Ollama API retornou status {response.status}: {error_text}"
+                        f"Ollama retornou status {response.status}: {error_text}",
+                        self.model_name
                     )
                 
                 result = await response.json()
-                processing_time = asyncio.get_event_loop().time() - start_time
                 
-                return self._parse_response(result, processing_time)
-
+                # Extrair informações da resposta
+                response_text = result.get("response", "")
+                
+                if not response_text:
+                    raise LLMInvalidResponseError(
+                        "Resposta vazia do Ollama",
+                        self.model_name
+                    )
+                
+                # Estimar tokens (Ollama não retorna sempre)
+                tokens_used = result.get("eval_count", len(response_text.split()))
+                
+                return LLMResponse(
+                    text=response_text,
+                    model=self.model_name,
+                    tokens_used=tokens_used,
+                    processing_time=result.get("total_duration", 0) / 1e9,  # nanoseconds to seconds
+                    cost=0.0,  # Ollama é gratuito
+                    confidence=0.8,  # Confiança padrão para Ollama
+                    metadata={
+                        "context": result.get("context", []),
+                        "done": result.get("done", True),
+                        "load_duration": result.get("load_duration", 0),
+                        "prompt_eval_count": result.get("prompt_eval_count", 0),
+                        "prompt_eval_duration": result.get("prompt_eval_duration", 0),
+                        "eval_count": result.get("eval_count", 0),
+                        "eval_duration": result.get("eval_duration", 0)
+                    }
+                )
+                
+        except aiohttp.ClientTimeout:
+            raise LLMTimeoutError(f"Timeout na requisição para Ollama", self.model_name)
         except aiohttp.ClientError as e:
-            logger.error(f"Erro de conexão com Ollama: {e}")
-            raise LLMConnectionError(f"Erro de conexão: {str(e)}")
-        except Exception as e:
-            logger.error(f"Erro inesperado no Ollama: {e}")
-            raise LLMInvalidResponseError(f"Erro inesperado: {str(e)}")
+            raise LLMConnectionError(f"Erro de conexão com Ollama: {e}", self.model_name)
+        except json.JSONDecodeError as e:
+            raise LLMInvalidResponseError(f"Resposta JSON inválida do Ollama: {e}", self.model_name)
 
-    async def stream_generate(
+    async def _stream_generate_impl(
         self,
         prompt: str,
         context: str = "",
         system_prompt: Optional[str] = None,
         params: Optional[GenerationParams] = None
-    ):
-        """
-        Gera uma resposta em streaming.
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
+        """Implementação do streaming para Ollama."""
         
-        Args:
-            prompt: Prompt principal
-            context: Contexto adicional
-            system_prompt: Prompt do sistema
-            params: Parâmetros de geração
+        # Construir prompt completo
+        full_prompt = self._build_full_prompt(prompt, context, system_prompt)
+        
+        # Preparar payload
+        payload = {
+            "model": self.model_name,
+            "prompt": full_prompt,
+            "stream": True
+        }
+        
+        # Adicionar parâmetros
+        if params:
+            options = {}
+            if params.temperature is not None:
+                options["temperature"] = params.temperature
+            if params.max_tokens is not None:
+                options["num_predict"] = params.max_tokens
+            if params.top_p is not None:
+                options["top_p"] = params.top_p
             
-        Yields:
-            Chunks da resposta em streaming
-        """
-        try:
-            full_prompt = self._build_prompt(prompt, context, system_prompt)
-            generation_params = self._build_params(params)
-            
-            payload = {
-                "model": self.model_name,
-                "prompt": full_prompt,
-                "stream": True,
-                "options": generation_params
-            }
+            if options:
+                payload["options"] = options
 
+        try:
             async with self._session.post(
-                f"{self.base_url}/api/generate",
+                self.generate_url,
                 json=payload,
-                timeout=self.timeout
+                timeout=aiohttp.ClientTimeout(total=self._timeout * 2)  # Mais tempo para streaming
             ) as response:
                 
                 if response.status != 200:
                     error_text = await response.text()
-                    raise LLMConnectionError(
-                        f"Ollama API retornou status {response.status}: {error_text}"
-                    )
+                    yield {
+                        "content": "",
+                        "is_final": True,
+                        "error": f"Ollama status {response.status}: {error_text}"
+                    }
+                    return
                 
+                full_response = ""
                 async for line in response.content:
-                    if line:
-                        try:
-                            import json
-                            chunk = json.loads(line.decode('utf-8'))
-                            
-                            yield {
-                                "content": chunk.get("response", ""),
-                                "is_final": chunk.get("done", False),
-                                "metadata": {
-                                    "model": self.model_name,
-                                    "tokens": chunk.get("eval_count", 0)
-                                }
+                    if not line:
+                        continue
+                    
+                    try:
+                        # Decodificar linha JSON
+                        chunk_data = json.loads(line.decode().strip())
+                        
+                        content = chunk_data.get("response", "")
+                        is_done = chunk_data.get("done", False)
+                        
+                        if content:
+                            full_response += content
+                        
+                        yield {
+                            "content": content,
+                            "is_final": is_done,
+                            "metadata": {
+                                "done": is_done,
+                                "context": chunk_data.get("context", []),
+                                "total_duration": chunk_data.get("total_duration"),
+                                "eval_count": chunk_data.get("eval_count")
                             }
+                        }
+                        
+                        if is_done:
+                            break
                             
-                            if chunk.get("done", False):
-                                break
-                                
-                        except json.JSONDecodeError:
-                            continue
+                    except json.JSONDecodeError as e:
+                        self.log.warning(f"Erro ao decodificar chunk JSON: {e}")
+                        continue
+                
+        except aiohttp.ClientTimeout:
+            yield {
+                "content": "",
+                "is_final": True,
+                "error": "Timeout no streaming do Ollama"
+            }
+        except Exception as e:
+            yield {
+                "content": "",
+                "is_final": True,
+                "error": f"Erro no streaming: {str(e)}"
+            }
 
-        except aiohttp.ClientError as e:
-            logger.error(f"Erro de conexão com Ollama streaming: {e}")
-            raise LLMConnectionError(f"Erro de conexão streaming: {str(e)}")
-
-    async def health_check(self) -> bool:
-        """
-        Verifica se o modelo está disponível.
-        
-        Returns:
-            True se o modelo estiver disponível
-        """
+    async def _health_check_impl(self) -> bool:
+        """Implementação do health check para Ollama."""
         try:
+            # Verificar se servidor Ollama está respondendo
             async with self._session.get(
-                f"{self.base_url}/api/tags",
-                timeout=aiohttp.ClientTimeout(total=10)
+                self.tags_url,
+                timeout=aiohttp.ClientTimeout(total=5.0)
             ) as response:
                 
                 if response.status != 200:
                     return False
                 
+                # Verificar se nosso modelo está disponível
                 data = await response.json()
-                models = [model["name"] for model in data.get("models", [])]
+                models = data.get("models", [])
                 
-                return self.model_name in models
-
+                for model in models:
+                    if model.get("name") == self.model_name:
+                        return True
+                
+                # Se modelo não encontrado, tentar pull
+                self.log.info(f"Modelo {self.model_name} não encontrado, tentando pull...")
+                return await self._try_pull_model()
+                
         except Exception as e:
-            logger.warning(f"Health check falhou para {self.model_name}: {e}")
+            self.log.error(f"Erro no health check: {e}")
             return False
 
-    async def get_model_info(self) -> Dict[str, Any]:
-        """
-        Obtém informações sobre o modelo.
-        
-        Returns:
-            Informações do modelo
-        """
+    async def _get_model_info_impl(self) -> Dict[str, Any]:
+        """Implementação para obter informações do modelo Ollama."""
         try:
+            # Obter informações detalhadas do modelo
             async with self._session.post(
-                f"{self.base_url}/api/show",
+                self.show_url,
                 json={"name": self.model_name},
-                timeout=aiohttp.ClientTimeout(total=10)
+                timeout=aiohttp.ClientTimeout(total=10.0)
             ) as response:
                 
                 if response.status == 200:
-                    return await response.json()
+                    data = await response.json()
+                    return {
+                        "available": True,
+                        "details": data.get("details", {}),
+                        "modelfile": data.get("modelfile", ""),
+                        "parameters": data.get("parameters", {}),
+                        "template": data.get("template", ""),
+                        "system": data.get("system", ""),
+                        "size": data.get("size", 0)
+                    }
                 else:
-                    return {"error": f"Status {response.status}"}
-
+                    return {"available": False, "error": f"Status {response.status}"}
+                    
         except Exception as e:
-            return {"error": str(e)}
+            return {"available": False, "error": str(e)}
 
-    async def close(self) -> None:
-        """Fecha recursos associados ao modelo."""
-        # Ollama não requer cleanup específico
-        pass
+    async def _try_pull_model(self) -> bool:
+        """Tenta fazer pull do modelo se não estiver disponível."""
+        try:
+            self.log.info(f"Fazendo pull do modelo {self.model_name}...")
+            
+            async with self._session.post(
+                self.pull_url,
+                json={"name": self.model_name},
+                timeout=aiohttp.ClientTimeout(total=300.0)  # 5 minutos para pull
+            ) as response:
+                
+                if response.status == 200:
+                    # Consumir stream de pull
+                    async for line in response.content:
+                        try:
+                            chunk = json.loads(line.decode().strip())
+                            if chunk.get("status") == "success":
+                                self.log.info(f"Modelo {self.model_name} baixado com sucesso")
+                                return True
+                        except json.JSONDecodeError:
+                            continue
+                
+                return False
+                
+        except Exception as e:
+            self.log.error(f"Erro ao fazer pull do modelo: {e}")
+            return False
 
-    def _build_prompt(
+    def _build_full_prompt(
         self,
         prompt: str,
         context: str = "",
         system_prompt: Optional[str] = None
     ) -> str:
-        """Constrói o prompt completo."""
+        """Constrói prompt completo para Ollama."""
         parts = []
         
         if system_prompt:
-            parts.append(f"SISTEMA: {system_prompt}")
-        else:
-            parts.append("SISTEMA: Você é um assistente jurídico especializado em legislação moçambicana. Responda de forma precisa e citando artigos relevantes quando possível.")
+            parts.append(f"System: {system_prompt}")
         
         if context:
-            parts.append(f"CONTEXTO: {context}")
+            parts.append(f"Context: {context}")
         
-        parts.append(f"PERGUNTA: {prompt}")
-        parts.append("RESPOSTA:")
+        parts.append(f"User: {prompt}")
+        parts.append("Assistant:")
         
         return "\n\n".join(parts)
-
-    def _build_params(self, params: Optional[GenerationParams]) -> Dict[str, Any]:
-        """Constrói parâmetros de geração."""
-        if not params:
-            params = GenerationParams()
-        
-        return {
-            "temperature": params.temperature or 0.7,
-            "num_predict": params.max_tokens or 1000,
-            "top_p": params.top_p or 0.9,
-            "top_k": params.top_k or 50,
-            "repeat_penalty": 1.1
-        }
-
-    def _parse_response(self, result: Dict[str, Any], processing_time: float) -> LLMResponse:
-        """Faz parse da resposta do Ollama."""
-        if "error" in result:
-            raise LLMInvalidResponseError(f"Erro do Ollama: {result['error']}")
-        
-        response_text = result.get("response", "")
-        if not response_text:
-            raise LLMInvalidResponseError("Resposta vazia do Ollama")
-        
-        return LLMResponse(
-            text=response_text.strip(),
-            model=self.model_name,
-            tokens_used=result.get("eval_count", 0),
-            processing_time=processing_time,
-            cost=0.0,  # Ollama é gratuito
-            metadata={
-                "total_duration": result.get("total_duration", 0),
-                "load_duration": result.get("load_duration", 0),
-                "prompt_eval_count": result.get("prompt_eval_count", 0),
-                "eval_count": result.get("eval_count", 0),
-                "eval_duration": result.get("eval_duration", 0)
-            }
-        )
