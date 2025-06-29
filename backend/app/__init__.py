@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Aplicação Mozaia LLM Orchestrator.
+Aplicação Muzaia LLM Orchestrator.
 
 Sistema enterprise para orquestração de múltiplos modelos LLM
 com consenso, resiliência e observabilidade completa.
 """
 
 __version__ = "2.0.0"
-__title__ = "Mozaia LLM Orchestrator"
+__title__ = "Muzaia LLM Orchestrator"
 __description__ = "Orquestrador enterprise para múltiplos LLMs com gestão avançada de recursos"
 __author__ = "Wezo"
-__email__ = "dev@mozaia.mz"
+__email__ = "dev@muzaia.mz"
 __license__ = "MIT"
-__url__ = "https://github.com/WezoTech/mozaia"
+__url__ = "https://github.com/dequive/muzaia"
 
 # Metadados para compatibilidade
 APP_NAME = __title__
