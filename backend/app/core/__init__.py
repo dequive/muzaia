@@ -12,12 +12,17 @@ Contém os componentes principais do sistema:
 - Cache assíncrono em memória
 """
 
+# Configurações
 from .config import settings
+
+# Componentes principais
 from .orchestrator import LLMOrchestrator
 from .factory import LLMFactory
 from .pool import LLMPool, PoolConfig
 from .consensus_engine import HybridConsensusEngine as ConsensusEngine
 from .consensus import SemanticConsensusEngine
+
+# Cache
 from .cache import (
     AsyncInMemoryCache,
     EvictionPolicy,
@@ -25,6 +30,8 @@ from .cache import (
     global_cache,
     cache_result,
 )
+
+# Resiliência
 from .resilience import (
     CircuitBreaker,
     CircuitBreakerConfig,
@@ -35,40 +42,49 @@ from .resilience import (
     resilience_manager,
     retry_with_backoff,
 )
+
+# Protocolos e interfaces
 from .protocols import (
     AbstractLLM,
     AbstractLLMFactory,
     AbstractLLMPool,
     AbstractConsensusEngine,
     AbstractOrchestrator,
+)
+
+# Exceções
+from .exceptions import (
+    # LLM Errors
     LLMError,
     LLMConnectionError,
+    LLMTimeoutError,
     LLMRateLimitError,
     LLMInvalidResponseError,
-)
-from .exceptions import (
+    
+    # Core Errors
     MuzaiaError,
     InvalidInputError,
     LLMServiceError,
     ConsensusError,
     ValidationError,
+    
+    # Infrastructure Errors
     DatabaseError,
     AuthenticationError,
     AuthorizationError,
     RateLimitError,
     CircuitBreakerError,
     RetryExhaustedError,
-    LLMTimeoutError,
 )
 
-# Exports principais
+# Exports organizados por categoria
 __all__ = [
     # Configurações
     "settings",
     
     # Componentes principais
     "LLMOrchestrator",
-    "LLMFactory", 
+    "LLMFactory",
     "LLMPool",
     "PoolConfig",
     "ConsensusEngine",
@@ -76,7 +92,7 @@ __all__ = [
     
     # Cache
     "AsyncInMemoryCache",
-    "EvictionPolicy",
+    "EvictionPolicy", 
     "CacheStats",
     "global_cache",
     "cache_result",
@@ -91,26 +107,28 @@ __all__ = [
     "resilience_manager",
     "retry_with_backoff",
     
-    # Protocolos e interfaces
+    # Protocolos
     "AbstractLLM",
     "AbstractLLMFactory",
-    "AbstractLLMPool", 
+    "AbstractLLMPool",
     "AbstractConsensusEngine",
     "AbstractOrchestrator",
     
-    # Exceções do protocolo
+    # Exceções LLM
     "LLMError",
     "LLMConnectionError",
-    "LLMTimeoutError", 
+    "LLMTimeoutError",
     "LLMRateLimitError",
     "LLMInvalidResponseError",
     
-    # Exceções da aplicação
+    # Exceções Core
     "MuzaiaError",
     "InvalidInputError",
     "LLMServiceError",
-    "ConsensusError", 
+    "ConsensusError",
     "ValidationError",
+    
+    # Exceções Infrastructure
     "DatabaseError",
     "AuthenticationError",
     "AuthorizationError",
@@ -118,7 +136,3 @@ __all__ = [
     "CircuitBreakerError",
     "RetryExhaustedError",
 ]
-
-# Informações do módulo
-__version__ = "2.0.0"
-__author__ = "Muzaia Team"
