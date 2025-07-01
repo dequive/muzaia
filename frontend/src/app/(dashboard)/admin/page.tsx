@@ -1,9 +1,6 @@
-// Admin dashboard page
 import { Metadata } from 'next'
-import { AdminOverview } from '@/components/admin/admin-overview'
-import { UserManagement } from '@/components/admin/user-management'
-import { SystemControls } from '@/components/admin/system-controls'
-import { AuditLogs } from '@/components/admin/audit-logs'
+// Importando todos os componentes através do arquivo index.ts
+import { AdminOverview, UserManagement, SystemControls, AuditLogs } from '@/components/admin'
 
 export const metadata: Metadata = {
   title: 'Administração - Mozaia',
