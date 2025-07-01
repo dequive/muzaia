@@ -10,7 +10,7 @@ services:
       - COHERE_API_KEY=${COHERE_API_KEY}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - DATABASE_URL=postgresql://mozaia_user:mozaia_password@postgres:5432/mozaia_db
+      - DATABASE_URL=postgresql://mozaia_user:Desportiv0999@Wezo@postgres:5432/mozaia
       - REDIS_URL=redis://redis:6379
       - ENVIRONMENT=development
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
@@ -45,9 +45,9 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: mozaia_db
+      POSTGRES_DB: mozaia
       POSTGRES_USER: mozaia_user
-      POSTGRES_PASSWORD: mozaia_password
+      POSTGRES_PASSWORD: Desportiv0999@Wezo
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
