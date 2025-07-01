@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    appDir: true,
+    // Removido appDir: true pois agora é o padrão no Next.js 14+
     serverComponentsExternalPackages: ["@supabase/supabase-js"],
   },
   images: {
