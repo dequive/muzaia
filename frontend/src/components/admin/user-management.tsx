@@ -1,9 +1,9 @@
 'use client'
 
-import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { UserPlus, PencilIcon, Trash2 } from 'lucide-react';
+import React from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { UserPlus, Pencil, Trash2, User } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -11,18 +11,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 
-/**
- * UserManagement - Componente de gerenciamento de usuários.
- * Permite listar, adicionar, editar e remover usuários.
- */
+// O Next.js está procurando por uma exportação nomeada "UserManagement",
+// não uma exportação padrão
 export function UserManagement() {
-  // Aqui você pode adicionar estados e lógica como:
-  // const [users, setUsers] = useState([])
-  // const [isAddingUser, setIsAddingUser] = useState(false)
-  
   // Dados de exemplo - em produção, isso viria de uma API
   const users = [
     { 
@@ -43,20 +37,20 @@ export function UserManagement() {
       email: 'carlos@exemplo.com', 
       role: 'Usuário'
     }
-  ];
+  ]
 
   // Funções de manipulação - implementação real seria necessária
   const handleEdit = (userId: string) => {
-    console.log(`Editar usuário ${userId}`);
-  };
+    console.log(`Editar usuário ${userId}`)
+  }
 
   const handleDelete = (userId: string) => {
-    console.log(`Excluir usuário ${userId}`);
-  };
+    console.log(`Excluir usuário ${userId}`)
+  }
 
   const handleAddUser = () => {
-    console.log("Adicionar novo usuário");
-  };
+    console.log("Adicionar novo usuário")
+  }
 
   return (
     <Card>
@@ -86,7 +80,14 @@ export function UserManagement() {
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell>{user.name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-4 w-4" />
+                      </div>
+                      <span>{user.name}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>
@@ -96,7 +97,7 @@ export function UserManagement() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(user.id)}>
-                        <PencilIcon className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                         <span className="sr-only">Editar</span>
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)}>
@@ -112,5 +113,5 @@ export function UserManagement() {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }
