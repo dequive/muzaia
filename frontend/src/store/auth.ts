@@ -1,38 +1,48 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { User } from '@supabase/supabase-js'
+import type { User, Session, AuthState } from '@/types'
 
-interface AuthState {
-  user: User | null
-  accessToken: string | null
-  refreshToken: string | null
+interface AuthStore extends AuthState {
   setUser: (user: User | null) => void
-  setTokens: (access: string | null, refresh: string | null) => void
+  setSession: (session: Session | null) => void
   clear: () => void
 }
 
-export const useAuthStore = create<AuthState>()(
+export const useAuthStore = create<AuthStore>()(
   persist(
     (set) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
-      setUser: (user) => set({ user }),
-      setTokens: (access, refresh) => set({ 
-        accessToken: access, 
-        refreshToken: refresh 
-      }),
-      clear: () => set({ 
-        user: null, 
-        accessToken: null, 
-        refreshToken: null 
-      }),
+      session: null,
+      isAuthenticated: false,
+      loading: true,
+      initializing: true,
+
+      setUser: (user) => 
+        set({ 
+          user, 
+          isAuthenticated: !!user 
+        }),
+
+      setSession: (session) => 
+        set({ 
+          session,
+          user: session?.user || null,
+          isAuthenticated: !!session?.user
+        }),
+
+      clear: () => 
+        set({ 
+          user: null, 
+          session: null, 
+          isAuthenticated: false 
+        }),
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ 
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken 
+      partialize: (state) => ({
+        user: state.user,
+        session: state.session,
+        isAuthenticated: state.isAuthenticated
       }),
     }
   )
