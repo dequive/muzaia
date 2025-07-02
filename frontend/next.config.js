@@ -1,9 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Mover serverComponentsExternalPackages para o nível raiz (fora de experimental)
+  serverComponentsExternalPackages: ["@supabase/supabase-js"],
+  
   experimental: {
-    // Removido appDir: true pois agora é o padrão no Next.js 14+
-    serverComponentsExternalPackages: ["@supabase/supabase-js"],
+    // Manter apenas configurações experimentais ainda válidas
+    // Vazio por enquanto, pode ser removido se não tiver outras propriedades
   },
+  
   images: {
     domains: [
       "avatars.githubusercontent.com",
@@ -14,6 +18,7 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+  
   async rewrites() {
     return [
       {
@@ -22,6 +27,7 @@ const nextConfig = {
       },
     ];
   },
+  
   async headers() {
     return [
       {
@@ -43,6 +49,7 @@ const nextConfig = {
       },
     ];
   },
+  
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     // Configurações webpack customizadas
     config.module.rules.push({
@@ -62,16 +69,22 @@ const nextConfig = {
 
     return config;
   },
+  
   eslint: {
     dirs: ["src"],
   },
+  
   typescript: {
     ignoreBuildErrors: false,
   },
-  swcMinify: true,
+  
+  // swcMinify foi movido para o compilador ou removido no Next.js 15+
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
+    // swcMinify agora é configurado aqui
+    minify: true,
   },
+  
   env: {
     CUSTOM_KEY: "mozaia-frontend",
     BUILD_TIME: new Date().toISOString(),
