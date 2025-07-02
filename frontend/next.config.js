@@ -1,11 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remova serverComponentsExternalPackages do nível raiz pois não é reconhecido
   experimental: {
-    // Coloque de volta aqui para Next.js 15.3.4
-    serverComponentsExternalPackages: ["@supabase/supabase-js"],
+    // Configuração correta para Next.js 15.3.4
+    // Removido serverComponentsExternalPackages pois não é mais suportado desta forma
+    serverActions: true,
   },
-  
+
+  // Configuração de imagens otimizada
   images: {
     domains: [
       "avatars.githubusercontent.com",
@@ -16,8 +17,8 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  
-  // Adicione a configuração de CORS que está sendo solicitada
+
+  // Configuração de headers para CORS e segurança
   async headers() {
     return [
       {
@@ -35,22 +36,26 @@ const nextConfig = {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
           },
-          // Adicione cabeçalhos CORS
           {
             key: "Access-Control-Allow-Origin",
-            value: "*", // Ou configure para seus domínios específicos
+            value: process.env.NODE_ENV === "development" 
+              ? "http://localhost:3000" 
+              : "http://164.92.160.176:3000",
+          },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET,OPTIONS,PATCH,DELETE,POST,PUT",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",
           },
         ],
       },
     ];
   },
-  
-  // Configure explicitamente allowedOrigins para CORS
-  allowedOrigins: [
-    "localhost:3000",
-    "164.92.160.176:3000"
-  ],
-  
+
+  // Configuração de rewrites para API
   async rewrites() {
     return [
       {
@@ -59,13 +64,16 @@ const nextConfig = {
       },
     ];
   },
-  
+
+  // Configuração do webpack
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Adiciona suporte para SVG
     config.module.rules.push({
       test: /\.svg$/,
       use: ["@svgr/webpack"],
     });
 
+    // Análise de bundle em modo de desenvolvimento
     if (process.env.ANALYZE === "true") {
       const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
       config.plugins.push(
@@ -78,26 +86,33 @@ const nextConfig = {
 
     return config;
   },
-  
+
+  // Configuração do ESLint
   eslint: {
     dirs: ["src"],
   },
-  
+
+  // Configuração do TypeScript
   typescript: {
     ignoreBuildErrors: false,
   },
-  
-  // Corrija as configurações do compilador
-  swcMinify: true, // Volte para o nível raiz no Next.js 15.3.4
-  
+
+  // Configuração do compilador
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
-  
+
+  // Variáveis de ambiente customizadas
   env: {
     CUSTOM_KEY: "mozaia-frontend",
     BUILD_TIME: new Date().toISOString(),
   },
+
+  // Opções de otimização
+  poweredByHeader: false,
+  reactStrictMode: true,
+  swcMinify: true, // Agora é padrão no Next.js 15.3.4
+  compress: true,
 };
 
 module.exports = nextConfig;
