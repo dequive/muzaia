@@ -1,47 +1,94 @@
-// Login page
-import { Metadata } from 'next'
-import { LoginForm } from '@/components/auth/login-form'
+'use client'
 
-export const metadata: Metadata = {
-  title: 'Login - Mozaia',
-  description: 'Faça login na sua conta Mozaia',
-}
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useAuth } from '@/hooks/useAuth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2 } from 'lucide-react'
+
+const loginSchema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+})
+
+type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
+  const { signIn } = useAuth()
+  const [loading, setLoading] = useState(false)
+  
+  const { 
+    register, 
+    handleSubmit,
+    formState: { errors } 
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema)
+  })
+
+  const onSubmit = async (data: LoginForm) => {
+    setLoading(true)
+    try {
+      await signIn(data.email, data.password)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div className="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent" />
-        <div className="relative z-20 flex items-center text-lg font-medium">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="mr-2 h-6 w-6"
+    <div className="container flex h-screen w-screen flex-col items-center justify-center">
+      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+        <div className="flex flex-col space-y-2 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Bem-vindo de volta
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Entre com seu email e senha para continuar
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="m@exemplo.com"
+              {...register('email')}
+            />
+            {errors.email && (
+              <span className="text-sm text-destructive">
+                {errors.email.message}
+              </span>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
+              type="password"
+              {...register('password')}
+            />
+            {errors.password && (
+              <span className="text-sm text-destructive">
+                {errors.password.message}
+              </span>
+            )}
+          </div>
+
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={loading}
           >
-            <path d="M9 12l2 2 4-4" />
-            <circle cx="12" cy="12" r="9" />
-          </svg>
-          Mozaia
-        </div>
-        <div className="relative z-20 mt-auto">
-          <blockquote className="space-y-2">
-            <p className="text-lg">
-              "O Mozaia transformou nossa forma de trabalhar com IA. 
-              A precisão e confiabilidade das respostas é impressionante."
-            </p>
-            <footer className="text-sm">Sofia Almeida, CTO da TechMoz</footer>
-          </blockquote>
-        </div>
-      </div>
-      <div className="lg:p-8">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-          <LoginForm />
-        </div>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Entrar
+          </Button>
+        </form>
       </div>
     </div>
   )
