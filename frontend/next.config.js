@@ -1,11 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Mover serverComponentsExternalPackages para o nível raiz (fora de experimental)
-  serverComponentsExternalPackages: ["@supabase/supabase-js"],
-  
+  // Remova serverComponentsExternalPackages do nível raiz pois não é reconhecido
   experimental: {
-    // Manter apenas configurações experimentais ainda válidas
-    // Vazio por enquanto, pode ser removido se não tiver outras propriedades
+    // Coloque de volta aqui para Next.js 15.3.4
+    serverComponentsExternalPackages: ["@supabase/supabase-js"],
   },
   
   images: {
@@ -19,15 +17,7 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   
-  async rewrites() {
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/v1/:path*`,
-      },
-    ];
-  },
-  
+  // Adicione a configuração de CORS que está sendo solicitada
   async headers() {
     return [
       {
@@ -45,13 +35,32 @@ const nextConfig = {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
           },
+          // Adicione cabeçalhos CORS
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "*", // Ou configure para seus domínios específicos
+          },
         ],
       },
     ];
   },
   
+  // Configure explicitamente allowedOrigins para CORS
+  allowedOrigins: [
+    "localhost:3000",
+    "164.92.160.176:3000"
+  ],
+  
+  async rewrites() {
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/v1/:path*`,
+      },
+    ];
+  },
+  
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Configurações webpack customizadas
     config.module.rules.push({
       test: /\.svg$/,
       use: ["@svgr/webpack"],
@@ -78,11 +87,11 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   
-  // swcMinify foi movido para o compilador ou removido no Next.js 15+
+  // Corrija as configurações do compilador
+  swcMinify: true, // Volte para o nível raiz no Next.js 15.3.4
+  
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
-    // swcMinify agora é configurado aqui
-    minify: true,
   },
   
   env: {
