@@ -1,14 +1,15 @@
-// Root layout
-import type { Metadata } from 'next'
+import { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
-import { Providers } from '@/components/providers/index'
-import { Toaster } from 'react-hot-toast'
+import { Analytics } from '@vercel/analytics/react'
+import { Providers } from '@/components/providers'
+import { Toaster } from 'sonner'
 import { cn } from '@/lib/utils'
+import { siteConfig } from '@/config/site'
 import '@/styles/globals.css'
 
 const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-sans',
   display: 'swap',
 })
 
@@ -18,41 +19,72 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 })
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'white' },
+    { media: '(prefers-color-scheme: dark)', color: 'black' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
+
 export const metadata: Metadata = {
-  title: 'Mozaia - Orquestrador LLM Inteligente',
-  description: 'Plataforma avançada para orquestração de múltiplos modelos de linguagem com consenso inteligente',
-  keywords: ['LLM', 'AI', 'Orquestrador', 'Consenso', 'Mozambique', 'Inteligência Artificial'],
-  authors: [{ name: 'Mozaia Team' }],
-  creator: 'Mozaia',
-  publisher: 'Mozaia',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: siteConfig.name,
+    template: `%s | ${siteConfig.name}`,
   },
-  metadataBase: new URL('https://mozaia.mz'),
+  description: siteConfig.description,
+  keywords: [
+    'LLM',
+    'AI',
+    'Orquestrador',
+    'Consenso',
+    'Moçambique',
+    'Inteligência Artificial',
+    'Machine Learning',
+  ],
+  authors: [
+    {
+      name: siteConfig.creator,
+      url: siteConfig.links.github,
+    },
+  ],
+  creator: siteConfig.creator,
   openGraph: {
     type: 'website',
     locale: 'pt_MZ',
-    url: 'https://mozaia.mz',
-    title: 'Mozaia - Orquestrador LLM Inteligente',
-    description: 'Plataforma avançada para orquestração de múltiplos modelos de linguagem',
-    siteName: 'Mozaia',
+    url: siteConfig.url,
+    title: siteConfig.name,
+    description: siteConfig.description,
+    siteName: siteConfig.name,
     images: [
       {
-        url: '/og-image.png',
+        url: siteConfig.ogImage,
         width: 1200,
         height: 630,
-        alt: 'Mozaia - Orquestrador LLM',
+        alt: siteConfig.name,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Mozaia - Orquestrador LLM Inteligente',
-    description: 'Plataforma avançada para orquestração de múltiplos modelos de linguagem',
-    images: ['/og-image.png'],
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
+    creator: '@mozaiaai',
   },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
+    ],
+  },
+  manifest: '/manifest.json',
   robots: {
     index: true,
     follow: true,
@@ -65,23 +97,24 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'your-google-verification-code',
+    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION,
+  },
+  alternates: {
+    canonical: siteConfig.url,
+    languages: {
+      'pt-MZ': '/pt-mz',
+      'en-US': '/en',
+    },
   },
 }
 
-export default function RootLayout({
-  children,
-}: {
+interface RootLayoutProps {
   children: React.ReactNode
-}) {
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="pt-MZ" suppressHydrationWarning>
-      <head>
-        <meta name="theme-color" content="#0ea5e9" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
-      </head>
+    <html lang="pt" suppressHydrationWarning>
       <body
         className={cn(
           'min-h-screen bg-background font-sans antialiased',
@@ -91,31 +124,12 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
-          {children}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: 'hsl(var(--card))',
-                color: 'hsl(var(--card-foreground))',
-                border: '1px solid hsl(var(--border))',
-              },
-              success: {
-                iconTheme: {
-                  primary: 'hsl(var(--primary))',
-                  secondary: 'white',
-                },
-              },
-              error: {
-                iconTheme: {
-                  primary: 'hsl(var(--destructive))',
-                  secondary: 'white',
-                },
-              },
-            }}
-          />
+          <div className="relative flex min-h-screen flex-col">
+            {children}
+          </div>
+          <Toaster position="top-right" expand closeButton richColors />
         </Providers>
+        <Analytics />
       </body>
     </html>
   )
