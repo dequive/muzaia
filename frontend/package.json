@@ -18,7 +18,7 @@
     "analyze": "cross-env ANALYZE=true next build",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "prepare": "husky install",
+    // "prepare": "husky install",
     "precommit": "lint-staged",
     "validate": "npm-run-all --parallel type-check lint:fix format:check test",
     "clean": "rimraf .next out node_modules",
