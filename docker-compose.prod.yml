@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  vault:
+    image: vault:1.15
+    container_name: muzaia-vault
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_API_ADDR=http://0.0.0.0:8200
+      - VAULT_DEV_ROOT_TOKEN_ID=${VAULT_ROOT_TOKEN}
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault_data:/vault/data
+    restart: unless-stopped
+    networks:
+      - muzaia-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - node.name=es01
+      - cluster.name=muzaia-monitoring
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - muzaia-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - muzaia-network
+
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.11.0
+    environment:
+      - output.elasticsearch.hosts=["elasticsearch:9200"]
+      - output.elasticsearch.username=elastic
+      - output.elasticsearch.password=${ELASTIC_PASSWORD}
+    ports:
+      - "8200:8200"
+    depends_on:
+      - elasticsearch
+    networks:
+      - muzaia-network
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - muzaia-network
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - muzaia-network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=${VAULT_TOKEN}
+      - APM_SERVER_URL=http://apm-server:8200
+      - ELASTIC_APM_SECRET_TOKEN=${APM_SECRET_TOKEN}
+      - ELASTIC_APM_SERVICE_NAME=muzaia-backend
+      - PROMETHEUS_MULTIPROC_DIR=/tmp
+    ports:
+      - "8000:8000"
+    depends_on:
+      - vault
+      - postgres
+      - redis
+      - elasticsearch
+      - apm-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    networks:
+      - muzaia-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=https://api.muzaia.mz
+      - NEXT_PUBLIC_APM_SERVICE_NAME=muzaia-frontend
+      - NEXT_PUBLIC_APM_SERVER_URL=http://apm-server:8200
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - muzaia-network
+
+volumes:
+  vault_data:
+  es_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  muzaia-network:
+    driver: bridge
