@@ -1,0 +1,18 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: muzaia-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - muzaia-network
+
+volumes:
+  prometheus_data:
+
+networks:
+  muzaia-network:
+    driver: bridge
