@@ -3,25 +3,35 @@
   "version": "2.0.0",
   "description": "Frontend do Mozaia LLM Orchestrator",
   "private": true,
+  "author": "dequive",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.17.0",
+    "npm": ">=9.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.14.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
-    "type-check": "tsc --noEmit",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "test": "jest",
+    "lint": "next lint --fix --dir src",
+    "lint:strict": "eslint --max-warnings=0 src",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "analyze": "cross-env ANALYZE=true next build",
+    "clean": "rimraf .next .turbo node_modules out coverage",
+    "validate": "pnpm run-p typecheck lint:strict test",
+    "prepare": "husky install",
+    "preinstall": "npx only-allow pnpm",
+    "postbuild": "next-sitemap",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "precommit": "lint-staged",
-    "validate": "npm-run-all --parallel type-check lint:fix format:check test",
-    "clean": "rimraf .next out node_modules",
-    "postbuild": "next-sitemap"
+    "maintenance": "ts-node scripts/maintenance.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -42,10 +52,6 @@
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-toast": "^1.1.5",
     "@radix-ui/react-tooltip": "^1.0.7",
-    "@supabase/auth-helpers-nextjs": "^0.9.0",
-    "@supabase/auth-ui-react": "^0.4.7",
-    "@supabase/auth-ui-shared": "^0.1.8",
-    "@supabase/supabase-js": "^2.39.3",
     "@tanstack/react-query": "^5.17.19",
     "@tanstack/react-query-devtools": "^5.17.19",
     "@vercel/analytics": "^1.1.2",
@@ -53,14 +59,12 @@
     "axios": "^1.6.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
-    "cmdk": "^0.2.0",
     "date-fns": "^3.2.0",
     "framer-motion": "^10.18.0",
     "geist": "^1.2.1",
     "lodash": "^4.17.21",
     "lucide-react": "^0.309.0",
     "next": "14.0.4",
-    "next-sitemap": "^4.2.3",
     "next-themes": "^0.2.1",
     "react": "^18.2.0",
     "react-day-picker": "^8.10.0",
@@ -106,22 +110,40 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "lint-staged": "^15.2.0",
+    "next-sitemap": "^4.2.3",
     "npm-run-all": "^4.1.5",
     "postcss": "^8.4.33",
     "prettier": "^3.1.1",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "rimraf": "^5.0.5",
     "tailwindcss": "^3.4.1",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
+    "src/**/*.{js,jsx,ts,tsx}": [
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{json,md}": [
+    "src/**/*.{json,md,mdx}": [
       "prettier --write"
     ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "prettier": {
+    "plugins": [
+      "@ianvs/prettier-plugin-sort-imports",
+      "prettier-plugin-tailwindcss"
+    ],
+    "semi": false,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5"
   },
   "browserslist": {
     "production": [
@@ -134,9 +156,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
   }
 }
