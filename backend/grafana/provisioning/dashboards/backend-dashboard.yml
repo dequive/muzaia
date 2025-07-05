@@ -1,0 +1,13 @@
+# backend/grafana/provisioning/dashboards/backend-dashboard.yml
+apiVersion: 1
+
+providers:
+  - name: 'default'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      # Caminho onde os arquivos JSON do dashboard serão montados no container.
+      path: /etc/grafana/dashboards
