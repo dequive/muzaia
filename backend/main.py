@@ -1,191 +1,142 @@
-# -*- coding: utf-8 -*-
-"""
-Ponto de Entrada Principal da Aplicação Mozaia LLM Orchestrator.
-API FastAPI enterprise-grade com observabilidade completa,
-resiliência, monitoramento e gestão robusta de recursos.
-"""
-from __future__ import annotations
-
 import logging
-import sys
-import time
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator
 
-import uvicorn
 import structlog
-from fastapi import FastAPI, Request, status, Depends
+import uvicorn
+from asgi_correlation_id import CorrelationIdMiddleware
+from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-from prometheus_client import (
-    Counter, Histogram, Gauge, REGISTRY, generate_latest
-)
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.core.config import settings
-from app.core.exceptions import MozaiaError
-from app.core.orchestrator import LLMOrchestrator
-from app.database.session import get_db_session, ping_database
-from app.schemas import (
-    GenerationParams,
-    OrchestratorResponse,
-    HealthStatus,
-    HealthCheckDependency,
-)
+from app.api.router import api_router
+from app.config import settings
+from app.llm_orchestrator import LLMOrchestrator
+from app.observability.logging import setup_logging
+from app.observability.metrics import PrometheusMiddleware, metrics
+from app.schemas.errors import MozaiaError
 
-# --- Métricas do Prometheus ---
-HTTP_REQUESTS_TOTAL = Counter("http_requests_total", "Total de requisições HTTP", ["method", "path", "status_code"])
-HTTP_REQUESTS_DURATION_SECONDS = Histogram("http_requests_duration_seconds", "Duração das requisições HTTP em segundos", ["method", "path"])
-HTTP_REQUESTS_IN_PROGRESS = Gauge("http_requests_in_progress", "Número de requisições HTTP em andamento", ["method", "path"])
-
-
-# --- Middleware de Métricas do Prometheus ---
-class PrometheusMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        path = request.url.path
-        method = request.method
-        if path == "/metrics":
-            return await call_next(request)
-        HTTP_REQUESTS_IN_PROGRESS.labels(method=method, path=path).inc()
-        start_time = time.time()
-        try:
-            response = await call_next(request)
-            status_code = response.status_code
-        except Exception as e:
-            status_code = 500
-            raise e
-        finally:
-            duration = time.time() - start_time
-            HTTP_REQUESTS_DURATION_SECONDS.labels(method=method, path=path).observe(duration)
-            HTTP_REQUESTS_TOTAL.labels(method=method, path=path, status_code=status_code).inc()
-            HTTP_REQUESTS_IN_PROGRESS.labels(method=method, path=path).dec()
-        return response
-
-
-# --- Configuração de Logging Estruturado ---
-def setup_logging():
-    """
-    Configura o logging estruturado usando structlog para toda a aplicação.
-    Em ambiente de desenvolvimento, usa um formato legível no console.
-    Em outros ambientes (produção), emite logs em JSON.
-    """
-    log_level = "DEBUG" if settings.debug else "INFO"
-    
-    # Processadores compartilhados para todos os ambientes
-    shared_processors = [
-        structlog.contextvars.merge_contextvars,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.TimeStamper(fmt="iso"),
-    ]
-
-    if settings.debug:
-        # Formato colorido e legível para desenvolvimento
-        processors = shared_processors + [
-            structlog.dev.ConsoleRenderer(colors=True)
-        ]
-    else:
-        # Formato JSON para produção
-        processors = shared_processors + [
-            structlog.processors.dict_tracebacks,
-            structlog.processors.JSONRenderer(),
-        ]
-
-    # Configura o structlog
-    structlog.configure(
-        processors=processors,
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        wrapper_class=structlog.stdlib.BoundLogger,
-        cache_logger_on_first_use=True,
-    )
-    
-    # Configura os loggers padrão do Python para usar o pipeline do structlog
-    root_logger = logging.getLogger()
-    root_logger.handlers.clear()
-    handler = logging.StreamHandler(sys.stdout)
-    root_logger.addHandler(handler)
-    root_logger.setLevel(log_level)
-    
-    # Silencia loggers muito verbosos de bibliotecas de terceiros
-    logging.getLogger("uvicorn.access").setLevel("WARNING")
-    logging.getLogger("uvicorn.error").setLevel("WARNING")
-    logging.getLogger("aiohttp").setLevel("WARNING")
-
-# Executa a configuração de logging ao iniciar o módulo
+# Configuração centralizada do logging e métricas
 setup_logging()
 logger = structlog.get_logger(__name__)
 
 
-# --- Ciclo de Vida da Aplicação ---
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    logger.info("application_startup", stage="starting")
-    orchestrator = LLMOrchestrator(
-        pool_config=settings.llm_pool,
-        consensus_config=settings.consensus,
-    )
-    await orchestrator.initialize()
-    app.state.orchestrator = orchestrator
-    logger.info("application_startup", stage="complete")
-    yield
-    logger.info("application_shutdown", stage="starting")
-    await app.state.orchestrator.close()
-    logger.info("application_shutdown", stage="complete")
+async def lifespan(app: FastAPI):
+    """
+    Gerencia o ciclo de vida da aplicação.
+    - Inicializa o LLMOrchestrator com os modelos definidos nas configurações.
+    - Pré-carrega os modelos para evitar latência na primeira requisição.
+    """
+    logger.info("Initializing application lifespan...")
+    try:
+        llm_orchestrator = LLMOrchestrator(
+            llm_pool=settings.LLM_POOL,
+            model_name=settings.MODEL_NAME,
+        )
+        # Se houver uma função de preload, ela seria chamada aqui.
+        # Ex: await llm_orchestrator.preload_models()
+        app.state.llm_orchestrator = llm_orchestrator
+        logger.info(
+            "LLM Orchestrator initialized successfully.",
+            model_name=settings.MODEL_NAME,
+            llm_pool=settings.LLM_POOL,
+        )
+        yield
+    except Exception as e:
+        logger.exception("Failed to initialize LLM Orchestrator.", error=e)
+        # Se a inicialização falhar, podemos decidir parar a aplicação.
+        # Neste caso, apenas logamos e continuamos para que a API
+        # possa responder com erros, se necessário.
+        yield
+    finally:
+        # Lógica de limpeza ao finalizar a aplicação (se necessário)
+        logger.info("Application shutdown.")
 
 
-# --- Criação da Aplicação FastAPI ---
 app = FastAPI(
-    title="Mozaia LLM Orchestrator",
-    version="1.0.0",
-    description="Orquestrador de LLMs de alta performance.",
+    title=settings.PROJECT_NAME,
+    version=settings.PROJECT_VERSION,
     lifespan=lifespan,
 )
 
 # --- Middlewares ---
-app.add_middleware(CORSMiddleware, allow_origins=[str(origin) for origin in settings.server.cors_origins], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-app.add_middleware(PrometheusMiddleware)
+# Métricas do Prometheus
+app.add_middleware(PrometheusMiddleware, app_name=settings.PROJECT_NAME)
+# ID de correlação para rastreabilidade dos logs
+app.add_middleware(CorrelationIdMiddleware)
+
+# --- Endpoints ---
+# Endpoint para as métricas do Prometheus
+app.add_route("/metrics", metrics)
+# Roteador principal da API
+app.include_router(api_router, prefix=settings.API_PREFIX)
 
 
 # --- Handlers de Exceção ---
 @app.exception_handler(MozaiaError)
-async def mozaia_exception_handler(request: Request, exc: MozaiaError):
-    logger.warning("application_error", error_code=exc.error_code, detail=exc.message, path=request.url.path)
-    return JSONResponse(status_code=exc.status_code, content={"error": exc.error_code, "message": exc.message})
+async def mozaia_exception_handler(request, exc: MozaiaError):
+    """Handler para exceções customizadas da aplicação."""
+    logger.error(
+        "Application error occurred.",
+        error=exc.message,
+        status_code=exc.status_code,
+        detail=exc.detail,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"message": exc.message, "detail": exc.detail},
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    """Handler para exceções HTTP (ex: 404 Not Found)."""
+    logger.warning(
+        "HTTP exception occurred.",
+        status_code=exc.status_code,
+        detail=exc.detail,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"message": "HTTP Error", "detail": exc.detail},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    """Handler para erros de validação do Pydantic."""
+    logger.warning(
+        "Request validation error.",
+        errors=exc.errors(),
+        body=exc.body,
+    )
+    return JSONResponse(
+        status_code=422,
+        content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
+    )
+
 
 @app.exception_handler(Exception)
-async def generic_exception_handler(request: Request, exc: Exception):
-    logger.error("unhandled_exception", path=request.url.path, exc_info=True)
-    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": "internal_server_error", "message": "Ocorreu um erro inesperado."})
+async def generic_exception_handler(request, exc: Exception):
+    """Handler para exceções genéricas e não tratadas."""
+    logger.exception("An unhandled exception occurred.", error=str(exc))
+    return JSONResponse(
+        status_code=500,
+        content={
+            "message": "Internal Server Error",
+            "detail": "An unexpected error occurred on the server.",
+        },
+    )
 
 
-# --- Endpoints da API ---
-@app.get("/metrics", tags=["Monitoring"])
-def get_metrics():
-    return Response(content=generate_latest(REGISTRY), media_type="text/plain")
-
-@app.get("/health", tags=["Monitoring"], response_model=HealthStatus)
-async def health_check(session: AsyncGenerator = Depends(get_db_session)):
-    db_ok, db_latency = await ping_database(session)
-    dependencies = [HealthCheckDependency(name="database", status="ok" if db_ok else "error", latency=db_latency)]
-    overall_status = "ok" if all(dep.status == "ok" for dep in dependencies) else "error"
-    if overall_status == "error":
-        logger.error("health_check_failed", dependencies=dependencies)
-        return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content=HealthStatus(status=overall_status, dependencies=dependencies).dict())
-    return HealthStatus(status=overall_status, dependencies=dependencies)
-
-@app.post("/v1/generate", tags=["LLM Orchestrator"], response_model=OrchestratorResponse)
-async def generate(request: Request, params: GenerationParams):
-    orchestrator: LLMOrchestrator = request.app.state.orchestrator
-    # Exemplo de como adicionar contexto ao log
-    structlog.contextvars.bind_contextvars(prompt_length=len(params.prompt))
-    response = await orchestrator.generate(prompt=params.prompt, params=params, context=params.context)
-    return response
-
-
-# --- Ponto de Entrada para Execução ---
+# --- Ponto de Entrada ---
 if __name__ == "__main__":
-    uvicorn.run("main:app", host=settings.server.host, port=settings.server.port, reload=True, log_config=None)
+    uvicorn.run(
+        "main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.RELOAD,
+        log_level=logging.getLevelName(settings.LOG_LEVEL).lower(),
+    )
