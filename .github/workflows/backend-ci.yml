@@ -1,0 +1,70 @@
+# .github/workflows/backend-ci.yml
+# Workflow de Integração Contínua para o Backend
+
+name: Backend CI
+
+# --- Triggers ---
+# O workflow é acionado em pushes e pull requests para o branch 'main'.
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # --- Job de Teste ---
+  # Este job executa a suíte de testes completa.
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    # Define o diretório de trabalho padrão para todos os passos.
+    # Isso é útil pois nosso projeto está no subdiretório 'backend'.
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      # 1. Checkout do Código
+      # Baixa o código do repositório para a máquina virtual.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configurar o Python
+      # Instala a versão 3.11 do Python, que usamos no projeto.
+      - name: Set up Python 3.11
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. Instalar o Poetry
+      # Usa uma action dedicada para instalar o Poetry de forma confiável.
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: '1.7.1' # A mesma versão usada no Dockerfile
+          virtualenvs-create: true # Habilita a criação de virtualenvs
+          virtualenvs-in-project: true # Cria o .venv dentro da pasta do projeto
+
+      # 4. Configurar Cache para Dependências
+      # Armazena o ambiente virtual para acelerar builds futuros.
+      # O cache é invalidado sempre que o arquivo 'poetry.lock' muda.
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/.venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      # 5. Instalar Dependências
+      # Executa 'poetry install' apenas se o cache não for encontrado.
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-ansi
+
+      # 6. Executar Testes com Pytest
+      # Executa a suíte de testes. As variáveis de ambiente do pytest.ini
+      # garantem que um banco de dados de teste isolado seja usado.
+      - name: Run tests with pytest
+        run: poetry run pytest
