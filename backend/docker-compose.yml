@@ -52,6 +52,11 @@ services:
     ports:
       - "3000:3000"
     volumes:
+      # Monta os arquivos de provisioning
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboard-providers
+      - ./grafana/dashboards:/etc/grafana/dashboards
+      # Volume para persistir dados do Grafana
       - grafana_data:/var/lib/grafana
     env_file:
       - .env
