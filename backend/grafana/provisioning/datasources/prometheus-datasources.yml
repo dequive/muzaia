@@ -1,0 +1,12 @@
+# backend/grafana/provisioning/datasources/prometheus-datasource.yml
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    # URL do serviço Prometheus, acessível pela rede interna do Docker.
+    url: http://prometheus:9090
+    access: proxy
+    isDefault: true
+    jsonData:
+      timeInterval: "15s"
