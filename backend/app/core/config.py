@@ -251,6 +251,3 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app.environment == 'production'
-    
-    @property
-    def is_
