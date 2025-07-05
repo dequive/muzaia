@@ -1,5 +1,5 @@
 # .github/workflows/backend-ci.yml
-# Workflow de Integração Contínua para o Backend (v4 - Execução Direta)
+# Workflow de Integração Contínua para o Backend (v5 - Modo de Diagnóstico)
 
 name: Backend CI
 
@@ -43,10 +43,25 @@ jobs:
         working-directory: ./backend
         run: poetry install --no-interaction
 
-      # --- PASSO DE TESTE REVISADO ---
-      - name: Run tests with pytest
+      # --- PASSOS DE DIAGNÓSTICO ---
+      - name: 1. Verify file structure
         working-directory: ./backend
-        # Invoca o pytest como um módulo do Python.
-        # Isso garante que o diretório de trabalho atual (./backend)
-        # seja adicionado ao path de busca de módulos, resolvendo importações.
-        run: poetry run python -m pytest
+        run: |
+          echo "--- Current Directory Content ---"
+          ls -la
+          echo "--- Tests Directory Content ---"
+          ls -la tests/
+          
+      - name: 2. Verify Poetry environment
+        working-directory: ./backend
+        run: |
+          echo "--- Poetry Environment Info ---"
+          poetry env info
+          echo "--- Installed Packages ---"
+          poetry show
+
+      # --- PASSO DE TESTE FINAL ---
+      - name: 3. Run tests with pytest (verbose)
+        working-directory: ./backend
+        # Executa o pytest com máxima verbosidade para logs detalhados.
+        run: poetry run python -m pytest -vvv
