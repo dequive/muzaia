@@ -1,5 +1,5 @@
 # .github/workflows/backend-ci.yml
-# Workflow de Integração Contínua para o Backend (v6 - Corrigido)
+# Workflow de Integração Contínua para o Backend
 
 name: Backend CI
 
@@ -23,18 +23,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Instala o Poetry na raiz.
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: '1.7.1'
 
-      # Instala as dependências a partir do pyproject.toml na raiz.
+      # Instala as dependências a partir do pyproject.toml do backend.
       - name: Install dependencies
+        working-directory: ./backend
         run: poetry install
 
-      # Executa os testes, especificando o diretório de trabalho.
-      # O poetry run garante que o ambiente correto seja usado.
+      # Executa os testes, garantindo que o ambiente correto seja usado.
       - name: Run tests with pytest
         working-directory: ./backend
         run: poetry run python -m pytest
