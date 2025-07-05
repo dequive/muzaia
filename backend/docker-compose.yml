@@ -1,0 +1,52 @@
+# backend/docker-compose.yml
+# Arquivo Docker Compose para ambiente de desenvolvimento local.
+# Use: docker-compose up --build
+
+version: '3.8'
+
+services:
+  # --- Serviço do Backend (Aplicação FastAPI) ---
+  backend:
+    container_name: muzaia-backend-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Em desenvolvimento, usamos o estágio 'builder' para ter acesso ao Poetry e outras ferramentas.
+      target: builder
+    ports:
+      - "8000:8000"
+    volumes:
+      # Monta o código-fonte local no container para permitir o hot-reload.
+      - .:/app
+    env_file:
+      # Carrega as variáveis de ambiente do arquivo .env
+      - .env
+    # Sobrescreve o CMD do Dockerfile para usar o hot-reload do Uvicorn.
+    command: poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      # Garante que o serviço do banco de dados inicie antes da aplicação.
+      postgres:
+        condition: service_healthy
+
+  # --- Serviço do Banco de Dados (PostgreSQL) ---
+  postgres:
+    container_name: muzaia-postgres-dev
+    image: postgres:15-alpine
+    ports:
+      # Expõe a porta do Postgres para que possa ser acessada por um cliente de BD local.
+      - "5432:5432"
+    volumes:
+      # Persiste os dados do banco de dados localmente.
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    healthcheck:
+      # Verifica se o banco de dados está pronto para aceitar conexões.
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  # Define o volume nomeado para persistir os dados do Postgres.
+  postgres_data:
