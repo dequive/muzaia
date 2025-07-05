@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "muzaia"
+version = "0.1.0"
+description = "Backend for the Muzaia project"
+authors = ["dequive <dequive@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111.0"
+uvicorn = {extras = ["standard"], version = "^0.29.0"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.29"}
+asyncpg = "^0.29.0"
+aiosqlite = "^0.20.0"
+pydantic-settings = "^2.2.1"
+structlog = "^24.1.0"
+python-json-logger = "^2.0.7"
+prometheus-fastapi-instrumentator = "^6.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+pytest-mock = "^3.12.0"
+httpx = "^0.27.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+# Informa ao Pytest para adicionar o diretório 'backend' ao path,
+# permitindo que ele encontre e importe o módulo 'app'.
+pythonpath = ["backend"]
+# Define as variáveis de ambiente necessárias para os testes.
+env = [
+    "DANGER_TESTING_MODE=true",
+    "DATABASE_URL=sqlite+aiosqlite:///./test.db"
+]
