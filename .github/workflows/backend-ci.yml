@@ -1,5 +1,5 @@
 # .github/workflows/backend-ci.yml
-# Workflow de Integração Contínua para o Backend (v3 - Mais Robusto)
+# Workflow de Integração Contínua para o Backend (v4 - Execução Direta)
 
 name: Backend CI
 
@@ -38,18 +38,15 @@ jobs:
           path: backend/.venv
           key: venv-${{ runner.os }}-${{ hashFiles('backend/poetry.lock') }}
 
-      # Passo de instalação mais explícito.
-      # Garante que TODAS as dependências, incluindo as de 'dev', sejam instaladas.
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         working-directory: ./backend
         run: poetry install --no-interaction
 
-      # Passo de teste revisado
+      # --- PASSO DE TESTE REVISADO ---
       - name: Run tests with pytest
         working-directory: ./backend
-        # Define o PYTHONPATH explicitamente antes de rodar o pytest.
-        # Isso garante que 'pytest' encontre o diretório 'app'.
-        run: |
-          export PYTHONPATH=.
-          poetry run pytest
+        # Invoca o pytest como um módulo do Python.
+        # Isso garante que o diretório de trabalho atual (./backend)
+        # seja adicionado ao path de busca de módulos, resolvendo importações.
+        run: poetry run python -m pytest
