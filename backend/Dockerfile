@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Estágio de Build (builder) ---
-FROM python:3.11 as builder
+FROM python:3.12 as builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ COPY ./alembic ./alembic
 COPY main.py alembic.ini ./
 
 # --- Estágio Final (final) ---
-FROM python:3.11-slim as final
+FROM python:3.12-slim as final
 
 WORKDIR /app
 
