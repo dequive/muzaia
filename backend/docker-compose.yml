@@ -6,9 +6,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: builder
+      # --- CORREÇÃO 1: Removida a linha "target: builder" ---
+      # target: builder  <- ESTA LINHA FOI REMOVIDA
     ports:
-      - "8001:8000"  # Mudado de 8000:8000 para 8001:8000
+      - "8001:8000"
     volumes:
       - .:/app
     env_file:
@@ -22,9 +23,15 @@ services:
     container_name: muzaia-postgres-dev
     image: postgres:15-alpine
     ports:
-      - "5433:5432"  # Mudado de 5432:5432 para 5433:5432
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # --- CORREÇÃO 2: Adicionado o bloco "environment" ---
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # O env_file continua aqui para carregar as variáveis para o docker-compose
     env_file:
       - .env
     healthcheck:
@@ -37,7 +44,7 @@ services:
     container_name: muzaia-prometheus-dev
     image: prom/prometheus:v2.47.0
     ports:
-      - "9091:9090"  # Mudado de 9090:9090 para 9091:9090
+      - "9091:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -50,7 +57,7 @@ services:
     container_name: muzaia-grafana-dev
     image: grafana/grafana:10.1.1
     ports:
-      - "3001:3000"  # Mudado de 3000:3000 para 3001:3000
+      - "3001:3000"
     volumes:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboard-providers
