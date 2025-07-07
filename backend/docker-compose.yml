@@ -6,15 +6,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # --- CORREÇÃO 1: Removida a linha "target: builder" ---
-      # target: builder  <- ESTA LINHA FOI REMOVIDA
+      target: final  # Alterado para usar o estágio final do Dockerfile
     ports:
       - "8001:8000"
     volumes:
-      - .:/app
+      - ./app:/app/app  # Ajustado para evitar sobrescrever o virtualenv
+      - ./alembic:/app/alembic
+      - ./main.py:/app/main.py
+      - ./alembic.ini:/app/alembic.ini
     env_file:
       - .env
-    command: poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    # Removido o comando pois já está definido no Dockerfile
+    # command: poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       postgres:
         condition: service_healthy
@@ -26,12 +29,10 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # --- CORREÇÃO 2: Adicionado o bloco "environment" ---
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    # O env_file continua aqui para carregar as variáveis para o docker-compose
     env_file:
       - .env
     healthcheck:
