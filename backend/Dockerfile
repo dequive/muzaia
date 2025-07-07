@@ -11,6 +11,11 @@ WORKDIR /app
 ENV POETRY_VERSION=1.7.1
 RUN pip install "poetry==$POETRY_VERSION"
 
+# ---- INÍCIO DA CORREÇÃO ----
+# Configura o Poetry para criar o virtualenv dentro do diretório do projeto
+RUN poetry config virtualenvs.in-project true
+# ---- FIM DA CORREÇÃO ----
+
 # Copia os arquivos de definição de dependências
 COPY poetry.lock pyproject.toml ./
 
