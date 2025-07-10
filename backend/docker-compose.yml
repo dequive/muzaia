@@ -6,14 +6,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: builder
+      target: final  # Alterado para usar o estágio final do Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
-      - .:/app
+      - ./app:/app/app  # Ajustado para evitar sobrescrever o virtualenv
+      - ./alembic:/app/alembic
+      - ./main.py:/app/main.py
+      - ./alembic.ini:/app/alembic.ini
     env_file:
       - .env
-    command: poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    # Removido o comando pois já está definido no Dockerfile
+    # command: poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       postgres:
         condition: service_healthy
@@ -22,9 +26,13 @@ services:
     container_name: muzaia-postgres-dev
     image: postgres:15-alpine
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     env_file:
       - .env
     healthcheck:
@@ -37,7 +45,7 @@ services:
     container_name: muzaia-prometheus-dev
     image: prom/prometheus:v2.47.0
     ports:
-      - "9090:9090"
+      - "9091:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -50,13 +58,11 @@ services:
     container_name: muzaia-grafana-dev
     image: grafana/grafana:10.1.1
     ports:
-      - "3000:3000"
+      - "3001:3000"
     volumes:
-      # Monta os arquivos de provisioning
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboard-providers
       - ./grafana/dashboards:/etc/grafana/dashboards
-      # Volume para persistir dados do Grafana
       - grafana_data:/var/lib/grafana
     env_file:
       - .env
