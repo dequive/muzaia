@@ -2,7 +2,7 @@
 
 # --- Estágio de Build (builder) ---
 # Usa uma imagem Python completa para instalar dependências e compilar artefatos.
-FROM python:3.11 as builder
+FROM python:3.12 as builder
 
 # Define o diretório de trabalho
 WORKDIR /app
@@ -20,7 +20,7 @@ RUN poetry install --no-interaction --no-ansi --no-dev --no-root
 
 # --- Estágio Final (final) ---
 # Usa uma imagem slim, que é menor e mais segura para produção.
-FROM python:3.11-slim as final
+FROM python:3.12-slim as final
 
 # Define o diretório de trabalho
 WORKDIR /app
@@ -48,13 +48,13 @@ COPY --chown=appuser:appuser ./alembic ./alembic
 COPY --chown=appuser:appuser main.py alembic.ini ./
 
 # Expõe a porta em que a aplicação será executada
-EXPOSE 8000
+EXPOSE 8001
 
 # Define um Health Check robusto para o container
 # Verifica se a aplicação está respondendo corretamente antes de marcar o container como saudável.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD [ "python", "-c", "import httpx; exit(0) if httpx.get('http://localhost:8000/health').status_code == 200 else exit(1)" ]
+    CMD [ "python", "-c", "import httpx; exit(0) if httpx.get('http://localhost:8001/health').status_code == 200 else exit(1)" ]
 
 # Comando para iniciar a aplicação em produção com Uvicorn e múltiplos workers.
 # --proxy-headers: necessário para que a aplicação funcione corretamente atrás de um proxy reverso (como NGINX ou Traefik).
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--proxy-headers"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "4", "--proxy-headers"]
