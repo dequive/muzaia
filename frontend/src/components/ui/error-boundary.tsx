@@ -43,9 +43,9 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
           <div className="flex space-x-2">
             <Button
               onClick={resetError}
-              className="flex-1"
-              leftIcon={<RefreshCw className="h-4 w-4" />}
+              className="flex-1 flex items-center gap-2"
             >
+              <RefreshCw className="h-4 w-4" />
               Tentar novamente
             </Button>
             <Button
@@ -92,5 +92,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
     }
 
     return this.props.children
+  }
+}
+
+export { ErrorBoundary }
   }
 }

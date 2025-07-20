@@ -1,3 +1,5 @@
+# Updated exception handler to use correct class name
+
 import logging
 from contextlib import asynccontextmanager
 
@@ -75,8 +77,8 @@ app.include_router(api_router, prefix=settings.API_PREFIX)
 
 
 # --- Handlers de Exceção ---
-@app.exception_handler(MozaiaError)
-async def mozaia_exception_handler(request, exc: MozaiaError):
+@app.exception_handler(MuzaiaError)
+async def mozaia_exception_handler(request, exc: MuzaiaError):
     """Handler para exceções customizadas da aplicação."""
     logger.error(
         "Application error occurred.",
