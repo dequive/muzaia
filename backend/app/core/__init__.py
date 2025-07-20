@@ -19,7 +19,7 @@ from .config import settings
 from .orchestrator import LLMOrchestrator
 from .factory import LLMFactory
 from .pool import LLMPool, PoolConfig
-from .consensus_engine import HybridConsensusEngine as ConsensusEngine
+from .consensus_engine import ConsensusEngine
 from .consensus import SemanticConsensusEngine
 
 # Cache
