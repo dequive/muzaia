@@ -1,0 +1,437 @@
+Failed to compile
+
+Next.js (14.2.30) is outdated (learn more)
+./src/components/ui/loading.tsx
+Error: 
+  × the name `cn` is defined multiple times
+     ╭─[/home/runner/workspace/frontend/src/components/ui/loading.tsx:1:1]
+   1 │ import * as React from "react"
+   2 │ import { cn } from "@/lib/utils"
+     ·          ─┬
+     ·           ╰── previous definition of `cn` here
+   3 │ import { Loader2, RefreshCw, Circle } from "lucide-react"
+   4 │ 
+   5 │ interface LoadingProps {
+   6 │   /**
+   7 │    * Tipo de loading
+   8 │    */
+   9 │   variant?: 'spinner' | 'dots' | 'pulse' | 'bars' | 'wave'
+  10 │   /**
+  11 │    * Tamanho do loading
+  12 │    */
+  13 │   size?: 'sm' | 'md' | 'lg' | 'xl'
+  14 │   /**
+  15 │    * Texto a ser exibido junto ao loading
+  16 │    */
+  17 │   text?: string
+  18 │   /**
+  19 │    * Se true, centraliza o loading
+  20 │    */
+  21 │   center?: boolean
+  22 │   /**
+  23 │    * Cor customizada
+  24 │    */
+  25 │   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'
+  26 │   /**
+  27 │    * Classes CSS adicionais
+  28 │    */
+  29 │   className?: string
+  30 │ }
+  31 │ 
+  32 │ function Loading({
+  33 │   variant = 'spinner',
+  34 │   size = 'md',
+  35 │   text,
+  36 │   center = false,
+  37 │   color = 'default',
+  38 │   className,
+  39 │ }: LoadingProps) {
+  40 │   const sizes = {
+  41 │     sm: 'w-4 h-4',
+  42 │     md: 'w-6 h-6',
+  43 │     lg: 'w-8 h-8',
+  44 │     xl: 'w-12 h-12',
+  45 │   }
+  46 │ 
+  47 │   const colors = {
+  48 │     default: 'text-foreground',
+  49 │     primary: 'text-primary',
+  50 │     secondary: 'text-secondary',
+  51 │     success: 'text-green-500',
+  52 │     warning: 'text-yellow-500',
+  53 │     error: 'text-red-500',
+  54 │   }
+  55 │ 
+  56 │   const textSizes = {
+  57 │     sm: 'text-xs',
+  58 │     md: 'text-sm',
+  59 │     lg: 'text-base',
+  60 │     xl: 'text-lg',
+  61 │   }
+  62 │ 
+  63 │   const LoadingComponent = () => {
+  64 │     switch (variant) {
+  65 │       case 'spinner':
+  66 │         return (
+  67 │           <Loader2 
+  68 │             className={cn(
+  69 │               "animate-spin",
+  70 │               sizes[size],
+  71 │               colors[color]
+  72 │             )} 
+  73 │           />
+  74 │         )
+  75 │ 
+  76 │       case 'dots':
+  77 │         return (
+  78 │           <div className="flex space-x-1">
+  79 │             {[0, 1, 2].map((index) => (
+  80 │               <Circle
+  81 │                 key={index}
+  82 │                 className={cn(
+  83 │                   "animate-bounce fill-current",
+  84 │                   size === 'sm' ? 'w-1 h-1' : 
+  85 │                   size === 'md' ? 'w-1.5 h-1.5' :
+  86 │                   size === 'lg' ? 'w-2 h-2' : 'w-3 h-3',
+  87 │                   colors[color]
+  88 │                 )}
+  89 │                 style={{
+  90 │                   animationDelay: `${index * 0.1}s`,
+  91 │                   animationDuration: '0.6s'
+  92 │                 }}
+  93 │               />
+  94 │             ))}
+  95 │           </div>
+  96 │         )
+  97 │ 
+  98 │       case 'pulse':
+  99 │         return (
+ 100 │           <div 
+ 101 │             className={cn(
+ 102 │               "animate-pulse rounded-full bg-current opacity-75",
+ 103 │               sizes[size],
+ 104 │               colors[color]
+ 105 │             )} 
+ 106 │           />
+ 107 │         )
+ 108 │ 
+ 109 │       case 'bars':
+ 110 │         return (
+ 111 │           <div className="flex items-end space-x-1">
+ 112 │             {[0, 1, 2, 3].map((index) => (
+ 113 │               <div
+ 114 │                 key={index}
+ 115 │                 className={cn(
+ 116 │                   "animate-pulse bg-current",
+ 117 │                   size === 'sm' ? 'w-0.5' : 
+ 118 │                   size === 'md' ? 'w-1' :
+ 119 │                   size === 'lg' ? 'w-1.5' : 'w-2',
+ 120 │                   colors[color]
+ 121 │                 )}
+ 122 │                 style={{
+ 123 │                   height: `${Math.random() * 16 + 8}px`,
+ 124 │                   animationDelay: `${index * 0.1}s`,
+ 125 │                   animationDuration: '1s'
+ 126 │                 }}
+ 127 │               />
+ 128 │             ))}
+ 129 │           </div>
+ 130 │         )
+ 131 │ 
+ 132 │       case 'wave':
+ 133 │         return (
+ 134 │           <div className="flex items-center space-x-1">
+ 135 │             {[0, 1, 2, 3, 4].map((index) => (
+ 136 │               <div
+ 137 │                 key={index}
+ 138 │                 className={cn(
+ 139 │                   "animate-bounce rounded-full bg-current",
+ 140 │                   size === 'sm' ? 'w-1 h-1' : 
+ 141 │                   size === 'md' ? 'w-1.5 h-1.5' :
+ 142 │                   size === 'lg' ? 'w-2 h-2' : 'w-3 h-3',
+ 143 │                   colors[color]
+ 144 │                 )}
+ 145 │                 style={{
+ 146 │                   animationDelay: `${index * 0.1}s`,
+ 147 │                   animationDuration: '1.4s'
+ 148 │                 }}
+ 149 │               />
+ 150 │             ))}
+ 151 │           </div>
+ 152 │         )
+ 153 │ 
+ 154 │       default:
+ 155 │         return <RefreshCw className={cn("animate-spin", sizes[size], colors[color])} />
+ 156 │     }
+ 157 │   }
+ 158 │ 
+ 159 │   const content = (
+ 160 │     <div className={cn(
+ 161 │       "flex items-center gap-2",
+ 162 │       center && "justify-center",
+ 163 │       className
+ 164 │     )}>
+ 165 │       <LoadingComponent />
+ 166 │       {text && (
+ 167 │         <span className={cn(
+ 168 │           "animate-pulse",
+ 169 │           textSizes[size],
+ 170 │           colors[color]
+ 171 │         )}>
+ 172 │           {text}
+ 173 │         </span>
+ 174 │       )}
+ 175 │     </div>
+ 176 │   )
+ 177 │ 
+ 178 │   if (center) {
+ 179 │     return (
+ 180 │       <div className="flex items-center justify-center w-full h-full min-h-[100px]">
+ 181 │         {content}
+ 182 │       </div>
+ 183 │     )
+ 184 │   }
+ 185 │ 
+ 186 │   return content
+ 187 │ }
+ 188 │ 
+ 189 │ // Componentes especializados
+ 190 │ export const FullPageLoading: React.FC<{ text?: string }> = ({ text = "Carregando..." }) => {
+ 191 │   return (
+ 192 │     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+ 193 │       <div className="bg-card p-6 rounded-lg shadow-lg border">
+ 194 │         <Loading variant="spinner" size="lg" text={text} center />
+ 195 │       </div>
+ 196 │     </div>
+ 197 │   )
+ 198 │ }
+ 199 │ 
+ 200 │ export const InlineLoading: React.FC<{ text?: string; size?: 'sm' | 'md' }> = ({ 
+ 201 │   text = "Carregando...", 
+ 202 │   size = 'sm' 
+ 203 │ }) => {
+ 204 │   return <Loading variant="dots" size={size} text={text} />
+ 205 │ }
+ 206 │ 
+ 207 │ export const ButtonLoading: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'sm' }) => {
+ 208 │   return <Loading variant="spinner" size={size} />
+ 209 │ }
+ 210 │ 
+ 211 │ export { Loading }
+ 212 │ import React from 'react'
+ 213 │ import { cn } from '@/lib/utils'
+     ·          ─┬
+     ·           ╰── `cn` redefined here
+ 214 │ 
+ 215 │ interface LoadingProps {
+ 216 │   variant?: 'spinner' | 'dots' | 'pulse'
+     ╰────
+
+  × the name `Loading` is defined multiple times
+     ╭─[/home/runner/workspace/frontend/src/components/ui/loading.tsx:29:1]
+  29 │   className?: string
+  30 │ }
+  31 │ 
+  32 │ function Loading({
+     ·          ───┬───
+     ·             ╰── previous definition of `Loading` here
+  33 │   variant = 'spinner',
+  34 │   size = 'md',
+  35 │   text,
+  36 │   center = false,
+  37 │   color = 'default',
+  38 │   className,
+  39 │ }: LoadingProps) {
+  40 │   const sizes = {
+  41 │     sm: 'w-4 h-4',
+  42 │     md: 'w-6 h-6',
+  43 │     lg: 'w-8 h-8',
+  44 │     xl: 'w-12 h-12',
+  45 │   }
+  46 │ 
+  47 │   const colors = {
+  48 │     default: 'text-foreground',
+  49 │     primary: 'text-primary',
+  50 │     secondary: 'text-secondary',
+  51 │     success: 'text-green-500',
+  52 │     warning: 'text-yellow-500',
+  53 │     error: 'text-red-500',
+  54 │   }
+  55 │ 
+  56 │   const textSizes = {
+  57 │     sm: 'text-xs',
+  58 │     md: 'text-sm',
+  59 │     lg: 'text-base',
+  60 │     xl: 'text-lg',
+  61 │   }
+  62 │ 
+  63 │   const LoadingComponent = () => {
+  64 │     switch (variant) {
+  65 │       case 'spinner':
+  66 │         return (
+  67 │           <Loader2 
+  68 │             className={cn(
+  69 │               "animate-spin",
+  70 │               sizes[size],
+  71 │               colors[color]
+  72 │             )} 
+  73 │           />
+  74 │         )
+  75 │ 
+  76 │       case 'dots':
+  77 │         return (
+  78 │           <div className="flex space-x-1">
+  79 │             {[0, 1, 2].map((index) => (
+  80 │               <Circle
+  81 │                 key={index}
+  82 │                 className={cn(
+  83 │                   "animate-bounce fill-current",
+  84 │                   size === 'sm' ? 'w-1 h-1' : 
+  85 │                   size === 'md' ? 'w-1.5 h-1.5' :
+  86 │                   size === 'lg' ? 'w-2 h-2' : 'w-3 h-3',
+  87 │                   colors[color]
+  88 │                 )}
+  89 │                 style={{
+  90 │                   animationDelay: `${index * 0.1}s`,
+  91 │                   animationDuration: '0.6s'
+  92 │                 }}
+  93 │               />
+  94 │             ))}
+  95 │           </div>
+  96 │         )
+  97 │ 
+  98 │       case 'pulse':
+  99 │         return (
+ 100 │           <div 
+ 101 │             className={cn(
+ 102 │               "animate-pulse rounded-full bg-current opacity-75",
+ 103 │               sizes[size],
+ 104 │               colors[color]
+ 105 │             )} 
+ 106 │           />
+ 107 │         )
+ 108 │ 
+ 109 │       case 'bars':
+ 110 │         return (
+ 111 │           <div className="flex items-end space-x-1">
+ 112 │             {[0, 1, 2, 3].map((index) => (
+ 113 │               <div
+ 114 │                 key={index}
+ 115 │                 className={cn(
+ 116 │                   "animate-pulse bg-current",
+ 117 │                   size === 'sm' ? 'w-0.5' : 
+ 118 │                   size === 'md' ? 'w-1' :
+ 119 │                   size === 'lg' ? 'w-1.5' : 'w-2',
+ 120 │                   colors[color]
+ 121 │                 )}
+ 122 │                 style={{
+ 123 │                   height: `${Math.random() * 16 + 8}px`,
+ 124 │                   animationDelay: `${index * 0.1}s`,
+ 125 │                   animationDuration: '1s'
+ 126 │                 }}
+ 127 │               />
+ 128 │             ))}
+ 129 │           </div>
+ 130 │         )
+ 131 │ 
+ 132 │       case 'wave':
+ 133 │         return (
+ 134 │           <div className="flex items-center space-x-1">
+ 135 │             {[0, 1, 2, 3, 4].map((index) => (
+ 136 │               <div
+ 137 │                 key={index}
+ 138 │                 className={cn(
+ 139 │                   "animate-bounce rounded-full bg-current",
+ 140 │                   size === 'sm' ? 'w-1 h-1' : 
+ 141 │                   size === 'md' ? 'w-1.5 h-1.5' :
+ 142 │                   size === 'lg' ? 'w-2 h-2' : 'w-3 h-3',
+ 143 │                   colors[color]
+ 144 │                 )}
+ 145 │                 style={{
+ 146 │                   animationDelay: `${index * 0.1}s`,
+ 147 │                   animationDuration: '1.4s'
+ 148 │                 }}
+ 149 │               />
+ 150 │             ))}
+ 151 │           </div>
+ 152 │         )
+ 153 │ 
+ 154 │       default:
+ 155 │         return <RefreshCw className={cn("animate-spin", sizes[size], colors[color])} />
+ 156 │     }
+ 157 │   }
+ 158 │ 
+ 159 │   const content = (
+ 160 │     <div className={cn(
+ 161 │       "flex items-center gap-2",
+ 162 │       center && "justify-center",
+ 163 │       className
+ 164 │     )}>
+ 165 │       <LoadingComponent />
+ 166 │       {text && (
+ 167 │         <span className={cn(
+ 168 │           "animate-pulse",
+ 169 │           textSizes[size],
+ 170 │           colors[color]
+ 171 │         )}>
+ 172 │           {text}
+ 173 │         </span>
+ 174 │       )}
+ 175 │     </div>
+ 176 │   )
+ 177 │ 
+ 178 │   if (center) {
+ 179 │     return (
+ 180 │       <div className="flex items-center justify-center w-full h-full min-h-[100px]">
+ 181 │         {content}
+ 182 │       </div>
+ 183 │     )
+ 184 │   }
+ 185 │ 
+ 186 │   return content
+ 187 │ }
+ 188 │ 
+ 189 │ // Componentes especializados
+ 190 │ export const FullPageLoading: React.FC<{ text?: string }> = ({ text = "Carregando..." }) => {
+ 191 │   return (
+ 192 │     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+ 193 │       <div className="bg-card p-6 rounded-lg shadow-lg border">
+ 194 │         <Loading variant="spinner" size="lg" text={text} center />
+ 195 │       </div>
+ 196 │     </div>
+ 197 │   )
+ 198 │ }
+ 199 │ 
+ 200 │ export const InlineLoading: React.FC<{ text?: string; size?: 'sm' | 'md' }> = ({ 
+ 201 │   text = "Carregando...", 
+ 202 │   size = 'sm' 
+ 203 │ }) => {
+ 204 │   return <Loading variant="dots" size={size} text={text} />
+ 205 │ }
+ 206 │ 
+ 207 │ export const ButtonLoading: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'sm' }) => {
+ 208 │   return <Loading variant="spinner" size={size} />
+ 209 │ }
+ 210 │ 
+ 211 │ export { Loading }
+ 212 │ import React from 'react'
+ 213 │ import { cn } from '@/lib/utils'
+ 214 │ 
+ 215 │ interface LoadingProps {
+ 216 │   variant?: 'spinner' | 'dots' | 'pulse'
+ 217 │   size?: 'sm' | 'md' | 'lg'
+ 218 │   className?: string
+ 219 │ }
+ 220 │ 
+ 221 │ export function Loading({ 
+     ·                 ───┬───
+     ·                    ╰── `Loading` redefined here
+ 222 │   variant = 'spinner', 
+ 223 │   size = 'md', 
+ 224 │   className 
+     ╰────
+
+Import trace for requested module:
+./src/components/ui/loading.tsx
+./src/components/chat/message-list.tsx
+./src/components/chat/chat-interface.tsx
