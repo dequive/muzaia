@@ -1,8 +1,8 @@
 
 export const siteConfig = {
-  name: "Mozaia AI",
-  description: "Orquestrador de LLMs com consenso inteligente para Moçambique",
-  url: "https://mozaia.ai",
+  name: "Muzaia",
+  description: "AI Chat Platform with Multi-LLM Support",
+  url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   ogImage: "/og.jpg",
   links: {
     github: "https://github.com/muzaia/muzaia",

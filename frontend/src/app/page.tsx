@@ -2,8 +2,8 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Mozaia AI - Orquestrador de LLMs',
-  description: 'Plataforma de IA com suporte a múltiplos LLMs e consenso inteligente',
+  title: 'Muzaia - AI Chat Platform',
+  description: 'AI Chat Platform with Multi-LLM Support and intelligent consensus',
 }
 
 export default function HomePage() {
@@ -11,10 +11,10 @@ export default function HomePage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
         <h1 className="text-4xl font-bold text-gray-800 mb-4">
-          Bem-vindo ao Mozaia AI
+          Bem-vindo ao Muzaia
         </h1>
         <p className="text-lg text-gray-600 mb-8">
-          Orquestrador de LLMs com consenso inteligente para Moçambique
+          Plataforma de IA com suporte a múltiplos LLMs e consenso inteligente
         </p>
         <div className="space-x-4">
           <a

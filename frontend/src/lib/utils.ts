@@ -9,8 +9,8 @@ import {
   isValid, 
   startOfDay, 
   endOfDay, 
-  differenceInDays,
-  differenceInHours,
+  differenceInDays, 
+  differenceInHours, 
   differenceInMinutes
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale/pt-BR'
