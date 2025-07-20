@@ -1,4 +1,3 @@
-
 'use client'
 
 import { ThemeProvider } from '@/components/providers/theme-provider'
@@ -10,42 +9,29 @@ interface ProvidersProps {
   children: React.ReactNode
 }
 
-const queryClientConfig = {
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minuto
-      refetchOnWindowFocus: false,
-      retry: (failureCount: number, error: any) => {
-        // Não retry em erros 4xx
-        if (error?.response?.status >= 400 && error?.response?.status < 500) {
-          return false
-        }
-        return failureCount < 3
-      },
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-}
-
 export function Providers({ children }: ProvidersProps) {
-  const [queryClient] = useState(() => new QueryClient(queryClientConfig))
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+          },
+        },
+      })
+  )
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider 
-        attribute="class" 
-        defaultTheme="system" 
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
         enableSystem
         disableTransitionOnChange
       >
         {children}
+        <ReactQueryDevtools initialIsOpen={false} />
       </ThemeProvider>
-      <ReactQueryDevtools 
-        initialIsOpen={false}
-        position="bottom-right"
-      />
     </QueryClientProvider>
   )
 }
