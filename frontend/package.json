@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:prod": "NODE_ENV=production next build",
     "start": "next start",
+    "build:prod": "next build && next export",
     "start:prod": "NODE_ENV=production next start -p 5000 -H 0.0.0.0",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
@@ -27,7 +27,7 @@
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.38.4",
     "@tanstack/react-query": "^5.8.4",
-    "@tanstack/react-query-devtools": "^5.83.0",
+    "@tanstack/react-query-devtools": "^5.8.3",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
