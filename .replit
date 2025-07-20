@@ -5,10 +5,11 @@ run = "run"
 channel = "stable-24_05"
 
 [deployment]
-build = ["sh", "-c", "cd frontend && npm run build:prod"]
+build = ["sh", "-c", "cd frontend && npm run build"]
 outputDir = "frontend/.next"
 deploymentTarget = "static"
 publicDir = "frontend/.next"
+run = ["sh", "-c", "cd frontend && npm start"]
 
 [workflows]
 runButton = "Start Frontend Dev"
