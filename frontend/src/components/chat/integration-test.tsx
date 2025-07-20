@@ -73,7 +73,7 @@ export function IntegrationTest() {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Teste de Integração Frontend-Backend</h3>
         <Button onClick={runIntegrationTests} disabled={testing}>
-          {testing ? 'Testando...' : 'Executar Testes'}
+          {testing ? 'A testar...' : 'Executar Testes'}
         </Button>
       </div>
 

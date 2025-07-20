@@ -106,11 +106,11 @@ export function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
               </div>
             </div>
           </div>
-          
+
           <h1 className="text-4xl font-bold mb-4">
             Bem-vindo ao <span className="text-gradient">Mozaia</span>
           </h1>
-          
+
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Seu assistente de IA júridico inteligente.
           </p>
@@ -156,7 +156,7 @@ export function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
           <h2 className="text-2xl font-semibold text-center mb-8">
             Comece com um exemplo
           </h2>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {suggestedPrompts.map((item, index) => (
               <motion.div
@@ -176,15 +176,15 @@ export function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
                       </div>
                       <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                     </div>
-                    
+
                     <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
                       {item.title}
                     </h3>
-                    
+
                     <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                       {item.prompt}
                     </p>
-                    
+
                     <div className="flex items-center justify-between">
                       <Badge variant="secondary" className="text-xs">
                         {item.context}
@@ -210,7 +210,7 @@ export function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
           <p className="text-muted-foreground mb-4">
             Ou comece digitando sua pergunta na caixa de mensagem abaixo
           </p>
-          
+
           <div className="flex items-center justify-center space-x-4 text-xs text-muted-foreground">
             <span>⌘ + Enter para enviar rápido</span>
             <span>•</span>

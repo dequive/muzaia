@@ -71,7 +71,7 @@ describe('Configuration', () => {
       }
 
       const validation = validateConfig(testConfig)
-      expect(validation.warnings).toContain('Timeout da API muito alto (>30s)')
+      expect(validation.warnings).toContain('Tempo limite da API muito elevado (>30s)')
     })
   })
 
@@ -92,7 +92,7 @@ describe('Configuration', () => {
       }
 
       const validation = validateConfig(testConfig)
-      expect(validation.warnings).toContain('Tamanho máximo de mensagem muito alto (>4k caracteres)')
+      expect(validation.warnings).toContain('Tamanho máximo de mensagem muito elevado (>4k caracteres)')
     })
   })
 

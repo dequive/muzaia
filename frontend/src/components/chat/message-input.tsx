@@ -141,7 +141,7 @@ export function MessageInput({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={placeholder}
+              placeholder="Escreva a sua mensagem..."
               disabled={isLoading}
               className="min-h-[52px] max-h-[200px] resize-none border-0 bg-transparent focus:ring-0 px-4 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               rows={1}
@@ -155,6 +155,7 @@ export function MessageInput({
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              title="Anexar ficheiro"
             >
               <Paperclip className="h-4 w-4" />
             </Button>
@@ -169,6 +170,7 @@ export function MessageInput({
                   ? "text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-900/20" 
                   : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               )}
+              title="Gravação de voz"
             >
               <Mic className="h-4 w-4" />
             </Button>
@@ -186,6 +188,7 @@ export function MessageInput({
                     ? "bg-emerald-600 hover:bg-emerald-700 shadow-md hover:shadow-lg" 
                     : "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
               )}
+              title="Enviar mensagem"
             >
               {isStreaming ? (
                 <Square className="h-4 w-4" />

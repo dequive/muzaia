@@ -1,4 +1,3 @@
-
 import React from 'react'
 import Link from 'next/link'
 import { MessageSquare, Sparkles, Zap, Shield } from 'lucide-react'
@@ -19,17 +18,17 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
+
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
             Mozaia AI - Chat Público
           </h1>
-          
+
           <p className="text-lg text-gray-600 mb-8">
             Experimente nosso orquestrador de LLMs com consenso inteligente.
             <br />
             <span className="text-sm text-gray-500">Nenhum login necessário!</span>
           </p>
-          
+
           <div className="space-x-4 mb-12">
             <Link
               href="/chat"
@@ -45,7 +44,7 @@ export default function HomePage() {
               Entrar (Opcional)
             </Link>
           </div>
-          
+
           {/* Features */}
           <div className="grid md:grid-cols-3 gap-8 mt-16">
             <div className="text-center p-6 bg-white rounded-lg shadow-sm">
@@ -53,13 +52,13 @@ export default function HomePage() {
               <h3 className="text-lg font-semibold mb-2">Múltiplos Modelos</h3>
               <p className="text-gray-600">Orquestração inteligente entre diferentes LLMs para respostas otimizadas</p>
             </div>
-            
+
             <div className="text-center p-6 bg-white rounded-lg shadow-sm">
               <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Consenso Inteligente</h3>
               <p className="text-gray-600">Sistema de consenso que garante respostas mais precisas e confiáveis</p>
             </div>
-            
+
             <div className="text-center p-6 bg-white rounded-lg shadow-sm">
               <MessageSquare className="h-12 w-12 text-purple-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Acesso Livre</h3>
@@ -68,7 +67,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-      
+
       {/* Call to Action */}
       <div className="bg-gray-50 py-16">
         <div className="container mx-auto px-4 text-center">

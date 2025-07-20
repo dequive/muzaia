@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -259,6 +258,9 @@ export function ChatInterface() {
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
           <div className="max-w-3xl mx-auto">
+            <div className="text-center p-6 bg-white rounded-lg shadow-sm">
+              <p className="text-gray-600">Sistema não disponível. Verifique a ligação.</p>
+            </div>
             {messages.map((message, index) => (
               <div
                 key={message.id}
@@ -293,7 +295,7 @@ export function ChatInterface() {
                         {message.content}
                       </p>
                     </div>
-                    
+
                     {/* Action buttons for assistant messages */}
                     {message.role === 'assistant' && (
                       <div className="flex items-center space-x-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">

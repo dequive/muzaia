@@ -169,7 +169,7 @@ export function Loading({
 }
 
 // Componentes especializados
-export const FullPageLoading: React.FC<{ text?: string }> = ({ text = "Carregando..." }) => {
+export const FullPageLoading: React.FC<{ text?: string }> = ({ text = "A carregar..." }) => {
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
       <div className="bg-card p-6 rounded-lg shadow-lg border">
@@ -180,7 +180,7 @@ export const FullPageLoading: React.FC<{ text?: string }> = ({ text = "Carregand
 }
 
 export const InlineLoading: React.FC<{ text?: string; size?: 'sm' | 'md' }> = ({ 
-  text = "Carregando...", 
+  text = "A carregar...", 
   size = 'sm' 
 }) => {
   return <Loading variant="dots" size={size} text={text} />
