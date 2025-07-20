@@ -111,3 +111,9 @@ class DatabaseManager:
 
 # Instância global do gerenciador
 db_manager = DatabaseManager()
+
+
+async def get_db_session():
+    """Dependency para obter sessão do banco de dados."""
+    async with db_manager.get_session() as session:
+        yield session

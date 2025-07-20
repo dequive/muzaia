@@ -8,9 +8,10 @@ import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from sqlalchemy import (
-    Column, String, Text, Integer, Decimal, Boolean, DateTime, 
+    Column, String, Text, Integer, Boolean, DateTime, 
     ForeignKey, JSON, ARRAY, Index, CheckConstraint
 )
+from sqlalchemy.types import Numeric as Decimal
 from sqlalchemy.dialects.postgresql import UUID, ENUM, INET
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, validates
