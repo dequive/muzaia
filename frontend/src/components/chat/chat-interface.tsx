@@ -43,6 +43,7 @@ export function ChatInterface() {
   const [isDark, setIsDark] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [handoffStatus, setHandoffStatus] = useState(null);
+  const [wsConnected, setWsConnected] = useState(false); // WebSocket status
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -237,6 +238,11 @@ export function ChatInterface() {
             </div>
 
             <div className="flex items-center space-x-2">
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  wsConnected ? "bg-green-500" : "bg-red-500"
+                )} />
+                <span className="text-sm font-medium">Status:</span>
               <Button variant="ghost" size="sm">
                 <Share className="h-4 w-4" />
               </Button>

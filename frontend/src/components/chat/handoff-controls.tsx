@@ -95,14 +95,12 @@ export function HandoffControls({
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/handoff/request', {
+      const response = await fetch('/api/smart-chat/conversation/' + conversationId + '/force-handoff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          conversation_id: conversationId,
           user_id: userId,
           specialization: selectedSpecialization,
-          priority,
           reason: reason.trim()
         })
       })
