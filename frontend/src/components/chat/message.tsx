@@ -44,6 +44,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { copyToClipboard, formatRelativeTime, cn } from '@/lib/utils'
 import type { Message as MessageType } from '@/types'
+import { VoiceControls } from './voice-controls'
 
 interface MessageProps {
   message: MessageType
@@ -150,7 +151,7 @@ export function Message({
                   code({ node, inline, className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className || '')
                     const language = match ? match[1] : ''
-                    
+
                     return !inline && match ? (
                       <div className="relative">
                         <SyntaxHighlighter
@@ -206,7 +207,7 @@ export function Message({
                     </>
                   )}
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -218,7 +219,7 @@ export function Message({
                 >
                   <ThumbsUp className="h-3 w-3" />
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -284,7 +285,7 @@ export function Message({
             <Clock className="h-3 w-3 mr-1" />
             {formatRelativeTime(message.created_at)}
           </span>
-          
+
           {isAssistant && processingTime > 0 && (
             <span className="flex items-center">
               <Zap className="h-3 w-3 mr-1" />

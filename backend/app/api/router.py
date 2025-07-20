@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +5,7 @@ import structlog
 from typing import Dict, Any
 
 from app.core.config import settings
+from app.api.multimodal import router as multimodal_router
 
 logger = structlog.get_logger(__name__)
 
@@ -121,3 +121,4 @@ async def get_messages(conversation_id: str):
 
 # Inclui o roteador do LLM no roteador principal
 api_router.include_router(llm_router)
+api_router.include_router(multimodal_router)

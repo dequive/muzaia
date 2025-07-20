@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   Send,
@@ -10,6 +10,9 @@ import {
   Mic,
   Plus,
   LogIn,
+  X,
+  FileText,
+  Upload,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -35,7 +38,12 @@ export function MessageInput({
   const [message, setMessage] = useState('')
   const [showAttachments, setShowAttachments] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [isRecording, setIsRecording] = useState(false)
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const { user } = useAuth()
 
   // Auto-resize textarea
@@ -54,12 +62,16 @@ export function MessageInput({
   }, [])
 
   const handleSend = async () => {
-    if (!message.trim()) return
-
-    // Allow anonymous users to send messages in public mode
+    if (!canSend) return
 
     const content = message.trim()
+    const files = uploadedFiles
+    const audio = audioBlob
+
+    // Reset state
     setMessage('')
+    setUploadedFiles([])
+    setAudioBlob(null)
 
     // Reset textarea height
     if (textareaRef.current) {
@@ -67,7 +79,21 @@ export function MessageInput({
     }
 
     try {
-      await onSendMessage(content)
+      // For now, we'll pass the content and handle multimodal in the future
+      // TODO: Implement proper multimodal message sending
+      if (content || files.length > 0 || audio) {
+        let messageContent = content
+        
+        if (files.length > 0) {
+          messageContent += `\n\n📎 ${files.length} ficheiro(s) anexado(s): ${files.map(f => f.name).join(', ')}`
+        }
+        
+        if (audio) {
+          messageContent += '\n\n🎤 Áudio gravado anexado'
+        }
+        
+        await onSendMessage(messageContent)
+      }
     } catch (error) {
       console.error('Error sending message:', error)
     }
@@ -84,7 +110,80 @@ export function MessageInput({
     window.location.href = '/login'
   }
 
-  const canSend = message.trim() && !isLoading
+  // File upload handlers
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const validFiles = files.filter(file => {
+      const isValidType = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword',
+        'text/plain',
+        'image/jpeg',
+        'image/png',
+        'image/webp'
+      ].includes(file.type)
+      const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB limit
+      return isValidType && isValidSize
+    })
+    
+    if (validFiles.length < files.length) {
+      console.warn('Alguns ficheiros foram rejeitados (tipo ou tamanho inválido)')
+    }
+    
+    setUploadedFiles(prev => [...prev, ...validFiles])
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [])
+
+  const handleFileRemove = useCallback((index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
+  // Voice recording handlers
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      const chunks: BlobPart[] = []
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data)
+        }
+      }
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' })
+        setAudioBlob(blob)
+        stream.getTracks().forEach(track => track.stop())
+      }
+
+      mediaRecorder.start()
+      mediaRecorderRef.current = mediaRecorder
+      setIsRecording(true)
+    } catch (error) {
+      console.error('Erro ao iniciar gravação:', error)
+    }
+  }, [])
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+    }
+  }, [isRecording])
+
+  const handleVoiceToggle = useCallback(() => {
+    if (isRecording) {
+      stopRecording()
+    } else {
+      startRecording()
+    }
+  }, [isRecording, startRecording, stopRecording])
+
+  const canSend = (message.trim() || uploadedFiles.length > 0 || audioBlob) && !isLoading
 
   return (
     <div className="border-t border-gray-200 bg-white p-4">
@@ -141,24 +240,85 @@ export function MessageInput({
             exit={{ height: 0, opacity: 0 }}
             className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200"
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 mb-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.docx,.doc,.txt,.jpeg,.jpg,.png,.webp"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center space-x-2"
+              >
+                <Paperclip className="h-4 w-4" />
+                <span>Documento</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
                 className="flex items-center space-x-2"
               >
                 <Image className="h-4 w-4" />
                 <span>Imagem</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <Paperclip className="h-4 w-4" />
-                <span>Arquivo</span>
-              </Button>
             </div>
+
+            {/* Uploaded files display */}
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700">Ficheiros anexados:</p>
+                {uploadedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm truncate">{file.name}</span>
+                      <span className="text-xs text-gray-500">
+                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleFileRemove(index)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Audio recording display */}
+            {audioBlob && (
+              <div className="mt-3 p-2 bg-white rounded border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Mic className="h-4 w-4 text-green-500" />
+                    <span className="text-sm">Áudio gravado</span>
+                    <audio
+                      controls
+                      src={URL.createObjectURL(audioBlob)}
+                      className="h-8"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAudioBlob(null)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -215,9 +375,18 @@ export function MessageInput({
             <Button
               variant="ghost"
               size="sm"
-              className="p-2 text-gray-500 hover:text-gray-700"
+              onClick={handleVoiceToggle}
+              className={cn(
+                "p-2 transition-colors",
+                isRecording 
+                  ? "text-red-500 hover:text-red-600 bg-red-50" 
+                  : "text-gray-500 hover:text-gray-700"
+              )}
             >
               <Mic className="h-5 w-5" />
+              {isRecording && (
+                <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse" />
+              )}
             </Button>
           </div>
         </div>
@@ -232,6 +401,15 @@ export function MessageInput({
             )}
             {isLoading && <span>Enviando...</span>}
             {isStreaming && <span>Gerando resposta...</span>}
+            {isRecording && <span className="text-red-500">🔴 Gravando áudio...</span>}
+            {uploadedFiles.length > 0 && (
+              <span className="text-blue-600">
+                📎 {uploadedFiles.length} ficheiro(s)
+              </span>
+            )}
+            {audioBlob && (
+              <span className="text-green-600">🎤 Áudio pronto</span>
+            )}
           </div>
           <div>
             {message.length > 0 && (
