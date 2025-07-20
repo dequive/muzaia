@@ -58,8 +58,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.PROJECT_VERSION,
+    title=settings.project_name,
+    version=settings.project_version,
     lifespan=lifespan,
 )
 
@@ -73,7 +73,7 @@ app.add_middleware(CorrelationIdMiddleware)
 
 # --- Endpoints ---
 # Roteador principal da API
-app.include_router(api_router, prefix=settings.API_PREFIX)
+app.include_router(api_router, prefix=settings.api_prefix)
 
 
 # --- Handlers de Exceção ---
@@ -137,8 +137,8 @@ async def generic_exception_handler(request, exc: Exception):
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.RELOAD,
-        log_level=logging.getLevelName(settings.LOG_LEVEL).lower(),
+        host=settings.host,
+        port=settings.port,
+        reload=settings.reload,
+        log_level=logging.getLevelName(settings.log_level).lower(),
     )
