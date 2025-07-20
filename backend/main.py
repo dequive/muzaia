@@ -34,16 +34,16 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing application lifespan...")
     try:
         llm_orchestrator = LLMOrchestrator(
-            llm_pool=settings.LLM_POOL,
-            model_name=settings.MODEL_NAME,
+            llm_pool=settings.llm_pool,
+            model_name=settings.model_name,
         )
         # Se houver uma função de preload, ela seria chamada aqui.
         # Ex: await llm_orchestrator.preload_models()
         app.state.llm_orchestrator = llm_orchestrator
         logger.info(
             "LLM Orchestrator initialized successfully.",
-            model_name=settings.MODEL_NAME,
-            llm_pool=settings.LLM_POOL,
+            model_name=settings.model_name,
+            llm_pool=settings.llm_pool,
         )
         yield
     except Exception as e:
@@ -72,6 +72,18 @@ instrumentator.expose(app)
 app.add_middleware(CorrelationIdMiddleware)
 
 # --- Endpoints ---
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint that redirects to API documentation."""
+    return {
+        "message": "Muzaia Backend API",
+        "version": settings.project_version,
+        "status": "running",
+        "docs": "/docs",
+        "api": settings.api_prefix
+    }
+
 # Roteador principal da API
 app.include_router(api_router, prefix=settings.api_prefix)
 
