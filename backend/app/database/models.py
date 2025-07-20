@@ -55,7 +55,7 @@ class User(Base, TimestampMixin):
     language_preference = Column(String(10), default='pt-MZ')
     last_active = Column(DateTime(timezone=True), default=func.now())
     is_active = Column(Boolean, default=True)
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     # Relacionamentos
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
@@ -89,7 +89,7 @@ class Conversation(Base, TimestampMixin):
     total_cost = Column(Decimal(10, 6), default=0.00)
     requires_review = Column(Boolean, default=False)
     completed_at = Column(DateTime(timezone=True))
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     # Relacionamentos
     user = relationship("User", back_populates="conversations")
@@ -126,7 +126,7 @@ class Message(Base, TimestampMixin):
     cost = Column(Decimal(10, 6), default=0.00)
     requires_review = Column(Boolean, default=False)
     is_streamed = Column(Boolean, default=False)
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     # Relacionamentos
     conversation = relationship("Conversation", back_populates="messages")
@@ -170,7 +170,7 @@ class ModelResponse(Base):
     error_message = Column(Text)
     is_outlier = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=func.now())
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     # Relacionamentos
     message = relationship("Message", back_populates="model_responses")
@@ -199,7 +199,7 @@ class Feedback(Base):
     comment = Column(Text)
     is_helpful = Column(Boolean)
     created_at = Column(DateTime(timezone=True), default=func.now())
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     # Relacionamentos
     message = relationship("Message", back_populates="feedback")
@@ -256,7 +256,7 @@ class AuditLog(Base):
     ip_address = Column(INET)
     user_agent = Column(Text)
     created_at = Column(DateTime(timezone=True), default=func.now())
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     # Índices
     __table_args__ = (
