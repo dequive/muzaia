@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -85,7 +86,7 @@ export function MessageInput({
           <Button
             variant="outline"
             size="sm"
-            className="bg-white dark:bg-gray-800 shadow-lg"
+            className="bg-white dark:bg-gray-800 shadow-lg border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
             onClick={() => setShowAttachments(false)}
           >
             <Image className="h-4 w-4 mr-2" />
@@ -95,7 +96,7 @@ export function MessageInput({
           <Button
             variant="outline"
             size="sm"
-            className="bg-white dark:bg-gray-800 shadow-lg"
+            className="bg-white dark:bg-gray-800 shadow-lg border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
             onClick={() => setShowAttachments(false)}
           >
             <Paperclip className="h-4 w-4 mr-2" />
@@ -105,16 +106,16 @@ export function MessageInput({
       )}
 
       {/* Main Input Container */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-300 dark:border-gray-600 shadow-sm focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:shadow-md transition-all duration-200">
-        <div className="flex items-end p-3 space-x-3">
+      <div className="relative bg-white dark:bg-gray-800 rounded-3xl border border-gray-300 dark:border-gray-600 shadow-lg focus-within:border-gray-400 dark:focus-within:border-gray-500 focus-within:shadow-xl transition-all duration-200">
+        <div className="flex items-end p-4 space-x-4">
           {/* Attachment Button */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowAttachments(!showAttachments)}
-            className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 self-end mb-1"
+            className="h-10 w-10 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full self-end"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-5 w-5" />
           </Button>
 
           {/* Message Input */}
@@ -127,33 +128,23 @@ export function MessageInput({
               placeholder={placeholder}
               disabled={isLoading}
               className={cn(
-                "min-h-[20px] max-h-[200px] resize-none border-0 p-0 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 bg-transparent focus:ring-0 focus:outline-none",
+                "min-h-[24px] max-h-[200px] resize-none border-0 p-0 text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 bg-transparent focus:ring-0 focus:outline-none",
                 "scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent"
               )}
               rows={1}
             />
           </div>
 
-          {/* Voice/Send Button */}
-          <div className="flex items-center space-x-2 self-end mb-1">
-            {!canSend && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <Mic className="h-4 w-4" />
-              </Button>
-            )}
-
+          {/* Send/Stop Button */}
+          <div className="flex items-center self-end">
             {isStreaming ? (
               <Button
                 size="sm"
                 variant="destructive"
                 onClick={onStopStreaming}
-                className="h-8 w-8 p-0 rounded-lg"
+                className="h-10 w-10 p-0 rounded-full bg-red-500 hover:bg-red-600 text-white"
               >
-                <Square className="h-3 w-3" />
+                <Square className="h-4 w-4" />
               </Button>
             ) : (
               <Button
@@ -161,13 +152,13 @@ export function MessageInput({
                 onClick={handleSend}
                 disabled={!canSend}
                 className={cn(
-                  "h-8 w-8 p-0 rounded-lg transition-all duration-200",
+                  "h-10 w-10 p-0 rounded-full transition-all duration-200",
                   canSend 
-                    ? "bg-blue-500 hover:bg-blue-600 text-white shadow-sm" 
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
+                    ? "bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 shadow-md hover:shadow-lg" 
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
                 )}
               >
-                <Send className="h-3 w-3" />
+                <Send className="h-4 w-4" />
               </Button>
             )}
           </div>

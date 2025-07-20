@@ -13,7 +13,12 @@ import {
   Sparkles,
   ChevronDown,
   Share,
-  RefreshCw
+  RefreshCw,
+  Sun,
+  Moon,
+  History,
+  Edit3,
+  Trash2
 } from 'lucide-react'
 import { MessageList } from './message-list'
 import { MessageInput } from './message-input'
@@ -42,6 +47,7 @@ export function ChatInterface() {
   const { ui } = useChatStore()
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isDark, setIsDark] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -77,8 +83,21 @@ export function ChatInterface() {
     await regenerateLastResponse()
   }
 
+  const toggleTheme = () => {
+    setIsDark(!isDark)
+    document.documentElement.classList.toggle('dark')
+  }
+
+  // Mock conversation data
+  const conversations = [
+    { id: '1', title: 'Explicação sobre programação', timestamp: '2024-01-15' },
+    { id: '2', title: 'Desenvolvimento web moderno', timestamp: '2024-01-14' },
+    { id: '3', title: 'Análise de dados com Python', timestamp: '2024-01-13' },
+    { id: '4', title: 'Machine Learning básico', timestamp: '2024-01-12' },
+  ]
+
   return (
-    <div className="flex h-screen bg-white dark:bg-gray-900">
+    <div className={cn("flex h-screen", isDark ? "dark" : "")}>
       {/* Sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -86,14 +105,14 @@ export function ChatInterface() {
             initial={{ x: -300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="w-80 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col"
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="w-64 bg-gray-900 dark:bg-gray-950 text-white flex flex-col border-r border-gray-800"
           >
             {/* Sidebar Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-3 border-b border-gray-800">
               <Button
                 onClick={handleNewChat}
-                className="w-full justify-start bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+                className="w-full justify-start bg-transparent border border-gray-600 hover:bg-gray-800 text-white h-11"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova conversa
@@ -102,39 +121,47 @@ export function ChatInterface() {
 
             {/* Conversation List */}
             <div className="flex-1 overflow-y-auto p-2">
-              {/* Recent conversations would go here */}
-              <div className="space-y-2">
-                <div className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2 uppercase tracking-wider">
-                  Hoje
-                </div>
-                {/* Mock conversation items */}
-                <div className="px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                  <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                    Explicação sobre programação
+              <div className="space-y-1">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className="group flex items-center justify-between p-3 rounded-lg hover:bg-gray-800 cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <MessageSquare className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-white truncate">
+                          {conv.title}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                        <Edit3 className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                  <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                    Desenvolvimento web moderno
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
             {/* Sidebar Footer */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <div className="p-3 border-t border-gray-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-8 w-8 bg-gray-700">
+                    <AvatarFallback className="text-white bg-gray-700">
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-sm text-white">
                     Usuário
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
                   <Settings className="h-4 w-4" />
                 </Button>
               </div>
@@ -144,35 +171,41 @@ export function ChatInterface() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900">
         {/* Header */}
-        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 <Menu className="h-5 w-5" />
               </Button>
               
               <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-white" />
                 </div>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Mozaia AI
                 </h1>
               </div>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm">
-                <Share className="h-4 w-4" />
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleTheme}
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                <Share className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -181,62 +214,62 @@ export function ChatInterface() {
         {/* Chat Area */}
         <div className="flex-1 flex flex-col">
           {!currentConversation && messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center max-w-3xl mx-auto px-4">
+            <div className="flex-1 flex flex-col items-center justify-center max-w-4xl mx-auto px-4 w-full">
               {/* Welcome Screen */}
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <MessageSquare className="h-8 w-8 text-white" />
+              <div className="text-center mb-12">
+                <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-8">
+                  <Sparkles className="h-10 w-10 text-white" />
                 </div>
                 
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
                   Como posso ajudá-lo hoje?
                 </h2>
                 
-                <p className="text-gray-600 dark:text-gray-400 mb-8">
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-12">
                   Faça qualquer pergunta e obtenha respostas inteligentes com consenso de múltiplos modelos
                 </p>
 
                 {/* Example Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+                  <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all duration-200 hover:shadow-md">
+                    <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                       💡 Explicar conceitos
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       Como funciona a inteligência artificial?
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                  <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all duration-200 hover:shadow-md">
+                    <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                       🚀 Desenvolvimento
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       Criar uma aplicação web moderna
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                  <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all duration-200 hover:shadow-md">
+                    <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                       📊 Análise de dados
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       Interpretar estatísticas e tendências
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                  <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all duration-200 hover:shadow-md">
+                    <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                       ✍️ Redação
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       Escrever textos profissionais
                     </div>
                   </div>
                 </div>
 
                 {/* Integration Test */}
-                <div className="w-full max-w-2xl bg-gray-50 dark:bg-gray-800 rounded-xl p-6 mb-8">
+                <div className="w-full max-w-2xl bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
                   <IntegrationTest />
                 </div>
               </div>
@@ -247,7 +280,7 @@ export function ChatInterface() {
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto"
             >
-              <div className="max-w-3xl mx-auto px-4 py-6">
+              <div className="max-w-4xl mx-auto px-4 py-6">
                 {messages.length === 0 ? (
                   <EmptyState 
                     onStartChat={handleNewChat}
@@ -276,25 +309,25 @@ export function ChatInterface() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={scrollToBottom}
-                className="absolute bottom-32 right-8 z-10 h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center border border-gray-200 dark:border-gray-700"
+                className="absolute bottom-32 right-8 z-10 h-12 w-12 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center border border-gray-200 dark:border-gray-700"
               >
-                <ChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                <ChevronDown className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </motion.button>
             )}
           </AnimatePresence>
 
           {/* Message Input */}
-          <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-            <div className="max-w-3xl mx-auto px-4 py-4">
+          <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+            <div className="max-w-4xl mx-auto px-4 py-6">
               <MessageInput
                 onSendMessage={handleSendMessage}
                 isLoading={isLoading}
                 isStreaming={isStreaming}
                 onStopStreaming={stopStreaming}
-                placeholder="Envie uma mensagem..."
+                placeholder="Envie uma mensagem para o Mozaia AI..."
               />
               
-              <div className="text-center mt-2">
+              <div className="text-center mt-3">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   O Mozaia AI pode cometer erros. Considere verificar informações importantes.
                 </p>
