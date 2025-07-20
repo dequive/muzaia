@@ -39,11 +39,6 @@ export const formatRelativeTime = (date: string | Date): string => {
     const dateObj = typeof date === 'string' ? parseISO(date) : date
     if (!isValid(dateObj)) return 'Data inválida'
 
-    // For SSR compatibility, avoid real-time calculations during hydration
-    if (typeof window === 'undefined') {
-      return formatDate(dateObj, 'dd/MM/yyyy')
-    }
-
     if (isToday(dateObj)) {
       const hours = differenceInHours(new Date(), dateObj)
       const minutes = differenceInMinutes(new Date(), dateObj)

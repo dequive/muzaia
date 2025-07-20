@@ -6,11 +6,6 @@ import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-interface ErrorFallbackProps {
-  error?: Error
-  resetError: () => void
-}
-
 interface Props {
   children: React.ReactNode
   fallback?: React.ComponentType<ErrorFallbackProps>

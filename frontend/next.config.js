@@ -1,10 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  
-  // Replit specific configurations
-  output: 'standalone',
-  compress: true,
 
   images: {
     domains: [
@@ -16,9 +12,8 @@ const nextConfig = {
 
   experimental: {
     typedRoutes: true,
+    serverComponentsExternalPackages: ['sharp'],
   },
-  
-  serverExternalPackages: ['sharp'],
 
   headers: async () => {
     return [

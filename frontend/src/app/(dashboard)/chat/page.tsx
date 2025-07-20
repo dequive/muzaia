@@ -1,16 +1,2 @@
-
-import { Metadata } from 'next'
-import { ChatInterface } from '@/components/chat/chat-interface'
-
-export const metadata: Metadata = {
-  title: 'Chat - Mozaia',
-  description: 'Interface de chat inteligente',
-}
-
-export default function ChatPage() {
-  return (
-    <div className="flex h-screen">
-      <ChatInterface />
-    </div>
-  )
-}
+// This file was removed to resolve route conflict with /chat/page.tsx
+// Chat functionality is handled by frontend/src/app/chat/page.tsx
