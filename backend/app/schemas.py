@@ -11,6 +11,13 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, validator
 
 
+class BaseResponse(BaseModel):
+    """Resposta base para API."""
+    success: bool = True
+    message: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+
 class ContextType(str, Enum):
     """Tipos de contexto suportados."""
     GENERAL = "general"

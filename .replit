@@ -17,7 +17,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && python main.py"
+args = "cd backend && python -m app.main"
 
 [[workflows.workflow]]
 name = "Start Frontend"

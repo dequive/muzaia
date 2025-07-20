@@ -158,7 +158,7 @@ async def generic_exception_handler(request, exc: Exception):
 # --- Ponto de Entrada ---
 if __name__ == "__main__":
     uvicorn.run(
-        "main:app",
+        "app.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.reload,
