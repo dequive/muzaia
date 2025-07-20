@@ -5,7 +5,8 @@ run = "run"
 channel = "stable-24_05"
 
 [deployment]
-run = ["sh", "-c", "run"]
+run = ["sh", "-c", "cd frontend && npm run start"]
+build = ["sh", "-c", "cd frontend && npm run build"]
 
 [workflows]
 runButton = "Start Frontend Dev"
