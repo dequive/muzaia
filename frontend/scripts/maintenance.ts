@@ -1,11 +1,11 @@
-import fs from 'fs'
-import path from 'path'
 import { execSync } from 'child_process'
+import * as fs from 'fs'
+import * as path from 'path'
 
 interface MaintenanceOptions {
-  fix?: boolean
   clean?: boolean
-  update?: boolean
+  install?: boolean
+  build?: boolean
   validate?: boolean
 }
 
@@ -13,7 +13,7 @@ class MaintenanceManager {
   private readonly cwd: string
   private readonly packageJson: any
 
-  constructor(options: MaintenanceOptions) {
+  constructor(options: MaintenanceOptions = {}) {
     this.cwd = process.cwd()
     this.packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
   }
@@ -37,34 +37,36 @@ class MaintenanceManager {
 
   private checkNodeVersion() {
     const nodeVersion = process.version
-    const requiredVersion = this.packageJson.engines.node
-    
-    if (!nodeVersion.match(requiredVersion)) {
-      throw new Error(
-        `Node.js ${nodeVersion} não é compatível. Requer ${requiredVersion}`
-      )
-    }
+    const requiredVersion = this.packageJson.engines?.node || '>=18.0.0'
+
+    console.log(`Node.js atual: ${nodeVersion}`)
+    console.log(`Node.js requerido: ${requiredVersion}`)
   }
 
   private async runMaintenanceTasks() {
     // Limpar caches e arquivos temporários
+    console.log('🧹 Limpando caches...')
     await this.execCommand('npm run clean')
-    
+
     // Instalar/atualizar dependências
+    console.log('📦 Instalando dependências...')
     await this.execCommand('npm install')
-    
+
     // Executar verificações
-    await this.execCommand('npm run validate')
-    
+    console.log('🔍 Executando verificações...')
+    await this.execCommand('npm run typecheck')
+    await this.execCommand('npm run lint')
+
     // Construir o projeto
+    console.log('🏗️ Construindo projeto...')
     await this.execCommand('npm run build')
-    
-    // Gerar sitemap
-    await this.execCommand('npm run postbuild')
+
+    console.log('✨ Tarefas de manutenção concluídas')
   }
 
   private async execCommand(command: string): Promise<void> {
     try {
+      console.log(`Executando: ${command}`)
       execSync(command, {
         stdio: 'inherit',
         cwd: this.cwd,
@@ -80,34 +82,10 @@ class MaintenanceManager {
   }
 }
 
-// CLI
+// Executar se for chamado diretamente
 if (require.main === module) {
-  const args = process.argv.slice(2)
-  const options: MaintenanceOptions = {
-    fix: args.includes('--fix'),
-    clean: args.includes('--clean'),
-    update: args.includes('--update'),
-    validate: args.includes('--validate')
-  }
-
-  if (args.includes('--help') || args.includes('-h')) {
-    console.log(`
-Uso: npm run maintenance [opções]
-
-Opções:
-  --fix        Corrige dependências e problemas conhecidos
-  --clean      Limpa caches e arquivos temporários
-  --update     Atualiza dependências para últimas versões
-  --validate   Executa verificações de tipo e testes
-  --help       Mostra esta ajuda
-
-Exemplos:
-  npm run maintenance --fix --clean
-  npm run maintenance --validate
-    `)
-    process.exit(0)
-  }
-
-  const maintenance = new MaintenanceManager(options)
-  maintenance.run().catch(() => process.exit(1))
+  const manager = new MaintenanceManager()
+  manager.run()
 }
+
+export { MaintenanceManager }

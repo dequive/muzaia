@@ -225,6 +225,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
         {/* Indicador de Tailwind em desenvolvimento */}
         {process.env.NODE_ENV === 'development' && <TailwindIndicator />}
       </body>
-    </html>tml>
+    </html>
   )
 }

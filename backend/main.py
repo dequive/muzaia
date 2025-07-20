@@ -12,12 +12,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.router import api_router
-from app.config import settings
-from app.llm_orchestrator import LLMOrchestrator
-from app.observability.logging import setup_logging
-from app.observability.metrics import PrometheusMiddleware, metrics
-from app.schemas.errors import MozaiaError
+from app.core.config import settings
+from app.core.orchestrator import LLMOrchestrator
+from app.core.exceptions import MuzaiaError
 
 # Configuração centralizada do logging e métricas
 setup_logging()
