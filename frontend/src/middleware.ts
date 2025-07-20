@@ -41,21 +41,7 @@ export function middleware(request: NextRequest) {
     response.headers.set('X-RateLimit-Window', '60')
   }
 
-  // Rotas protegidas que requerem autenticação (chat agora é público)
-  const protectedPaths = ['/admin', '/profile', '/system']
-  const isProtectedPath = protectedPaths.some(path => 
-    request.nextUrl.pathname.startsWith(path)
-  )
-
-  if (isProtectedPath) {
-    const token = request.cookies.get('next-auth.session-token')
-
-    if (!token) {
-      const url = new URL(`/`, request.url)
-      return NextResponse.redirect(url)
-    }
-  }
-
+  // Middleware disabled for static export
   return response
 }
 

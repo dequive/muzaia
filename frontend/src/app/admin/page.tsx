@@ -1,29 +1,12 @@
 
-'use client'
-
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { 
-  Users, 
-  UserCheck, 
-  UserX, 
-  Shield, 
-  Clock, 
-  CheckCircle, 
-  XCircle,
-  Eye,
-  Plus,
-  Search,
-  Filter
-} from 'lucide-react'
+// This file has been removed to resolve route conflict with /(dashboard)/admin/page.tsx
+// The admin functionality is now handled by the dashboard route group
+export default function AdminRedirect() {
+  if (typeof window !== 'undefined') {
+    window.location.href = '/admin'
+  }
+  return null
+}
 
 interface ProfessionalUser {
   id: string
