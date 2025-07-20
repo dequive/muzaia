@@ -15,6 +15,13 @@ export * from './constants'
 
 // Core utilities
 export const generateId = () => Math.random().toString(36).substring(2) + Date.now().toString(36)
+export const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .join('')
+    .slice(0, 2)
+}
 export const retry = async (fn: Function, attempts: number = 3, delay: number = 1000) => {
   for (let i = 0; i < attempts; i++) {
     try {
