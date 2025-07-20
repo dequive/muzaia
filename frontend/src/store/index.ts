@@ -107,3 +107,27 @@ export const useUI = () => {
     updateUI: store.updateUI
   }
 }
+
+export const useChatStore = () => {
+  const store = useStore()
+  return {
+    conversations: store.conversations,
+    currentConversation: store.currentConversation,
+    messages: store.messages,
+    isLoading: store.isLoading,
+    isStreaming: store.isStreaming,
+    chatSettings: store.chatSettings
+  }
+}
+
+export const useUIStore = () => {
+  const store = useStore()
+  return {
+    ui: store.ui,
+    updateUI: store.updateUI
+  }
+}
+
+export const chatActions = {
+  // Add chat actions here when implemented
+}

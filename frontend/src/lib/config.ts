@@ -208,3 +208,4 @@ export { config, type Config }
 export const isDev = config.environment === 'development'
 export const isProd = config.environment === 'production'
 export const isTest = config.environment === 'test'
+export const isDebug = isDev

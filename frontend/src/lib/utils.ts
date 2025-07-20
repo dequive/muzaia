@@ -219,6 +219,27 @@ export function omit<T, K extends keyof T>(
 }
 
 // =============================================================================
+// ID UTILITIES
+// =============================================================================
+
+export function generateId(length: number = 8): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
+export function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('')
+}
+
+// =============================================================================
 // ASYNC UTILITIES
 // =============================================================================
 
