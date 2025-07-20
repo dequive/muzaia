@@ -14,7 +14,7 @@ from sqlalchemy.engine.events import event
 from app.core.config import settings
 from app.database.models import Base
 
-logger = logging.getLogger(__name__))
+logger = logging.getLogger(__name__)
 
 
 class DatabaseManager:
