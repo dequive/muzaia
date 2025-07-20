@@ -416,7 +416,7 @@ class EnhancedApiClient {
         'Content-Type': 'application/json',
         'X-Client-Version': config.app.version,
         'X-Environment': config.app.environment,
-        'X-User-Agent': `Mozaia/${config.app.version} (${navigator.userAgent})`,
+        'X-User-Agent': `Mozaia/${config.app.version} (${typeof window !== 'undefined' ? navigator.userAgent : 'SSR'})`,
       },
     })
 
@@ -676,14 +676,14 @@ class EnhancedApiClient {
   async request<T = any>(config: AxiosRequestConfig): Promise<T> {
     try {
       // Check if online
-      if (!navigator.onLine && this.options.enableQueue) {
+      if (typeof window !== 'undefined' && !navigator.onLine && this.options.enableQueue) {
         return this.queue.enqueue(config)
       }
 
       const response = await this.client(config)
       return this.handleResponse<T>(response)
     } catch (error) {
-      if (!navigator.onLine && this.options.enableQueue) {
+      if (typeof window !== 'undefined' && !navigator.onLine && this.options.enableQueue) {
         return this.queue.enqueue(config)
       }
       throw error
