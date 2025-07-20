@@ -12,8 +12,9 @@ const nextConfig = {
 
   experimental: {
     typedRoutes: true,
-    serverComponentsExternalPackages: ['sharp'],
   },
+  
+  serverExternalPackages: ['sharp'],
 
   headers: async () => {
     return [
