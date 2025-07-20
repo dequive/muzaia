@@ -1,4 +1,3 @@
-
 import React from 'react'
 import { siteConfig } from "@/config/site"
 
@@ -8,77 +7,59 @@ export default function HomePage() {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center max-w-4xl mx-auto">
-          {/* Logo/Brand */}
-          <div className="mb-8">
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-4">
-              {siteConfig.name}
-            </h1>
-            <p className="text-xl text-gray-600 mb-8">
-              {siteConfig.description}
-            </p>
-          </div>
-
-          {/* Feature Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="text-3xl mb-4">🤖</div>
-              <h3 className="text-lg font-semibold mb-2">Multi-LLM</h3>
-              <p className="text-gray-600 text-sm">Orquestre múltiplos modelos de IA para obter as melhores respostas</p>
-            </div>
-            
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="text-3xl mb-4">⚡</div>
-              <h3 className="text-lg font-semibold mb-2">Consenso Inteligente</h3>
-              <p className="text-gray-600 text-sm">Algoritmo avançado que combina respostas para máxima precisão</p>
-            </div>
-            
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="text-3xl mb-4">🌍</div>
-              <h3 className="text-lg font-semibold mb-2">Para Moçambique</h3>
-              <p className="text-gray-600 text-sm">Otimizado para contextos locais e necessidades específicas</p>
-            </div>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent mb-6">
+            {siteConfig.name}
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            {siteConfig.description}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="/chat"
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+              className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
-              <span className="mr-2">🚀</span>
-              Começar Chat
+              Iniciar Chat
             </a>
-            
             <a
-              href="/docs"
-              className="inline-flex items-center px-8 py-4 bg-white/80 text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:bg-white hover:border-gray-300 transition-all duration-300"
+              href="/login"
+              className="inline-flex items-center justify-center px-8 py-4 border-2 border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition-all duration-200 transform hover:scale-105"
             >
-              <span className="mr-2">📚</span>
-              Documentação
+              Fazer Login
             </a>
           </div>
         </div>
       </div>
 
-      {/* Stats Section */}
-      <div className="bg-white/50 backdrop-blur-sm border-t border-white/20">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-1">5+</div>
-              <div className="text-sm text-gray-600">Modelos LLM</div>
+      {/* Features Section */}
+      <div className="bg-white/50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white text-2xl font-bold">AI</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Consenso Inteligente</h3>
+              <p className="text-gray-600">
+                Sistema avançado de consenso entre múltiplos LLMs para respostas mais precisas
+              </p>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-cyan-600 mb-1">99%</div>
-              <div className="text-sm text-gray-600">Uptime</div>
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white text-2xl font-bold">⚡</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Alta Performance</h3>
+              <p className="text-gray-600">
+                Orquestração otimizada para máxima velocidade e eficiência
+              </p>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-1">< 2s</div>
-              <div className="text-sm text-gray-600">Tempo Resposta</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-cyan-600 mb-1">24/7</div>
-              <div className="text-sm text-gray-600">Disponível</div>
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white text-2xl font-bold">🔒</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Seguro</h3>
+              <p className="text-gray-600">
+                Segurança enterprise com controle total dos dados
+              </p>
             </div>
           </div>
         </div>
