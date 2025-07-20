@@ -1,12 +1,11 @@
-
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { 
   format, 
   formatDistanceToNow, 
   isToday, 
-  isYesterday, 
-  parseISO, 
+  isYesterday,
+  parseISO,
   isValid,
   startOfDay,
   endOfDay,
@@ -37,42 +36,42 @@ export function formatDate(date: Date | string, formatStr: string = 'dd/MM/yyyy'
 export function formatRelativeTime(date: Date | string): string {
   const dateObj = typeof date === 'string' ? parseISO(date) : date
   if (!isValid(dateObj)) return 'Data inválida'
-  
+
   if (isToday(dateObj)) {
     return `Hoje às ${format(dateObj, 'HH:mm', { locale: ptBR })}`
   }
-  
+
   if (isYesterday(dateObj)) {
     return `Ontem às ${format(dateObj, 'HH:mm', { locale: ptBR })}`
   }
-  
+
   return formatDistanceToNow(dateObj, { addSuffix: true, locale: ptBR })
 }
 
 export function getTimeAgo(date: Date | string): string {
   const dateObj = typeof date === 'string' ? parseISO(date) : date
   if (!isValid(dateObj)) return 'Data inválida'
-  
+
   const now = new Date()
   const minutes = differenceInMinutes(now, dateObj)
   const hours = differenceInHours(now, dateObj)
   const days = differenceInDays(now, dateObj)
-  
+
   if (minutes < 1) return 'Agora mesmo'
   if (minutes < 60) return `${minutes}m atrás`
   if (hours < 24) return `${hours}h atrás`
   if (days < 7) return `${days}d atrás`
-  
+
   return formatDate(dateObj, 'dd/MM/yyyy')
 }
 
 export function isDateInRange(date: Date | string, start: Date, end: Date): boolean {
   const dateObj = typeof date === 'string' ? parseISO(date) : date
   if (!isValid(dateObj)) return false
-  
+
   const startOfRange = startOfDay(start)
   const endOfRange = endOfDay(end)
-  
+
   return dateObj >= startOfRange && dateObj <= endOfRange
 }
 
@@ -171,7 +170,7 @@ export function sortBy<T>(array: T[], key: keyof T, direction: 'asc' | 'desc' = 
   return [...array].sort((a, b) => {
     const aValue = a[key]
     const bValue = b[key]
-    
+
     if (aValue < bValue) return direction === 'asc' ? -1 : 1
     if (aValue > bValue) return direction === 'asc' ? 1 : -1
     return 0
@@ -206,11 +205,11 @@ export function pick<T extends Record<string, any>, K extends keyof T>(
 
 export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
   const result = { ...target }
-  
+
   Object.keys(source).forEach(key => {
     const sourceValue = source[key as keyof T]
     const targetValue = result[key as keyof T]
-    
+
     if (
       sourceValue &&
       typeof sourceValue === 'object' &&
@@ -224,7 +223,7 @@ export function deepMerge<T extends Record<string, any>>(target: T, source: Part
       result[key as keyof T] = sourceValue as T[keyof T]
     }
   })
-  
+
   return result
 }
 
@@ -241,7 +240,7 @@ export function debounce<T extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeout)
     timeout = setTimeout(() => func(...args), wait)
@@ -253,7 +252,7 @@ export function throttle<T extends (...args: any[]) => any>(
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args)
@@ -269,7 +268,7 @@ export function throttle<T extends (...args: any[]) => any>(
 
 export function getFromStorage(key: string): any {
   if (typeof window === 'undefined') return null
-  
+
   try {
     const item = window.localStorage.getItem(key)
     return item ? JSON.parse(item) : null
@@ -280,7 +279,7 @@ export function getFromStorage(key: string): any {
 
 export function setToStorage(key: string, value: any): void {
   if (typeof window === 'undefined') return
-  
+
   try {
     window.localStorage.setItem(key, JSON.stringify(value))
   } catch {
@@ -290,7 +289,7 @@ export function setToStorage(key: string, value: any): void {
 
 export function removeFromStorage(key: string): void {
   if (typeof window === 'undefined') return
-  
+
   try {
     window.localStorage.removeItem(key)
   } catch {
