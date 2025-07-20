@@ -1,0 +1,127 @@
+Perfeito. Essa abordagem é tecnicamente sólida e juridicamente responsável: **o sistema só responde com base em fontes legais validadas**, garantindo segurança, rastreabilidade e controle.
+
+---
+
+## ✅ OBJETIVO IMEDIATO
+
+Desenvolver um **repositório jurídico centralizado** para upload, validação e gestão de leis. Este será a **única base legal** da qual a IA poderá responder — e servirá como critério para **escalar ou não para humanos**.
+
+---
+
+## 🏗️ ARQUITETURA DO REPOSITÓRIO DE LEIS
+
+```
+┌───────────────────────────────┐
+│      PAINEL ADMIN/ADVOGADO    │
+└───────────────────────────────┘
+        ⇅ Upload / Gestão
+┌────────────────────────────────────────────────────────┐
+│ BACKEND LEGAL (FastAPI ou Node)                        │
+│ - API de upload de documentos                          │
+│ - Validação e anotação de metadados (jurisdição, tema)│
+│ - Validador de estrutura e unicidade                   │
+│ - Verificador de duplicação / revisão histórica        │
+└────────────────────────────────────────────────────────┘
+        ⇅                                                  ⇅
+┌───────────────────────┐                      ┌────────────────────────────┐
+│ STORAGE DE DOCUMENTOS │                      │ BASE DE DADOS LEGAL        │
+│ (PDF, DOCX, etc.)     │                      │ - ID, título, artigo       │
+│ - Armazenamento S3    │                      │ - Jurisdição, idioma       │
+└───────────────────────┘                      │ - Tags temáticas           │
+                                               │ - Status: pendente/aprovado│
+                                               └────────────────────────────┘
+```
+
+---
+
+## 📥 FUNCIONALIDADES PRINCIPAIS
+
+### 1. Upload de Leis (painel restrito)
+
+* Apenas administradores e advogados validados podem:
+
+  * Fazer upload de documentos legais (PDF, DOCX)
+  * Atribuir metadados: jurisdição, ano, tipo (constituição, decreto, etc.), idioma
+  * Ver histórico de versões
+  * Indicar se é **revogação, substituição ou novo texto**
+
+---
+
+### 2. Validação do Conteúdo
+
+* Antes de uma lei estar “ativa para uso da IA”, ela passa por:
+
+  * **Validação estrutural**: nome do documento, artigos numerados, coerência gramatical
+  * **Validação manual**: um advogado aprova ou rejeita
+* Campos de validação:
+
+  * `validador_id`, `data_validacao`, `observações`
+
+---
+
+### 3. Indexação para a IA
+
+* Após validação, o texto da lei é:
+
+  * Extraído do documento (com OCR se necessário)
+  * Normalizado em texto limpo e estruturado (por artigo)
+  * Indexado numa base semanticamente consultável:
+
+    * Ex: Elasticsearch, Weaviate, Qdrant, PostgreSQL Full-Text
+* Cada artigo pode ter:
+
+  * `conteúdo`, `artigo`, `capítulo`, `lei_id`, `jurisdição`, `idioma`, `versão`
+
+---
+
+## 📌 CAMPOS SUGERIDOS PARA A BASE LEGAL
+
+```sql
+Tabela: leis
+- id (UUID)
+- titulo
+- tipo_documento (enum: constituição, código, decreto, etc.)
+- jurisdição (ex: Moçambique, província)
+- idioma (pt, en, tsonga…)
+- ano_publicacao
+- status (pendente, aprovado, revogado)
+- storage_path (PDF original)
+- validado_por (id do advogado/admin)
+- data_validacao
+- criado_em
+
+Tabela: artigos
+- id
+- lei_id (FK leis.id)
+- artigo_numero
+- capítulo
+- secção
+- texto_original
+- texto_normalizado
+- tags_semânticas
+```
+
+---
+
+## 🔐 POLÍTICA DE RESPOSTA DA IA
+
+| Situação                           | Ação do sistema                           |
+| ---------------------------------- | ----------------------------------------- |
+| Texto legal existe e está validado | IA responde com confiança                 |
+| Lei ainda não validada             | IA informa que não pode responder         |
+| Documento fora do repositório      | IA informa que não tem base para resposta |
+| Tema sensível ou ambíguo           | IA recomenda falar com advogado humano    |
+| Baixa confiança na inferência      | Encaminha para humano automaticamente     |
+
+---
+
+## ✅ PRÓXIMO PASSO
+
+Queres que eu comece pelo:
+
+1. Modelo de dados (`SQLAlchemy` ou `Prisma`)
+2. API de upload e aprovação (`FastAPI`, com autenticação JWT por role)
+3. Esboço do painel web para advogados/admins
+4. Estrutura para extração e indexação de artigos (pré-RAG)
+
+Posso começar já com o repositório inicial `backend/legal_repository/`. Indica a tua prioridade.
