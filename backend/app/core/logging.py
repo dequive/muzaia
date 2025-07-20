@@ -4,10 +4,17 @@ import structlog
 from typing import Any, Dict
 
 
-def setup_logging() -> None:
-    """Configure structured logging for the application."""
+def setup_logging(log_level: str = "INFO") -> None:
+    """
+    Configura o sistema de logging estruturado da aplicação.
+    """
+    # Configuração básica do Python logging
+    logging.basicConfig(
+        format="%(message)s",
+        level=getattr(logging, log_level.upper()),
+    )
     
-    # Configure structlog
+    # Configuração do structlog
     structlog.configure(
         processors=[
             structlog.stdlib.filter_by_level,
@@ -26,8 +33,9 @@ def setup_logging() -> None:
         cache_logger_on_first_use=True,
     )
 
-    # Configure standard logging
-    logging.basicConfig(
-        format="%(message)s",
-        level=logging.INFO,
-    )
+
+def get_logger(name: str) -> Any:
+    """
+    Retorna um logger estruturado para o módulo especificado.
+    """
+    return structlog.get_logger(name)

@@ -254,3 +254,47 @@ class Settings(BaseSettings):
 
 # A linha crucial que foi adicionada de volta
 settings = Settings()
+from pydantic_settings import BaseSettings
+from typing import List, Optional
+import os
+
+
+class Settings(BaseSettings):
+    # Configurações básicas da aplicação
+    PROJECT_NAME: str = "Muzaia Backend"
+    PROJECT_VERSION: str = "0.1.0"
+    API_PREFIX: str = "/api/v1"
+    
+    # Configurações do servidor
+    HOST: str = "0.0.0.0"
+    PORT: int = 8001
+    RELOAD: bool = True
+    
+    # Configurações de logging
+    LOG_LEVEL: str = "INFO"
+    
+    # Configurações do LLM
+    LLM_POOL: List[str] = ["openai", "anthropic"]
+    MODEL_NAME: str = "gpt-3.5-turbo"
+    
+    # Configurações do banco de dados
+    DATABASE_URL: str = "sqlite+aiosqlite:///./muzaia.db"
+    
+    # Configurações de segurança
+    SECRET_KEY: str = "your-secret-key-change-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # Configurações do Redis (opcional)
+    REDIS_URL: Optional[str] = None
+    
+    # Configurações de desenvolvimento
+    DEBUG: bool = True
+    TESTING: bool = False
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
+
+settings = Settings()

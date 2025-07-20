@@ -15,7 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.core.orchestrator import LLMOrchestrator
 from app.core.exceptions import MuzaiaError
-from app.core import setup_logging
+from app.core.logging import setup_logging
 from app.api.router import api_router
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
