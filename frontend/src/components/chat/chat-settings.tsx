@@ -59,7 +59,14 @@ export function ChatSettings() {
   const { ui, updateUI } = useUIStore()
   const { chatSettings, updateChatSettings } = useChatStore()
   const { models, health } = useSystem()
-  const [localSettings, setLocalSettings] = useState(chatSettings)
+  const [localSettings, setLocalSettings] = useState(() => ({
+    ...chatSettings,
+    generation_params: chatSettings.generation_params || {
+      temperature: 0.7,
+      max_tokens: 2000,
+      top_p: 0.9
+    }
+  }))
   const [hasChanges, setHasChanges] = useState(false)
 
   const handleClose = () => {
@@ -208,9 +215,9 @@ export function ChatSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-xs">Temperatura: {localSettings.generation_params.temperature}</Label>
+                    <Label className="text-xs">Temperatura: {localSettings.generation_params?.temperature || 0.7}</Label>
                     <Slider
-                      value={[localSettings.generation_params.temperature || 0.7]}
+                      value={[localSettings.generation_params?.temperature || 0.7]}
                       onValueChange={([value]) => 
                         updateLocalSetting('generation_params.temperature', value)
                       }
@@ -227,7 +234,7 @@ export function ChatSettings() {
                     <Label className="text-xs">Máximo de Tokens</Label>
                     <Input
                       type="number"
-                      value={localSettings.generation_params.max_tokens}
+                      value={localSettings.generation_params?.max_tokens || 2000}
                       onChange={(e) => 
                         updateLocalSetting('generation_params.max_tokens', parseInt(e.target.value))
                       }
@@ -241,9 +248,9 @@ export function ChatSettings() {
                   </div>
 
                   <div>
-                    <Label className="text-xs">Top P: {localSettings.generation_params.top_p}</Label>
+                    <Label className="text-xs">Top P: {localSettings.generation_params?.top_p || 0.9}</Label>
                     <Slider
-                      value={[localSettings.generation_params.top_p || 0.9]}
+                      value={[localSettings.generation_params?.top_p || 0.9]}
                       onValueChange={([value]) => 
                         updateLocalSetting('generation_params.top_p', value)
                       }
