@@ -1,4 +1,4 @@
-// Chat header component
+
 'use client'
 
 import { useState } from 'react'
@@ -17,6 +17,11 @@ import {
   Zap,
   Shield,
   BarChart3,
+  Menu,
+  Share,
+  RefreshCw,
+  MoreVertical,
+  Sparkles,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -222,36 +227,6 @@ export function Header() {
     </header>
   )
 }
-'use client'
-
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import {
-  Menu,
-  Settings,
-  Share,
-  RefreshCw,
-  MoreVertical,
-  Sparkles,
-  User,
-  LogOut,
-  Bell,
-  Moon,
-  Sun
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
-import { useAuth } from '@/hooks/useAuth'
-import { useSystem } from '@/hooks/useSystem'
-import { getInitials, cn } from '@/lib/utils'
 
 interface ChatHeaderProps {
   onToggleSidebar?: () => void
@@ -271,12 +246,10 @@ export function ChatHeader({
   const [isDark, setIsDark] = useState(false)
 
   const handleShare = () => {
-    // Implement share functionality
     console.log('Share conversation')
   }
 
   const handleNewChat = () => {
-    // Implement new chat functionality
     window.location.reload()
   }
 
