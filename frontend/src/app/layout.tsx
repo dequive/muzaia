@@ -1,7 +1,17 @@
 import { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/react'
-import { SpeedInsights } from '@vercel/speed-insights/next'
+// Analytics e Speed Insights opcionais
+let Analytics: any = () => null
+let SpeedInsights: any = () => null
+
+try {
+  const vercelAnalytics = require('@vercel/analytics/react')
+  const vercelInsights = require('@vercel/speed-insights/next')
+  Analytics = vercelAnalytics.Analytics
+  SpeedInsights = vercelInsights.SpeedInsights
+} catch (error) {
+  // Vercel packages not available - using placeholder components
+}
 import { Providers } from '@/components/providers'
 import { Toaster } from 'sonner'
 import { cn } from '@/lib/utils'
