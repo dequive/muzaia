@@ -104,12 +104,10 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.environment == 'production'
 
-    class Config:
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
-        case_sensitive = False
-
     model_config = {
+        'env_file': '.env',
+        'env_file_encoding': 'utf-8',
+        'case_sensitive': False,
         'protected_namespaces': ('settings_',)
     }
 
