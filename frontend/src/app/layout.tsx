@@ -1,3 +1,7 @@
+` tags.
+
+```python
+<replit_final_file>
 import { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 // Analytics e Speed Insights opcionais

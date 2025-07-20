@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -9,9 +10,11 @@ import {
   Image,
   Mic,
   Plus,
+  LogIn,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import type { ContextType } from '@/types'
 
@@ -32,7 +35,9 @@ export function MessageInput({
 }: MessageInputProps) {
   const [message, setMessage] = useState('')
   const [showAttachments, setShowAttachments] = useState(false)
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { user } = useAuth()
 
   // Auto-resize textarea
   useEffect(() => {
@@ -50,7 +55,13 @@ export function MessageInput({
   }, [])
 
   const handleSend = async () => {
-    if (!message.trim() || isLoading) return
+    if (!message.trim()) return
+
+    // Check if user is authenticated before sending
+    if (!user) {
+      setShowLoginPrompt(true)
+      return
+    }
 
     const content = message.trim()
     setMessage('')
@@ -60,7 +71,11 @@ export function MessageInput({
       textareaRef.current.style.height = 'auto'
     }
 
-    await onSendMessage(content)
+    try {
+      await onSendMessage(content)
+    } catch (error) {
+      console.error('Error sending message:', error)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -70,95 +85,164 @@ export function MessageInput({
     }
   }
 
-  const canSend = message.trim().length > 0 && !isLoading
+  const handleLoginRedirect = () => {
+    window.location.href = '/login'
+  }
+
+  const canSend = message.trim() && !isLoading
 
   return (
-    <div className="relative">
-      {/* Attachment Options */}
-      {showAttachments && (
+    <div className="border-t border-gray-200 bg-white p-4">
+      {/* Login prompt modal */}
+      {showLoginPrompt && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          className="absolute bottom-full left-0 mb-2 flex space-x-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowLoginPrompt(false)}
         >
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-white dark:bg-gray-800 shadow-lg border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-            onClick={() => setShowAttachments(false)}
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <Image className="h-4 w-4 mr-2" />
-            Imagem
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-white dark:bg-gray-800 shadow-lg border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-            onClick={() => setShowAttachments(false)}
-          >
-            <Paperclip className="h-4 w-4 mr-2" />
-            Arquivo
-          </Button>
+            <div className="text-center">
+              <LogIn className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Login necessário
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Para usar o chat, você precisa fazer login primeiro.
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  onClick={handleLoginRedirect}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  Fazer Login
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLoginPrompt(false)}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
       )}
 
-      {/* Main Input Container */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-3xl border border-gray-300 dark:border-gray-600 shadow-lg focus-within:border-gray-400 dark:focus-within:border-gray-500 focus-within:shadow-xl transition-all duration-200">
-        <div className="flex items-end p-4 space-x-4">
-          {/* Attachment Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAttachments(!showAttachments)}
-            className="h-10 w-10 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full self-end"
+      <div className="max-w-4xl mx-auto">
+        {/* Attachments panel */}
+        {showAttachments && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200"
           >
-            <Plus className="h-5 w-5" />
-          </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Image className="h-4 w-4" />
+                <span>Imagem</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Paperclip className="h-4 w-4" />
+                <span>Arquivo</span>
+              </Button>
+            </div>
+          </motion.div>
+        )}
 
-          {/* Message Input */}
-          <div className="flex-1">
-            <Textarea
-              ref={textareaRef}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              disabled={isLoading}
+        {/* Main input area */}
+        <div className="relative">
+          <div className="flex items-end space-x-2">
+            {/* Attachment button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAttachments(!showAttachments)}
               className={cn(
-                "min-h-[24px] max-h-[200px] resize-none border-0 p-0 text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 bg-transparent focus:ring-0 focus:outline-none",
-                "scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent"
+                "p-2 text-gray-500 hover:text-gray-700",
+                showAttachments && "text-blue-600"
               )}
-              rows={1}
-            />
-          </div>
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
 
-          {/* Send/Stop Button */}
-          <div className="flex items-center self-end">
-            {isStreaming ? (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={onStopStreaming}
-                className="h-10 w-10 p-0 rounded-full bg-red-500 hover:bg-red-600 text-white"
-              >
+            {/* Text input */}
+            <div className="flex-1 relative">
+              <Textarea
+                ref={textareaRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={user ? placeholder : "Faça login para usar o chat..."}
+                disabled={isLoading}
+                className="min-h-[48px] max-h-[200px] resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-12"
+                rows={1}
+              />
+            </div>
+
+            {/* Send/Stop button */}
+            <Button
+              onClick={isStreaming ? onStopStreaming : handleSend}
+              disabled={!canSend && !isStreaming}
+              size="sm"
+              className={cn(
+                "p-2 transition-colors",
+                isStreaming 
+                  ? "bg-red-600 hover:bg-red-700" 
+                  : "bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
+              )}
+            >
+              {isStreaming ? (
                 <Square className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                onClick={handleSend}
-                disabled={!canSend}
-                className={cn(
-                  "h-10 w-10 p-0 rounded-full transition-all duration-200",
-                  canSend 
-                    ? "bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 shadow-md hover:shadow-lg" 
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                )}
-              >
+              ) : (
                 <Send className="h-4 w-4" />
-              </Button>
+              )}
+            </Button>
+
+            {/* Voice input button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2 text-gray-500 hover:text-gray-700"
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Status indicators */}
+        <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+          <div className="flex items-center space-x-2">
+            {!user && (
+              <span className="text-amber-600">
+                ⚠️ Login necessário para usar o chat
+              </span>
+            )}
+            {isLoading && <span>Enviando...</span>}
+            {isStreaming && <span>Gerando resposta...</span>}
+          </div>
+          <div>
+            {message.length > 0 && (
+              <span className={message.length > 1000 ? 'text-red-500' : ''}>
+                {message.length}/1000
+              </span>
             )}
           </div>
         </div>
