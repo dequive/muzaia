@@ -101,23 +101,27 @@ export function Message({
 
   return (
     <div className={cn(
-      "flex gap-3 group",
-      isUser ? "flex-row-reverse" : "flex-row"
+      "flex gap-4 py-6 px-4 group",
+      isUser 
+        ? "bg-gray-50 dark:bg-gray-700/50" 
+        : "bg-white dark:bg-gray-800"
     )}>
       {/* Avatar */}
       {showAvatar && (
         <div className="flex-shrink-0">
-          <Avatar className="h-8 w-8">
+          <Avatar className={cn(
+            "h-8 w-8",
+            isUser 
+              ? "bg-green-500" 
+              : "bg-gray-100 dark:bg-gray-600"
+          )}>
             {isUser ? (
-              <>
-                <AvatarImage src={user?.avatar_url} />
-                <AvatarFallback>
-                  <User className="h-4 w-4" />
-                </AvatarFallback>
-              </>
+              <AvatarFallback className="bg-green-500 text-white">
+                <User className="h-4 w-4" />
+              </AvatarFallback>
             ) : (
-              <AvatarFallback className="bg-primary/10">
-                <Brain className="h-4 w-4 text-primary" />
+              <AvatarFallback className="bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+                <Brain className="h-4 w-4" />
               </AvatarFallback>
             )}
           </Avatar>
@@ -129,24 +133,17 @@ export function Message({
         "flex-1 space-y-2",
         isUser ? "text-right" : "text-left"
       )}>
-        {/* Message Bubble */}
-        <motion.div
-          layout
-          className={cn(
-            "inline-block max-w-[80%] relative",
-            isUser 
-              ? "ml-auto bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-4 py-3"
-              : "mr-auto bg-muted rounded-2xl rounded-tl-md px-4 py-3"
-          )}
-        >
-          {/* Message Content */}
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            {isUser ? (
-              <p className="whitespace-pre-wrap break-words m-0">
-                {message.content}
-              </p>
-            ) : (
-              <ReactMarkdown
+        {/* Message Content */}
+        <div className="flex-1 min-w-0">
+          <div className="max-w-none">
+          {/* Message Text */}
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              {isUser ? (
+                <p className="whitespace-pre-wrap break-words m-0 text-gray-900 dark:text-white">
+                  {message.content}
+                </p>
+              ) : (
+                <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
                 components={{

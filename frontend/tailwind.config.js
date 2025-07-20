@@ -60,15 +60,32 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Cores específicas do Mozaia
+        // Cores específicas do Mozaia - ChatGPT style
         mozaia: {
-          primary: "#0ea5e9",
-          secondary: "#8b5cf6",
+          primary: "#10a37f",
+          secondary: "#6366f1",
           accent: "#06b6d4",
           success: "#10b981",
           warning: "#f59e0b",
           error: "#ef4444",
-          muted: "#64748b",
+          muted: "#6b7280",
+        },
+        // ChatGPT colors
+        chatgpt: {
+          green: "#10a37f",
+          "green-dark": "#0d8f6b",
+          gray: {
+            50: "#f9fafb",
+            100: "#f3f4f6",
+            200: "#e5e7eb",
+            300: "#d1d5db",
+            400: "#9ca3af",
+            500: "#6b7280",
+            600: "#4b5563",
+            700: "#374151",
+            800: "#1f2937",
+            900: "#111827",
+          },
         },
       },
       borderRadius: {
