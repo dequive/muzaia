@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.api.multimodal import router as multimodal_router
 from app.api.handoff import router as handoff_router
 from app.api.admin import router as admin_router
+from app.api.legal_repository import router as legal_repository_router
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 import structlog
@@ -131,6 +132,7 @@ api_router.include_router(llm_router)
 api_router.include_router(multimodal_router)
 api_router.include_router(handoff_router)
 api_router.include_router(admin_router)
+api_router.include_router(legal_repository_router)
 ```from fastapi import APIRouter
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
