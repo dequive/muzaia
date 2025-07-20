@@ -56,3 +56,5 @@ export { formatDate, formatRelativeTime } from './date'
 export { isValidEmail, isValidPassword } from './validation'
 export { truncate, slugify } from './string'
 export { formatCurrency, formatNumber } from './number'
+
+// Date-fns imports are now handled in the date utils file

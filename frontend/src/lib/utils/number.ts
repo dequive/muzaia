@@ -373,3 +373,13 @@ export function convertCurrency(
   
   return amount
 }
+export const formatCurrency = (value: number, currency = 'USD'): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(value)
+}
+
+export const formatNumber = (value: number): string => {
+  return new Intl.NumberFormat().format(value)
+}

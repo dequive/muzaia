@@ -346,3 +346,15 @@ export function formatCount(count: number, singular: string, plural?: string): s
   const word = count === 1 ? singular : (plural || pluralize(singular, count))
   return `${count} ${word}`
 }
+export const truncate = (str: string, length: number): string => {
+  if (str.length <= length) return str
+  return str.slice(0, length) + '...'
+}
+
+export const slugify = (str: string): string => {
+  return str
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}

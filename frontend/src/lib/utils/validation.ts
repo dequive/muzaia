@@ -374,3 +374,11 @@ export function hasMaxLength(value: string, maxLength: number): boolean {
 export function isInList<T>(value: T, options: T[]): boolean {
   return options.includes(value)
 }
+export const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+export const isValidPassword = (password: string): boolean => {
+  return password.length >= 8
+}
