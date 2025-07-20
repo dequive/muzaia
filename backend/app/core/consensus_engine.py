@@ -379,11 +379,12 @@ class ConsensusEngine:
         
         if not concepts1 or not concepts2:
             return 0.5  # Neutro se não há conceitos jurídicos
-        
-        intersection = concepts1.intersection(concepts2)
-        union = concepts1.union(concepts2)
-        
-        return len(intersection) / len(union) if union else 0.0
+
+        # Jaccard similarity
+        intersection = len(concepts1.intersection(concepts2))
+        union = len(concepts1.union(concepts2))
+
+        return intersection / union if union > 0 else 0.0
 
     def _calculate_consensus_scores(
         self,
@@ -585,7 +586,7 @@ class ConsensusEngine:
     def _has_encoding_issues(self, text: str) -> bool:
         """Verifica problemas de encoding."""
         # Caracteres estranhos que indicam problemas de encoding
-        problematic_chars = ['�', '\ufffd', '\x00']
+        problematic_chars = ['', '\ufffd', '\x00']
         return any(char in text for char in problematic_chars)
 
     def _looks_like_error(self, text: str) -> bool:

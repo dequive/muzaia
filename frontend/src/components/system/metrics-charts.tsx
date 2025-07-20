@@ -216,6 +216,14 @@ export function MetricsCharts({ className }: MetricsChartsProps) {
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+                </Card>
 
                 {/* Confidence Score Chart */}
                 <Card>

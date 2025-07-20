@@ -15,6 +15,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.core.orchestrator import LLMOrchestrator
 from app.core.exceptions import MuzaiaError
+from app.core import setup_logging
+from app.api.router import api_router
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 # Configuração centralizada do logging e métricas
 setup_logging()
@@ -62,13 +65,13 @@ app = FastAPI(
 
 # --- Middlewares ---
 # Métricas do Prometheus
-app.add_middleware(PrometheusMiddleware, app_name=settings.PROJECT_NAME)
+instrumentator = Instrumentator()
+instrumentator.instrument(app)
+instrumentator.expose(app)
 # ID de correlação para rastreabilidade dos logs
 app.add_middleware(CorrelationIdMiddleware)
 
 # --- Endpoints ---
-# Endpoint para as métricas do Prometheus
-app.add_route("/metrics", metrics)
 # Roteador principal da API
 app.include_router(api_router, prefix=settings.API_PREFIX)
 

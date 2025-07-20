@@ -30,6 +30,56 @@ const switchVariants = cva(
   }
 )
 
+const thumbVariants = cva(
+  "pointer-events-none block rounded-full bg-background shadow-lg ring-0 transition-transform",
+  {
+    variants: {
+      size: {
+        sm: "h-3 w-3 data-[state=checked]:translate-x-3 data-[state=unchecked]:translate-x-0",
+        default: "h-5 w-5 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
+        lg: "h-7 w-7 data-[state=checked]:translate-x-6 data-[state=unchecked]:translate-x-0",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+)
+
+export interface SwitchProps
+  extends React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>,
+    VariantProps<typeof switchVariants> {
+  loading?: boolean
+  showIcons?: boolean
+}
+
+const Switch = React.forwardRef<
+  React.ElementRef<typeof SwitchPrimitives.Root>,
+  SwitchProps
+>(({ className, size, variant, loading, showIcons, ...props }, ref) => (
+  <SwitchPrimitives.Root
+    className={cn(switchVariants({ size, variant }), className)}
+    {...props}
+    ref={ref}
+    disabled={loading || props.disabled}
+  >
+    <SwitchPrimitives.Thumb className={cn(thumbVariants({ size }))}>
+      {loading && (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      )}
+      {showIcons && !loading && (
+        <>
+          <Check className="h-3 w-3 opacity-0 data-[state=checked]:opacity-100" />
+          <X className="h-3 w-3 opacity-100 data-[state=checked]:opacity-0" />
+        </>
+      )}
+    </SwitchPrimitives.Thumb>
+  </SwitchPrimitives.Root>
+))
+Switch.displayName = SwitchPrimitives.Root.displayName
+
+export { Switch, switchVariants }
+
 const switchThumbVariants = cva(
   "pointer-events-none block rounded-full bg-background shadow-lg ring-0 transition-transform duration-200",
   {

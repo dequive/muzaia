@@ -60,14 +60,14 @@ from .exceptions import (
     LLMTimeoutError,
     LLMRateLimitError,
     LLMInvalidResponseError,
-    
+
     # Core Errors
     MuzaiaError,
     InvalidInputError,
     LLMServiceError,
     ConsensusError,
     ValidationError,
-    
+
     # Infrastructure Errors
     DatabaseError,
     AuthenticationError,
@@ -76,12 +76,13 @@ from .exceptions import (
     CircuitBreakerError,
     RetryExhaustedError,
 )
+from .logging import setup_logging
 
 # Exports organizados por categoria
 __all__ = [
     # Configurações
     "settings",
-    
+
     # Componentes principais
     "LLMOrchestrator",
     "LLMFactory",
@@ -89,14 +90,14 @@ __all__ = [
     "PoolConfig",
     "ConsensusEngine",
     "SemanticConsensusEngine",
-    
+
     # Cache
     "AsyncInMemoryCache",
     "EvictionPolicy", 
     "CacheStats",
     "global_cache",
     "cache_result",
-    
+
     # Resiliência
     "CircuitBreaker",
     "CircuitBreakerConfig",
@@ -106,28 +107,28 @@ __all__ = [
     "ResilienceManager",
     "resilience_manager",
     "retry_with_backoff",
-    
+
     # Protocolos
     "AbstractLLM",
     "AbstractLLMFactory",
     "AbstractLLMPool",
     "AbstractConsensusEngine",
     "AbstractOrchestrator",
-    
+
     # Exceções LLM
     "LLMError",
     "LLMConnectionError",
     "LLMTimeoutError",
     "LLMRateLimitError",
     "LLMInvalidResponseError",
-    
+
     # Exceções Core
     "MuzaiaError",
     "InvalidInputError",
     "LLMServiceError",
     "ConsensusError",
     "ValidationError",
-    
+
     # Exceções Infrastructure
     "DatabaseError",
     "AuthenticationError",
@@ -135,4 +136,5 @@ __all__ = [
     "RateLimitError",
     "CircuitBreakerError",
     "RetryExhaustedError",
+    "setup_logging",
 ]

@@ -434,6 +434,33 @@ export function isValidPhone(phone: string): boolean {
 // =============================================================================
 
 /**
+ * Capitaliza a primeira letra de uma string
+ */
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+/**
+ * Converte string para slug (URL-friendly)
+ */
+export function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/**
+ * Trunca texto com reticências
+ */
+export function truncate(str: string, length: number): string {
+  if (str.length <= length) return str
+  return str.slice(0, length) + '...'
+}======================================================
+
+/**
  * Trunca texto com opções avançadas
  */
 export function truncate(
