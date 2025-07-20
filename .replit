@@ -28,6 +28,10 @@ mode = "parallel"
 task = "workflow.run"
 args = "Start Frontend"
 
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && npm install && npm run dev"
+
 [[ports]]
 localPort = 3000
 externalPort = 80
