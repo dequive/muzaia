@@ -532,11 +532,11 @@ class EnhancedApiClient {
         // Log errors
         console.error('❌ API Error:', {
           id: requestId,
-          code: error.code,
-          status: error.response?.status,
-          url: error.config?.url,
-          message: error.message,
-          data: error.response?.data
+          code: error?.code || 'UNKNOWN',
+          status: error?.response?.status || 0,
+          url: error?.config?.url || 'unknown',
+          message: error?.message || 'Unknown error',
+          data: error?.response?.data || null
         })
 
         // Handle specific error cases

@@ -65,7 +65,7 @@ export function ChatSidebar() {
     selectConversation,
     loadingConversations 
   } = useChat()
-  
+
   const [searchTerm, setSearchTerm] = useState('')
   const [filterContext, setFilterContext] = useState<ContextType | 'all'>('all')
   const [showFilters, setShowFilters] = useState(false)
@@ -83,7 +83,7 @@ export function ChatSidebar() {
     const today = new Date()
     const yesterday = new Date(today)
     yesterday.setDate(today.getDate() - 1)
-    
+
     let key: string
     if (date.toDateString() === today.toDateString()) {
       key = 'Hoje'
@@ -94,7 +94,7 @@ export function ChatSidebar() {
     } else {
       key = 'Mais antigo'
     }
-    
+
     if (!groups[key]) groups[key] = []
     groups[key].push(conv)
     return groups
@@ -169,7 +169,7 @@ export function ChatSidebar() {
               className="pl-10"
             />
           </div>
-          
+
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
@@ -342,13 +342,13 @@ function ConversationItem({
               {conversation.title}
             </h4>
           </div>
-          
+
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center">
               <Clock className="h-3 w-3 mr-1" />
               {formatRelativeTime(conversation.updated_at)}
             </span>
-            
+
             <div className="flex items-center space-x-2">
               {conversation.avg_confidence && conversation.avg_confidence > 0.8 && (
                 <Star className="h-3 w-3 text-yellow-500" />
@@ -403,3 +403,4 @@ function ConversationItem({
     </Card>
   )
 }
+export { ChatSidebar }
