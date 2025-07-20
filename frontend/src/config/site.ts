@@ -1,8 +1,9 @@
 
+
 export const siteConfig = {
   name: "Mozaia AI",
   description: "Orquestrador de LLMs com consenso inteligente para Moçambique",
-  url: "https://mozaia.ai",
+  url: process.env.NEXT_PUBLIC_APP_URL || "https://mozaia.ai",
   ogImage: "/og.jpg",
   links: {
     github: "https://github.com/muzaia/muzaia",
@@ -10,3 +11,4 @@ export const siteConfig = {
   },
   creator: "Muzaia Team",
 }
+
