@@ -66,7 +66,9 @@ class Settings(BaseSettings):
         class CacheConfig:
             def __init__(self, ttl_sec: int, max_size: int):
                 self.cache_ttl_sec = ttl_sec
-                self.max_size = max_size
+                self.cache_max_size = max_size
+                self.cache_compression = True
+                self.cleanup_interval_sec = 300
         
         return CacheConfig(self.cache_ttl_sec, self.cache_max_size)
 
