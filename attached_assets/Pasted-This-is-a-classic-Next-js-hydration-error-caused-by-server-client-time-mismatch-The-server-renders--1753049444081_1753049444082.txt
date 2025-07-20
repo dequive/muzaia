@@ -1,0 +1,99 @@
+This is a classic Next.js hydration error caused by server-client time mismatch. The server renders the time at build/server time, but the client hydrates with a different time, causing React to detect the content mismatch.
+
+Here are several solutions to fix this:
+
+## Solution 1: Use `useEffect` to render time only on client
+
+```jsx
+import { useState, useEffect } from 'react'
+
+function TimeComponent() {
+  const [time, setTime] = useState('')
+  
+  useEffect(() => {
+    const updateTime = () => {
+      setTime(new Date().toLocaleTimeString())
+    }
+    
+    updateTime() // Set initial time
+    const interval = setInterval(updateTime, 1000)
+    
+    return () => clearInterval(interval)
+  }, [])
+  
+  return <div>{time || 'Loading...'}</div>
+}
+```
+
+## Solution 2: Suppress hydration warning (for time-based content)
+
+```jsx
+function TimeComponent() {
+  const [time, setTime] = useState(new Date().toLocaleTimeString())
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(new Date().toLocaleTimeString())
+    }, 1000)
+    
+    return () => clearInterval(interval)
+  }, [])
+  
+  return <div suppressHydrationWarning={true}>{time}</div>
+}
+```
+
+## Solution 3: Use dynamic imports with no SSR
+
+```jsx
+import dynamic from 'next/dynamic'
+
+const TimeComponent = dynamic(() => import('./TimeComponent'), {
+  ssr: false,
+  loading: () => <div>Loading...</div>
+})
+
+export default function Page() {
+  return (
+    <div>
+      <TimeComponent />
+    </div>
+  )
+}
+```
+
+## Solution 4: Create a custom hook for client-only rendering
+
+```jsx
+import { useState, useEffect } from 'react'
+
+function useIsClient() {
+  const [isClient, setIsClient] = useState(false)
+  
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+  
+  return isClient
+}
+
+function TimeComponent() {
+  const isClient = useIsClient()
+  const time = new Date().toLocaleTimeString()
+  
+  if (!isClient) {
+    return <div>Loading...</div> // or null
+  }
+  
+  return <div>{time}</div>
+}
+```
+
+## Best Practices:
+
+1. **For real-time data** (like clocks): Use Solution 1 or 4
+2. **For one-time renders**: Use Solution 2 with `suppressHydrationWarning`
+3. **For complex components**: Use Solution 3 with dynamic imports
+4. **Always handle the loading state** to avoid layout shift
+
+The key is ensuring that whatever renders on the server matches what renders on the client during the initial hydration phase.
