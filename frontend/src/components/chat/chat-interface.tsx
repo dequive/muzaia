@@ -54,7 +54,7 @@ export function ChatInterface() {
   }, [messages])
 
   const handleSendMessage = async (content: string) => {
-    if (!user) return // This check is redundant since MessageInput handles it, but good for safety
+    // Allow anonymous users to send messagesty
 
     // Add user message
     const userMessage = {
@@ -226,15 +226,16 @@ export function ChatInterface() {
             </div>
             
             <div className="flex items-center space-x-2">
-              {user && (
-                <>
-                  <Button variant="ghost" size="sm">
-                    <Share className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </>
+              <Button variant="ghost" size="sm">
+                <Share className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm">
+                <Settings className="h-4 w-4" />
+              </Button>
+              {!user && (
+                <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                  Modo Público
+                </div>
               )}
             </div>
           </div>

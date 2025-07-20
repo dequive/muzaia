@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -58,10 +57,10 @@ export function MessageInput({
     if (!message.trim()) return
 
     // Check if user is authenticated before sending
-    if (!user) {
-      setShowLoginPrompt(true)
-      return
-    }
+    // if (!user) {
+    //   setShowLoginPrompt(true)
+    //   return
+    // }
 
     const content = message.trim()
     setMessage('')
