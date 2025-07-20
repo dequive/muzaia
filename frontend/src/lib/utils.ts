@@ -1,6 +1,20 @@
 
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { 
+  format, 
+  formatDistanceToNow, 
+  isToday, 
+  isYesterday, 
+  parseISO, 
+  isValid, 
+  startOfDay, 
+  endOfDay, 
+  differenceInDays,
+  differenceInHours,
+  differenceInMinutes
+} from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 // =============================================================================
 // CORE UTILITIES
@@ -14,165 +28,209 @@ export function cn(...inputs: ClassValue[]) {
 // DATE UTILITIES
 // =============================================================================
 
-import { 
-  format, 
-  formatDistanceToNow, 
-  isToday, 
-  isYesterday, 
-  parseISO, 
-  isValid, 
-  startOfDay, 
-  endOfDay, 
-  differenceInDays, 
-  differenceInHours, 
-  differenceInMinutes
-} from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-
-/**
- * Formata uma data de acordo com o padrão brasileiro
- */
-export function formatDate(
-  date: Date | string | number,
-  formatStr: string = 'dd/MM/yyyy'
-): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date)
-  
-  if (!isValid(dateObj)) {
-    return 'Data inválida'
-  }
-  
-  return format(dateObj, formatStr, { locale: ptBR })
+export function formatDate(date: string | Date, pattern: string = 'dd/MM/yyyy'): string {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  if (!isValid(dateObj)) return 'Data inválida'
+  return format(dateObj, pattern, { locale: ptBR })
 }
 
-/**
- * Formata tempo relativo (ex: "há 2 horas")
- */
-export function formatRelativeTime(date: Date | string | number): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date)
-  
-  if (!isValid(dateObj)) {
-    return 'Data inválida'
-  }
+export function formatRelativeTime(date: string | Date): string {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  if (!isValid(dateObj)) return 'Data inválida'
   
   if (isToday(dateObj)) {
-    return formatDistanceToNow(dateObj, { 
-      addSuffix: true, 
-      locale: ptBR 
-    })
+    return `Hoje às ${format(dateObj, 'HH:mm')}`
   }
   
   if (isYesterday(dateObj)) {
-    return 'Ontem'
+    return `Ontem às ${format(dateObj, 'HH:mm')}`
   }
   
-  const daysDiff = differenceInDays(new Date(), dateObj)
-  
-  if (daysDiff <= 7) {
-    return `Há ${daysDiff} dia${daysDiff > 1 ? 's' : ''}`
-  }
-  
-  return formatDate(dateObj)
+  return formatDistanceToNow(dateObj, { addSuffix: true, locale: ptBR })
 }
 
-/**
- * Verifica se uma data é hoje
- */
-export function isDateToday(date: Date | string | number): boolean {
-  const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date)
-  return isValid(dateObj) && isToday(dateObj)
+export function isWithinRange(date: Date, start: Date, end: Date): boolean {
+  return date >= startOfDay(start) && date <= endOfDay(end)
 }
 
-/**
- * Verifica se uma data é ontem
- */
-export function isDateYesterday(date: Date | string | number): boolean {
-  const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date)
-  return isValid(dateObj) && isYesterday(dateObj)
+export function getDaysDifference(date1: Date, date2: Date): number {
+  return differenceInDays(date2, date1)
+}
+
+export function getHoursDifference(date1: Date, date2: Date): number {
+  return differenceInHours(date2, date1)
+}
+
+export function getMinutesDifference(date1: Date, date2: Date): number {
+  return differenceInMinutes(date2, date1)
 }
 
 // =============================================================================
 // STRING UTILITIES
 // =============================================================================
 
-/**
- * Trunca texto com reticências
- */
-export function truncate(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text
-  return text.slice(0, maxLength) + '...'
+export function truncate(str: string, length: number = 100): string {
+  if (str.length <= length) return str
+  return str.slice(0, length) + '...'
 }
 
-/**
- * Converte texto para slug
- */
-export function slugify(text: string): string {
-  return text
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
+
+export function slugify(str: string): string {
+  return str
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[^a-z0-9 -]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
-    .trim()
-}
-
-// =============================================================================
-// VALIDATION UTILITIES
-// =============================================================================
-
-/**
- * Valida email
- */
-export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
-}
-
-/**
- * Valida senha forte
- */
-export function isValidPassword(password: string): boolean {
-  // Mínimo 8 caracteres, pelo menos 1 letra maiúscula, 1 minúscula, 1 número
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/
-  return passwordRegex.test(password)
+    .replace(/^-|-$/g, '')
 }
 
 // =============================================================================
 // NUMBER UTILITIES
 // =============================================================================
 
-/**
- * Formata número como moeda (Metical moçambicano)
- */
-export function formatCurrency(amount: number): string {
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat('pt-BR').format(num)
+}
+
+export function formatCurrency(amount: number, currency: string = 'MZN'): string {
   return new Intl.NumberFormat('pt-MZ', {
     style: 'currency',
-    currency: 'MZN'
+    currency,
   }).format(amount)
 }
 
-/**
- * Formata número com separadores
- */
-export function formatNumber(num: number): string {
-  return new Intl.NumberFormat('pt-MZ').format(num)
+export function formatPercentage(value: number, decimals: number = 1): string {
+  return `${(value * 100).toFixed(decimals)}%`
 }
 
 // =============================================================================
-// CONSTANTS
+// VALIDATION UTILITIES  
 // =============================================================================
 
-export const BREAKPOINTS = {
-  sm: 640,
-  md: 768,
-  lg: 1024,
-  xl: 1280,
-  '2xl': 1536,
-} as const
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
 
-export const ANIMATION_DURATION = {
-  fast: 150,
-  normal: 300,
-  slow: 500,
-} as const
+export function isValidPhone(phone: string): boolean {
+  const phoneRegex = /^(?:\+?258)?[0-9]{8,9}$/
+  return phoneRegex.test(phone.replace(/\s/g, ''))
+}
+
+export function isValidUrl(url: string): boolean {
+  try {
+    new URL(url)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// =============================================================================
+// FILE UTILITIES
+// =============================================================================
+
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes'
+  
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+export function getFileExtension(filename: string): string {
+  return filename.slice(((filename.lastIndexOf('.') - 1) >>> 0) + 2)
+}
+
+// =============================================================================
+// ARRAY UTILITIES
+// =============================================================================
+
+export function unique<T>(array: T[]): T[] {
+  return [...new Set(array)]
+}
+
+export function groupBy<T, K extends keyof any>(
+  array: T[], 
+  key: (item: T) => K
+): Record<K, T[]> {
+  return array.reduce((groups, item) => {
+    const group = key(item)
+    if (!groups[group]) {
+      groups[group] = []
+    }
+    groups[group].push(item)
+    return groups
+  }, {} as Record<K, T[]>)
+}
+
+export function sortBy<T>(array: T[], key: keyof T, order: 'asc' | 'desc' = 'asc'): T[] {
+  return [...array].sort((a, b) => {
+    if (order === 'asc') {
+      return a[key] > b[key] ? 1 : -1
+    }
+    return a[key] < b[key] ? 1 : -1
+  })
+}
+
+// =============================================================================
+// OBJECT UTILITIES
+// =============================================================================
+
+export function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+  const result = {} as Pick<T, K>
+  keys.forEach(key => {
+    if (key in obj) {
+      result[key] = obj[key]
+    }
+  })
+  return result
+}
+
+export function omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
+  const result = { ...obj }
+  keys.forEach(key => {
+    delete result[key]
+  })
+  return result
+}
+
+// =============================================================================
+// ASYNC UTILITIES
+// =============================================================================
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }
+}
+
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle: boolean
+  return (...args: Parameters<T>) => {
+    if (!inThrottle) {
+      func(...args)
+      inThrottle = true
+      setTimeout(() => (inThrottle = false), limit)
+    }
+  }
+}

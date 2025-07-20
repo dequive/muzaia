@@ -1,7 +1,7 @@
+
 'use client'
 
-import { ThemeProvider } from 'next-themes'
-import { Toaster } from 'react-hot-toast'
+import { ThemeProvider } from '@/components/providers/theme-provider'
 
 interface ProvidersProps {
   children: React.ReactNode
@@ -9,9 +9,13 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
       {children}
-      <Toaster position="top-right" />
     </ThemeProvider>
   )
 }
