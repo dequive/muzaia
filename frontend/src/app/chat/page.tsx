@@ -5,7 +5,7 @@ import { ChatHeader } from '@/components/chat/header'
 import { ChatSettings } from '@/components/chat/chat-settings'
 import { useState } from 'react'
 import { useUIStore } from '@/store'
-import Sidebar from '@/components/chat/sidebar'
+import { ChatSidebar } from '@/components/chat/sidebar'
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -18,7 +18,7 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <Sidebar className="w-80 border-r" />
+      <ChatSidebar />
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
