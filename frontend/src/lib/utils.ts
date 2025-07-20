@@ -1,18 +1,17 @@
-
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { 
   format, 
   formatDistanceToNow, 
   isToday, 
-  isYesterday,
-  parseISO,
-  isValid,
-  startOfDay,
-  endOfDay,
-  differenceInDays,
-  differenceInHours,
-  differenceInMinutes
+  isYesterday, 
+  parseISO, 
+  isValid, 
+  startOfDay, 
+  endOfDay, 
+  differenceInDays, 
+  differenceInHours, 
+  differenceInMinutes 
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -25,44 +24,44 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // =============================================================================
-// DATE UTILITIES  
+// DATE UTILITIES
 // =============================================================================
 
-/**
- * Formata uma data para exibição
- */
-export function formatDate(date: Date | string, pattern = 'dd/MM/yyyy') {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date
-  
-  if (!isValid(dateObj)) {
-    return 'Data inválida'
-  }
-  
-  return format(dateObj, pattern, { locale: ptBR })
+export const formatDate = (date: string | Date, formatStr: string = 'dd/MM/yyyy') => {
+  const parsedDate = typeof date === 'string' ? parseISO(date) : date
+  if (!isValid(parsedDate)) return 'Data inválida'
+  return format(parsedDate, formatStr, { locale: ptBR })
 }
 
-/**
- * Formata uma data de forma relativa (ex: "há 2 horas")
- */
-export function formatRelativeDate(date: Date | string) {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date
-  
-  if (!isValid(dateObj)) {
-    return 'Data inválida'
+export const formatRelativeTime = (date: string | Date) => {
+  const parsedDate = typeof date === 'string' ? parseISO(date) : date
+  if (!isValid(parsedDate)) return 'Data inválida'
+  return formatDistanceToNow(parsedDate, { addSuffix: true, locale: ptBR })
+}
+
+export const isDateToday = (date: string | Date) => {
+  const parsedDate = typeof date === 'string' ? parseISO(date) : date
+  return isValid(parsedDate) && isToday(parsedDate)
+}
+
+export const isDateYesterday = (date: string | Date) => {
+  const parsedDate = typeof date === 'string' ? parseISO(date) : date
+  return isValid(parsedDate) && isYesterday(parsedDate)
+}
+
+export const getDayRange = (date: Date = new Date()) => {
+  return {
+    start: startOfDay(date),
+    end: endOfDay(date)
   }
-  
-  if (isToday(dateObj)) {
-    return `hoje às ${format(dateObj, 'HH:mm')}`
+}
+
+export const getTimeDifference = (date1: Date, date2: Date) => {
+  return {
+    days: differenceInDays(date2, date1),
+    hours: differenceInHours(date2, date1),
+    minutes: differenceInMinutes(date2, date1)
   }
-  
-  if (isYesterday(dateObj)) {
-    return `ontem às ${format(dateObj, 'HH:mm')}`
-  }
-  
-  return formatDistanceToNow(dateObj, { 
-    addSuffix: true, 
-    locale: ptBR 
-  })
 }
 
 /**
@@ -70,25 +69,25 @@ export function formatRelativeDate(date: Date | string) {
  */
 export function formatChatDate(date: Date | string) {
   const dateObj = typeof date === 'string' ? parseISO(date) : date
-  
+
   if (!isValid(dateObj)) {
     return ''
   }
-  
-  if (isToday(dateObj)) {
+
+  if (isDateToday(dateObj)) {
     return format(dateObj, 'HH:mm')
   }
-  
-  if (isYesterday(dateObj)) {
+
+  if (isDateYesterday(dateObj)) {
     return `Ontem ${format(dateObj, 'HH:mm')}`
   }
-  
+
   const daysDiff = differenceInDays(new Date(), dateObj)
-  
+
   if (daysDiff < 7) {
     return format(dateObj, 'EEEE HH:mm', { locale: ptBR })
   }
-  
+
   return format(dateObj, 'dd/MM HH:mm')
 }
 
@@ -98,15 +97,15 @@ export function formatChatDate(date: Date | string) {
 export function getDateDuration(startDate: Date | string, endDate: Date | string = new Date()) {
   const start = typeof startDate === 'string' ? parseISO(startDate) : startDate
   const end = typeof endDate === 'string' ? parseISO(endDate) : endDate
-  
+
   if (!isValid(start) || !isValid(end)) {
     return null
   }
-  
+
   const days = differenceInDays(end, start)
   const hours = differenceInHours(end, start)
   const minutes = differenceInMinutes(end, start)
-  
+
   return { days, hours, minutes }
 }
 
@@ -117,11 +116,11 @@ export function isDateInRange(date: Date | string, startDate: Date | string, end
   const dateObj = typeof date === 'string' ? parseISO(date) : date
   const start = typeof startDate === 'string' ? parseISO(startDate) : startDate
   const end = typeof endDate === 'string' ? parseISO(endDate) : endDate
-  
+
   if (!isValid(dateObj) || !isValid(start) || !isValid(end)) {
     return false
   }
-  
+
   return dateObj >= startOfDay(start) && dateObj <= endOfDay(end)
 }
 
@@ -238,7 +237,7 @@ export function uniqueArray<T>(array: T[], key?: keyof T): T[] {
   if (!key) {
     return [...new Set(array)]
   }
-  
+
   const seen = new Set()
   return array.filter(item => {
     const value = item[key]
@@ -282,7 +281,7 @@ export function removeUndefined<T extends Record<string, any>>(obj: T): Partial<
  */
 export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
   const result = { ...target }
-  
+
   for (const key in source) {
     if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
       result[key] = deepMerge(result[key] || {}, source[key]!)
@@ -290,7 +289,7 @@ export function deepMerge<T extends Record<string, any>>(target: T, source: Part
       result[key] = source[key]!
     }
   }
-  
+
   return result
 }
 
@@ -310,7 +309,7 @@ export const storage = {
       return defaultValue ?? null
     }
   },
-  
+
   set(key: string, value: any): void {
     try {
       localStorage.setItem(key, JSON.stringify(value))
@@ -318,7 +317,7 @@ export const storage = {
       console.error('Failed to save to localStorage:', error)
     }
   },
-  
+
   remove(key: string): void {
     try {
       localStorage.removeItem(key)
@@ -326,7 +325,7 @@ export const storage = {
       console.error('Failed to remove from localStorage:', error)
     }
   },
-  
+
   clear(): void {
     try {
       localStorage.clear()
@@ -355,7 +354,7 @@ export function debounce<T extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null
-  
+
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout)
     timeout = setTimeout(() => func(...args), wait)
@@ -370,7 +369,7 @@ export function throttle<T extends (...args: any[]) => any>(
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle = false
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args)
@@ -391,15 +390,15 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message
   }
-  
+
   if (typeof error === 'string') {
     return error
   }
-  
+
   if (error && typeof error === 'object' && 'message' in error) {
     return String(error.message)
   }
-  
+
   return 'Erro desconhecido'
 }
 

@@ -1,78 +1,58 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import type { Database } from '@/types/supabase'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return req.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          res.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          res.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
-    }
-  )
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next()
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  // Security headers for production
+  if (process.env.NODE_ENV === 'production') {
+    // HSTS - Force HTTPS
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
 
-  // Rotas que requerem autenticação
-  const protectedRoutes = [
-    '/dashboard',
-    '/profile',
-    '/settings',
-  ]
+    // Prevent clickjacking
+    response.headers.set('X-Frame-Options', 'DENY')
 
-  // Verifica se a rota atual está protegida
-  const isProtectedRoute = protectedRoutes.some(route => 
-    req.nextUrl.pathname.startsWith(route)
-  )
+    // Prevent MIME sniffing
+    response.headers.set('X-Content-Type-Options', 'nosniff')
 
-  // Redireciona para login se não autenticado em rota protegida
-  if (!session && isProtectedRoute) {
-    return NextResponse.redirect(new URL('/login', req.url))
+    // XSS Protection
+    response.headers.set('X-XSS-Protection', '1; mode=block')
+
+    // Referrer Policy
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+
+    // Content Security Policy
+    response.headers.set('Content-Security-Policy', [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self'",
+      "connect-src 'self' https://api.mozaia.ai wss://api.mozaia.ai",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'"
+    ].join('; '))
   }
 
-  // Redireciona para dashboard se já autenticado tentando acessar login/register
-  if (session && (
-    req.nextUrl.pathname === '/login' || 
-    req.nextUrl.pathname === '/register'
-  )) {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+  // Rate limiting for API routes
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    // Add rate limiting headers
+    response.headers.set('X-RateLimit-Limit', '100')
+    response.headers.set('X-RateLimit-Window', '60')
   }
 
-  return res
+  return response
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
+     * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
