@@ -416,7 +416,7 @@ class EnhancedApiClient {
         'Content-Type': 'application/json',
         'X-Client-Version': config.app.version,
         'X-Environment': config.app.environment,
-        'X-User-Agent': `Mozaia/${config.app.version} (${navigator.userAgent})`,
+        'X-User-Agent': `Mozaia/${config.app.version} (${typeof window !== 'undefined' ? navigator.userAgent : 'Server'})`,
       },
     })
 

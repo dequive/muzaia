@@ -18,6 +18,9 @@ import {
   Clock,
   Star,
   Zap,
+  Scale,
+  Briefcase,
+  GraduationCap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,7 +55,7 @@ const contextColors = {
   academic: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
 }
 
-export function Sidebar() {
+export function ChatSidebar() {
   const router = useRouter()
   const { ui, updateUI } = useUIStore()
   const { 
