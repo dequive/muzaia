@@ -403,4 +403,3 @@ function ConversationItem({
     </Card>
   )
 }
-export { ChatSidebar }
