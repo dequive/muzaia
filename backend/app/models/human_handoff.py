@@ -289,4 +289,3 @@ class HandoffManager:
 
         result = await self.db.execute(query, params)
         return result.fetchall()
-`

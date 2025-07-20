@@ -3,7 +3,7 @@ import { Metadata } from 'next'
 import { SystemOverview } from '@/components/system/system-overview'
 import { ModelStatus } from '@/components/system/model-status'
 import { MetricsCharts } from '@/components/system/metrics-charts'
-import { SystemLogs } from '@/components/system/system-logs'
+import { SystemLogs } from '@/components/system/system-overview'
 
 export const metadata: Metadata = {
   title: 'Sistema - Mozaia',

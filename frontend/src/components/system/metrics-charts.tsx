@@ -223,7 +223,7 @@ export function MetricsCharts({ className }: MetricsChartsProps) {
       </div>
     )
   }
-                </Card>
+}
 
                 {/* Confidence Score Chart */}
                 <Card>
