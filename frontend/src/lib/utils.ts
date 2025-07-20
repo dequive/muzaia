@@ -9,9 +9,9 @@ import {
   isValid, 
   startOfDay, 
   endOfDay, 
-  differenceInDays, 
-  differenceInHours, 
-  differenceInMinutes 
+  differenceInDays,
+  differenceInHours,
+  differenceInMinutes
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -27,238 +27,151 @@ export function cn(...inputs: ClassValue[]) {
 // DATE UTILITIES
 // =============================================================================
 
-export const formatDate = (date: string | Date, formatStr: string = 'dd/MM/yyyy') => {
-  const parsedDate = typeof date === 'string' ? parseISO(date) : date
-  if (!isValid(parsedDate)) return 'Data inválida'
-  return format(parsedDate, formatStr, { locale: ptBR })
+export function formatDate(date: string | Date, formatString: string = 'PPP'): string {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  if (!isValid(dateObj)) return 'Data inválida'
+  return format(dateObj, formatString, { locale: ptBR })
 }
 
-export const formatRelativeTime = (date: string | Date) => {
-  const parsedDate = typeof date === 'string' ? parseISO(date) : date
-  if (!isValid(parsedDate)) return 'Data inválida'
-  return formatDistanceToNow(parsedDate, { addSuffix: true, locale: ptBR })
+export function formatRelativeTime(date: string | Date): string {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  if (!isValid(dateObj)) return 'Data inválida'
+
+  if (isToday(dateObj)) {
+    return `hoje às ${format(dateObj, 'HH:mm')}`
+  }
+
+  if (isYesterday(dateObj)) {
+    return `ontem às ${format(dateObj, 'HH:mm')}`
+  }
+
+  return formatDistanceToNow(dateObj, { 
+    addSuffix: true, 
+    locale: ptBR 
+  })
 }
 
-export const isDateToday = (date: string | Date) => {
-  const parsedDate = typeof date === 'string' ? parseISO(date) : date
-  return isValid(parsedDate) && isToday(parsedDate)
+export function getTimeAgo(date: string | Date): string {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  if (!isValid(dateObj)) return 'Data inválida'
+
+  const now = new Date()
+  const diffInMinutes = differenceInMinutes(now, dateObj)
+  const diffInHours = differenceInHours(now, dateObj)
+  const diffInDays = differenceInDays(now, dateObj)
+
+  if (diffInMinutes < 1) return 'agora mesmo'
+  if (diffInMinutes < 60) return `${diffInMinutes}m`
+  if (diffInHours < 24) return `${diffInHours}h`
+  if (diffInDays < 7) return `${diffInDays}d`
+
+  return format(dateObj, 'dd/MM/yyyy', { locale: ptBR })
 }
 
-export const isDateYesterday = (date: string | Date) => {
-  const parsedDate = typeof date === 'string' ? parseISO(date) : date
-  return isValid(parsedDate) && isYesterday(parsedDate)
+export function isValidDate(date: string | Date): boolean {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  return isValid(dateObj)
 }
 
-export const getDayRange = (date: Date = new Date()) => {
+export function getDateRange(date: Date) {
   return {
     start: startOfDay(date),
     end: endOfDay(date)
   }
 }
 
-export const getTimeDifference = (date1: Date, date2: Date) => {
+// =============================================================================
+// VALIDATION UTILITIES
+// =============================================================================
+
+export function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+export function validatePassword(password: string): {
+  isValid: boolean
+  errors: string[]
+} {
+  const errors: string[] = []
+
+  if (password.length < 8) {
+    errors.push('Senha deve ter pelo menos 8 caracteres')
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Senha deve conter pelo menos uma letra maiúscula')
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('Senha deve conter pelo menos uma letra minúscula')
+  }
+
+  if (!/\d/.test(password)) {
+    errors.push('Senha deve conter pelo menos um número')
+  }
+
   return {
-    days: differenceInDays(date2, date1),
-    hours: differenceInHours(date2, date1),
-    minutes: differenceInMinutes(date2, date1)
+    isValid: errors.length === 0,
+    errors
   }
-}
-
-/**
- * Formata datetime para chat (ex: "14:30" ou "Ontem 14:30")
- */
-export function formatChatDate(date: Date | string) {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date
-
-  if (!isValid(dateObj)) {
-    return ''
-  }
-
-  if (isDateToday(dateObj)) {
-    return format(dateObj, 'HH:mm')
-  }
-
-  if (isDateYesterday(dateObj)) {
-    return `Ontem ${format(dateObj, 'HH:mm')}`
-  }
-
-  const daysDiff = differenceInDays(new Date(), dateObj)
-
-  if (daysDiff < 7) {
-    return format(dateObj, 'EEEE HH:mm', { locale: ptBR })
-  }
-
-  return format(dateObj, 'dd/MM HH:mm')
-}
-
-/**
- * Obtém informações sobre duração entre datas
- */
-export function getDateDuration(startDate: Date | string, endDate: Date | string = new Date()) {
-  const start = typeof startDate === 'string' ? parseISO(startDate) : startDate
-  const end = typeof endDate === 'string' ? parseISO(endDate) : endDate
-
-  if (!isValid(start) || !isValid(end)) {
-    return null
-  }
-
-  const days = differenceInDays(end, start)
-  const hours = differenceInHours(end, start)
-  const minutes = differenceInMinutes(end, start)
-
-  return { days, hours, minutes }
-}
-
-/**
- * Verifica se uma data está dentro de um range
- */
-export function isDateInRange(date: Date | string, startDate: Date | string, endDate: Date | string) {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date
-  const start = typeof startDate === 'string' ? parseISO(startDate) : startDate
-  const end = typeof endDate === 'string' ? parseISO(endDate) : endDate
-
-  if (!isValid(dateObj) || !isValid(start) || !isValid(end)) {
-    return false
-  }
-
-  return dateObj >= startOfDay(start) && dateObj <= endOfDay(end)
 }
 
 // =============================================================================
-// TEXT UTILITIES
+// STRING UTILITIES
 // =============================================================================
 
-/**
- * Trunca um texto com ellipsis
- */
-export function truncateText(text: string, maxLength: number) {
-  if (text.length <= maxLength) return text
-  return text.slice(0, maxLength) + '...'
+export function truncate(str: string, length: number): string {
+  if (str.length <= length) return str
+  return str.substring(0, length) + '...'
 }
 
-/**
- * Converte primeira letra para maiúscula
- */
-export function capitalize(text: string) {
-  if (!text) return text
-  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
-/**
- * Converte texto para slug (URL-friendly)
- */
-export function slugify(text: string) {
-  return text
+export function slugify(str: string): string {
+  return str
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-    .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
-    .replace(/\s+/g, '-') // Substitui espaços por hífens
-    .replace(/-+/g, '-') // Remove hífens duplicados
-    .trim()
+    .replace(/[^\w ]+/g, '')
+    .replace(/ +/g, '-')
 }
 
 // =============================================================================
 // NUMBER UTILITIES
 // =============================================================================
 
-/**
- * Formata números para display brasileiro
- */
-export function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
-  return new Intl.NumberFormat('pt-BR', options).format(value)
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat('pt-BR').format(num)
 }
 
-/**
- * Formata valores monetários
- */
-export function formatCurrency(value: number, currency = 'BRL') {
-  return formatNumber(value, {
+export function formatCurrency(value: number, currency: string = 'BRL'): string {
+  return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency,
-  })
+  }).format(value)
 }
 
-/**
- * Formata percentuais
- */
-export function formatPercent(value: number, decimals = 2) {
-  return formatNumber(value / 100, {
+export function formatPercentage(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
     style: 'percent',
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })
-}
-
-// =============================================================================
-// VALIDATION UTILITIES
-// =============================================================================
-
-/**
- * Valida se é email válido
- */
-export function isValidEmail(email: string) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
-}
-
-/**
- * Valida se é URL válida
- */
-export function isValidUrl(url: string) {
-  try {
-    new URL(url)
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
- * Valida se é JSON válido
- */
-export function isValidJson(str: string) {
-  try {
-    JSON.parse(str)
-    return true
-  } catch {
-    return false
-  }
+    minimumFractionDigits: 1,
+  }).format(value / 100)
 }
 
 // =============================================================================
 // ARRAY UTILITIES
 // =============================================================================
 
-/**
- * Remove itens duplicados de um array
- */
-export function uniqueArray<T>(array: T[], key?: keyof T): T[] {
-  if (!key) {
-    return [...new Set(array)]
-  }
-
-  const seen = new Set()
-  return array.filter(item => {
-    const value = item[key]
-    if (seen.has(value)) {
-      return false
-    }
-    seen.add(value)
-    return true
-  })
+export function unique<T>(array: T[]): T[] {
+  return Array.from(new Set(array))
 }
 
-/**
- * Agrupa array por propriedade
- */
 export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
   return array.reduce((groups, item) => {
-    const groupKey = String(item[key])
-    if (!groups[groupKey]) {
-      groups[groupKey] = []
-    }
-    groups[groupKey].push(item)
+    const group = String(item[key])
+    groups[group] = groups[group] || []
+    groups[group].push(item)
     return groups
   }, {} as Record<string, T[]>)
 }
@@ -267,152 +180,148 @@ export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
 // OBJECT UTILITIES
 // =============================================================================
 
-/**
- * Remove propriedades undefined de um objeto
- */
-export function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, value]) => value !== undefined)
-  ) as Partial<T>
+export function omit<T extends Record<string, any>, K extends keyof T>(
+  obj: T,
+  keys: K[]
+): Omit<T, K> {
+  const result = { ...obj }
+  keys.forEach(key => delete result[key])
+  return result
 }
 
-/**
- * Deep merge de objetos
- */
-export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
-  const result = { ...target }
+export function pick<T extends Record<string, any>, K extends keyof T>(
+  obj: T,
+  keys: K[]
+): Pick<T, K> {
+  const result = {} as Pick<T, K>
+  keys.forEach(key => {
+    if (key in obj) {
+      result[key] = obj[key]
+    }
+  })
+  return result
+}
 
-  for (const key in source) {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      result[key] = deepMerge(result[key] || {}, source[key]!)
-    } else {
-      result[key] = source[key]!
+// =============================================================================
+// FILE UTILITIES
+// =============================================================================
+
+export function formatFileSize(bytes: number): string {
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+  if (bytes === 0) return '0 Bytes'
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return `${Math.round(bytes / Math.pow(1024, i) * 100) / 100} ${sizes[i]}`
+}
+
+export function getFileExtension(filename: string): string {
+  return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2)
+}
+
+// =============================================================================
+// URL UTILITIES
+// =============================================================================
+
+export function buildUrl(base: string, params: Record<string, string | number>): string {
+  const url = new URL(base)
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.set(key, String(value))
+  })
+  return url.toString()
+}
+
+// =============================================================================
+// PERFORMANCE UTILITIES
+// =============================================================================
+
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let timeoutId: NodeJS.Timeout
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => func(...args), delay)
+  }
+}
+
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let lastCall = 0
+  return (...args: Parameters<T>) => {
+    const now = Date.now()
+    if (now - lastCall >= delay) {
+      lastCall = now
+      func(...args)
     }
   }
+}
 
-  return result
+// =============================================================================
+// BROWSER UTILITIES
+// =============================================================================
+
+export function copyToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard) {
+    return navigator.clipboard.writeText(text)
+  }
+
+  // Fallback for older browsers
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+
+  try {
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    return Promise.resolve()
+  } catch (err) {
+    document.body.removeChild(textArea)
+    return Promise.reject(err)
+  }
+}
+
+export function downloadFile(data: string, filename: string, type: string = 'text/plain'): void {
+  const blob = new Blob([data], { type })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 // =============================================================================
 // STORAGE UTILITIES
 // =============================================================================
 
-/**
- * Safe localStorage access
- */
-export const storage = {
-  get<T>(key: string, defaultValue?: T): T | null {
-    try {
-      const item = localStorage.getItem(key)
-      return item ? JSON.parse(item) : defaultValue ?? null
-    } catch {
-      return defaultValue ?? null
-    }
-  },
-
-  set(key: string, value: any): void {
-    try {
-      localStorage.setItem(key, JSON.stringify(value))
-    } catch (error) {
-      console.error('Failed to save to localStorage:', error)
-    }
-  },
-
-  remove(key: string): void {
-    try {
-      localStorage.removeItem(key)
-    } catch (error) {
-      console.error('Failed to remove from localStorage:', error)
-    }
-  },
-
-  clear(): void {
-    try {
-      localStorage.clear()
-    } catch (error) {
-      console.error('Failed to clear localStorage:', error)
-    }
-  }
-}
-
-// =============================================================================
-// ASYNC UTILITIES
-// =============================================================================
-
-/**
- * Sleep/delay function
- */
-export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-/**
- * Debounce function
- */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null
-
-  return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout)
-    timeout = setTimeout(() => func(...args), wait)
-  }
-}
-
-/**
- * Throttle function
- */
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  limit: number
-): (...args: Parameters<T>) => void {
-  let inThrottle = false
-
-  return (...args: Parameters<T>) => {
-    if (!inThrottle) {
-      func(...args)
-      inThrottle = true
-      setTimeout(() => inThrottle = false, limit)
-    }
-  }
-}
-
-// =============================================================================
-// ERROR UTILITIES
-// =============================================================================
-
-/**
- * Safe error message extraction
- */
-export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  if (typeof error === 'string') {
-    return error
-  }
-
-  if (error && typeof error === 'object' && 'message' in error) {
-    return String(error.message)
-  }
-
-  return 'Erro desconhecido'
-}
-
-/**
- * Safe async function wrapper
- */
-export async function safeAsync<T>(
-  fn: () => Promise<T>,
-  fallback?: T
-): Promise<[T | null, Error | null]> {
+export function setLocalStorage(key: string, value: any): void {
   try {
-    const result = await fn()
-    return [result, null]
+    localStorage.setItem(key, JSON.stringify(value))
   } catch (error) {
-    return [fallback ?? null, error instanceof Error ? error : new Error(String(error))]
+    console.warn('Failed to save to localStorage:', error)
+  }
+}
+
+export function getLocalStorage<T>(key: string, defaultValue?: T): T | null {
+  try {
+    const item = localStorage.getItem(key)
+    return item ? JSON.parse(item) : defaultValue ?? null
+  } catch (error) {
+    console.warn('Failed to read from localStorage:', error)
+    return defaultValue ?? null
+  }
+}
+
+export function removeLocalStorage(key: string): void {
+  try {
+    localStorage.removeItem(key)
+  } catch (error) {
+    console.warn('Failed to remove from localStorage:', error)
   }
 }

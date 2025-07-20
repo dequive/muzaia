@@ -2,25 +2,24 @@
 export const siteConfig = {
   name: "Mozaia AI",
   description: "Orquestrador de LLMs com consenso inteligente para Moçambique",
-  url: process.env.NEXT_PUBLIC_APP_URL || "https://mozaia.ai",
+  url: "https://mozaia.ai",
   ogImage: "/og.jpg",
   links: {
-    github: "https://github.com/muzaia/muzaia",
+    github: "https://github.com/mozaia/mozaia",
     docs: "/docs",
+    support: "/support"
   },
-  creator: "Muzaia Team",
+  creator: "Mozaia Team",
   keywords: [
     "AI",
     "LLM",
+    "Chat",
     "Moçambique",
-    "Consenso",
     "Inteligência Artificial",
-    "Chat"
+    "Consenso"
   ],
-  contact: {
-    email: "contact@mozaia.ai",
-    support: "support@mozaia.ai"
-  }
+  themeColor: "#0070f3",
+  locale: "pt-MZ"
 }
 
 export type SiteConfig = typeof siteConfig
