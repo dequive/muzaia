@@ -5,13 +5,13 @@ import {
   format, 
   formatDistanceToNow, 
   isToday, 
-  isYesterday, 
-  parseISO, 
-  isValid, 
-  startOfDay, 
-  endOfDay, 
-  differenceInDays, 
-  differenceInHours, 
+  isYesterday,
+  parseISO,
+  isValid,
+  startOfDay,
+  endOfDay,
+  differenceInDays,
+  differenceInHours,
   differenceInMinutes
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -25,163 +25,188 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // =============================================================================
-// DATE UTILITIES
+// DATE UTILITIES  
 // =============================================================================
 
-export function formatDate(
-  date: Date | string | number,
-  formatStr: string = 'dd/MM/yyyy'
-): string {
-  try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date)
-    if (!isValid(dateObj)) {
-      return 'Data inválida'
-    }
-    return format(dateObj, formatStr, { locale: ptBR })
-  } catch {
+/**
+ * Formata uma data para exibição
+ */
+export function formatDate(date: Date | string, pattern = 'dd/MM/yyyy') {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  
+  if (!isValid(dateObj)) {
     return 'Data inválida'
   }
+  
+  return format(dateObj, pattern, { locale: ptBR })
 }
 
-export function formatRelativeTime(date: Date | string | number): string {
-  try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date)
-    if (!isValid(dateObj)) {
-      return 'Data inválida'
-    }
-    
-    if (isToday(dateObj)) {
-      return `Hoje às ${format(dateObj, 'HH:mm')}`
-    }
-    
-    if (isYesterday(dateObj)) {
-      return `Ontem às ${format(dateObj, 'HH:mm')}`
-    }
-    
-    const daysDiff = differenceInDays(new Date(), dateObj)
-    if (daysDiff <= 7) {
-      return formatDistanceToNow(dateObj, { 
-        addSuffix: true, 
-        locale: ptBR 
-      })
-    }
-    
-    return format(dateObj, 'dd/MM/yyyy', { locale: ptBR })
-  } catch {
+/**
+ * Formata uma data de forma relativa (ex: "há 2 horas")
+ */
+export function formatRelativeDate(date: Date | string) {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  
+  if (!isValid(dateObj)) {
     return 'Data inválida'
   }
-}
-
-export function getTimeAgo(date: Date | string | number): string {
-  try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date)
-    if (!isValid(dateObj)) {
-      return 'Data inválida'
-    }
-    
-    const now = new Date()
-    const minutesDiff = differenceInMinutes(now, dateObj)
-    const hoursDiff = differenceInHours(now, dateObj)
-    const daysDiff = differenceInDays(now, dateObj)
-    
-    if (minutesDiff < 1) return 'Agora mesmo'
-    if (minutesDiff < 60) return `${minutesDiff}m`
-    if (hoursDiff < 24) return `${hoursDiff}h`
-    if (daysDiff < 7) return `${daysDiff}d`
-    
-    return format(dateObj, 'dd/MM', { locale: ptBR })
-  } catch {
-    return 'Data inválida'
+  
+  if (isToday(dateObj)) {
+    return `hoje às ${format(dateObj, 'HH:mm')}`
   }
+  
+  if (isYesterday(dateObj)) {
+    return `ontem às ${format(dateObj, 'HH:mm')}`
+  }
+  
+  return formatDistanceToNow(dateObj, { 
+    addSuffix: true, 
+    locale: ptBR 
+  })
 }
 
-export function isDateInRange(
-  date: Date | string | number,
-  startDate: Date | string | number,
-  endDate: Date | string | number
-): boolean {
-  try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date)
-    const startObj = typeof startDate === 'string' ? parseISO(startDate) : new Date(startDate)
-    const endObj = typeof endDate === 'string' ? parseISO(endDate) : new Date(endDate)
-    
-    if (!isValid(dateObj) || !isValid(startObj) || !isValid(endObj)) {
-      return false
-    }
-    
-    const dateStart = startOfDay(dateObj)
-    const rangeStart = startOfDay(startObj)
-    const rangeEnd = endOfDay(endObj)
-    
-    return dateStart >= rangeStart && dateStart <= rangeEnd
-  } catch {
+/**
+ * Formata datetime para chat (ex: "14:30" ou "Ontem 14:30")
+ */
+export function formatChatDate(date: Date | string) {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  
+  if (!isValid(dateObj)) {
+    return ''
+  }
+  
+  if (isToday(dateObj)) {
+    return format(dateObj, 'HH:mm')
+  }
+  
+  if (isYesterday(dateObj)) {
+    return `Ontem ${format(dateObj, 'HH:mm')}`
+  }
+  
+  const daysDiff = differenceInDays(new Date(), dateObj)
+  
+  if (daysDiff < 7) {
+    return format(dateObj, 'EEEE HH:mm', { locale: ptBR })
+  }
+  
+  return format(dateObj, 'dd/MM HH:mm')
+}
+
+/**
+ * Obtém informações sobre duração entre datas
+ */
+export function getDateDuration(startDate: Date | string, endDate: Date | string = new Date()) {
+  const start = typeof startDate === 'string' ? parseISO(startDate) : startDate
+  const end = typeof endDate === 'string' ? parseISO(endDate) : endDate
+  
+  if (!isValid(start) || !isValid(end)) {
+    return null
+  }
+  
+  const days = differenceInDays(end, start)
+  const hours = differenceInHours(end, start)
+  const minutes = differenceInMinutes(end, start)
+  
+  return { days, hours, minutes }
+}
+
+/**
+ * Verifica se uma data está dentro de um range
+ */
+export function isDateInRange(date: Date | string, startDate: Date | string, endDate: Date | string) {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date
+  const start = typeof startDate === 'string' ? parseISO(startDate) : startDate
+  const end = typeof endDate === 'string' ? parseISO(endDate) : endDate
+  
+  if (!isValid(dateObj) || !isValid(start) || !isValid(end)) {
     return false
   }
+  
+  return dateObj >= startOfDay(start) && dateObj <= endOfDay(end)
 }
 
 // =============================================================================
-// STRING UTILITIES
+// TEXT UTILITIES
 // =============================================================================
 
-export function truncate(str: string, length: number = 100): string {
-  if (str.length <= length) return str
-  return str.slice(0, length) + '...'
+/**
+ * Trunca um texto com ellipsis
+ */
+export function truncateText(text: string, maxLength: number) {
+  if (text.length <= maxLength) return text
+  return text.slice(0, maxLength) + '...'
 }
 
-export function slugify(str: string): string {
-  return str
+/**
+ * Converte primeira letra para maiúscula
+ */
+export function capitalize(text: string) {
+  if (!text) return text
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
+}
+
+/**
+ * Converte texto para slug (URL-friendly)
+ */
+export function slugify(text: string) {
+  return text
     .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+    .replace(/\s+/g, '-') // Substitui espaços por hífens
+    .replace(/-+/g, '-') // Remove hífens duplicados
     .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-export function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 // =============================================================================
 // NUMBER UTILITIES
 // =============================================================================
 
-export function formatNumber(num: number, locale: string = 'pt-BR'): string {
-  return new Intl.NumberFormat(locale).format(num)
+/**
+ * Formata números para display brasileiro
+ */
+export function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
+  return new Intl.NumberFormat('pt-BR', options).format(value)
 }
 
-export function formatCurrency(
-  amount: number, 
-  currency: string = 'MZN', 
-  locale: string = 'pt-MZ'
-): string {
-  return new Intl.NumberFormat(locale, {
+/**
+ * Formata valores monetários
+ */
+export function formatCurrency(value: number, currency = 'BRL') {
+  return formatNumber(value, {
     style: 'currency',
-    currency: currency,
-  }).format(amount)
+    currency,
+  })
 }
 
-export function formatPercentage(
-  value: number, 
-  decimals: number = 1, 
-  locale: string = 'pt-BR'
-): string {
-  return new Intl.NumberFormat(locale, {
+/**
+ * Formata percentuais
+ */
+export function formatPercent(value: number, decimals = 2) {
+  return formatNumber(value / 100, {
     style: 'percent',
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(value / 100)
+  })
 }
 
 // =============================================================================
 // VALIDATION UTILITIES
 // =============================================================================
 
-export function isValidEmail(email: string): boolean {
+/**
+ * Valida se é email válido
+ */
+export function isValidEmail(email: string) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
 
-export function isValidUrl(url: string): boolean {
+/**
+ * Valida se é URL válida
+ */
+export function isValidUrl(url: string) {
   try {
     new URL(url)
     return true
@@ -190,95 +215,141 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
-export function isValidPhone(phone: string): boolean {
-  // Formato moçambicano: +258 XX XXX XXXX ou 8X XXX XXXX
-  const phoneRegex = /^(\+258|258)?[\ ]?[8][0-9][\ ]?[0-9]{3}[\ ]?[0-9]{4}$/
-  return phoneRegex.test(phone.replace(/\s/g, ''))
+/**
+ * Valida se é JSON válido
+ */
+export function isValidJson(str: string) {
+  try {
+    JSON.parse(str)
+    return true
+  } catch {
+    return false
+  }
 }
 
 // =============================================================================
 // ARRAY UTILITIES
 // =============================================================================
 
-export function chunk<T>(array: T[], size: number): T[][] {
-  const chunks: T[][] = []
-  for (let i = 0; i < array.length; i += size) {
-    chunks.push(array.slice(i, i + size))
+/**
+ * Remove itens duplicados de um array
+ */
+export function uniqueArray<T>(array: T[], key?: keyof T): T[] {
+  if (!key) {
+    return [...new Set(array)]
   }
-  return chunks
+  
+  const seen = new Set()
+  return array.filter(item => {
+    const value = item[key]
+    if (seen.has(value)) {
+      return false
+    }
+    seen.add(value)
+    return true
+  })
 }
 
-export function shuffle<T>(array: T[]): T[] {
-  const shuffled = [...array]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  return shuffled
-}
-
-export function unique<T>(array: T[]): T[] {
-  return Array.from(new Set(array))
+/**
+ * Agrupa array por propriedade
+ */
+export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
+  return array.reduce((groups, item) => {
+    const groupKey = String(item[key])
+    if (!groups[groupKey]) {
+      groups[groupKey] = []
+    }
+    groups[groupKey].push(item)
+    return groups
+  }, {} as Record<string, T[]>)
 }
 
 // =============================================================================
 // OBJECT UTILITIES
 // =============================================================================
 
-export function omit<T extends Record<string, any>, K extends keyof T>(
-  obj: T,
-  keys: K[]
-): Omit<T, K> {
-  const result = { ...obj }
-  keys.forEach(key => delete result[key])
-  return result
+/**
+ * Remove propriedades undefined de um objeto
+ */
+export function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, value]) => value !== undefined)
+  ) as Partial<T>
 }
 
-export function pick<T extends Record<string, any>, K extends keyof T>(
-  obj: T,
-  keys: K[]
-): Pick<T, K> {
-  const result = {} as Pick<T, K>
-  keys.forEach(key => {
-    if (key in obj) {
-      result[key] = obj[key]
+/**
+ * Deep merge de objetos
+ */
+export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+  const result = { ...target }
+  
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      result[key] = deepMerge(result[key] || {}, source[key]!)
+    } else {
+      result[key] = source[key]!
     }
-  })
+  }
+  
   return result
 }
 
 // =============================================================================
-// FILE UTILITIES
+// STORAGE UTILITIES
 // =============================================================================
 
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes'
+/**
+ * Safe localStorage access
+ */
+export const storage = {
+  get<T>(key: string, defaultValue?: T): T | null {
+    try {
+      const item = localStorage.getItem(key)
+      return item ? JSON.parse(item) : defaultValue ?? null
+    } catch {
+      return defaultValue ?? null
+    }
+  },
   
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  set(key: string, value: any): void {
+    try {
+      localStorage.setItem(key, JSON.stringify(value))
+    } catch (error) {
+      console.error('Failed to save to localStorage:', error)
+    }
+  },
   
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
-export function getFileExtension(filename: string): string {
-  return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2)
-}
-
-export function isImageFile(filename: string): boolean {
-  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']
-  const extension = getFileExtension(filename).toLowerCase()
-  return imageExtensions.includes(extension)
+  remove(key: string): void {
+    try {
+      localStorage.removeItem(key)
+    } catch (error) {
+      console.error('Failed to remove from localStorage:', error)
+    }
+  },
+  
+  clear(): void {
+    try {
+      localStorage.clear()
+    } catch (error) {
+      console.error('Failed to clear localStorage:', error)
+    }
+  }
 }
 
 // =============================================================================
-// MISC UTILITIES
+// ASYNC UTILITIES
 // =============================================================================
 
+/**
+ * Sleep/delay function
+ */
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+/**
+ * Debounce function
+ */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
@@ -291,11 +362,14 @@ export function debounce<T extends (...args: any[]) => any>(
   }
 }
 
+/**
+ * Throttle function
+ */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
-  let inThrottle: boolean
+  let inThrottle = false
   
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
@@ -306,32 +380,40 @@ export function throttle<T extends (...args: any[]) => any>(
   }
 }
 
-export function generateId(length: number = 8): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let result = ''
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
+// =============================================================================
+// ERROR UTILITIES
+// =============================================================================
+
+/**
+ * Safe error message extraction
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
   }
-  return result
+  
+  if (typeof error === 'string') {
+    return error
+  }
+  
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String(error.message)
+  }
+  
+  return 'Erro desconhecido'
 }
 
-export function copyToClipboard(text: string): Promise<void> {
-  if (navigator.clipboard) {
-    return navigator.clipboard.writeText(text)
-  } else {
-    // Fallback para navegadores mais antigos
-    const textArea = document.createElement('textarea')
-    textArea.value = text
-    document.body.appendChild(textArea)
-    textArea.focus()
-    textArea.select()
-    try {
-      document.execCommand('copy')
-      return Promise.resolve()
-    } catch (err) {
-      return Promise.reject(err)
-    } finally {
-      document.body.removeChild(textArea)
-    }
+/**
+ * Safe async function wrapper
+ */
+export async function safeAsync<T>(
+  fn: () => Promise<T>,
+  fallback?: T
+): Promise<[T | null, Error | null]> {
+  try {
+    const result = await fn()
+    return [result, null]
+  } catch (error) {
+    return [fallback ?? null, error instanceof Error ? error : new Error(String(error))]
   }
 }

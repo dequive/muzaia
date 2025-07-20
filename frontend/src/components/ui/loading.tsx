@@ -1,35 +1,17 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Loader2, RefreshCw, Circle } from "lucide-react"
+import React from 'react'
+import { cn } from '@/lib/utils'
+import { Loader2, RefreshCw, Circle } from 'lucide-react'
 
 interface LoadingProps {
-  /**
-   * Tipo de loading
-   */
   variant?: 'spinner' | 'dots' | 'pulse' | 'bars' | 'wave'
-  /**
-   * Tamanho do loading
-   */
   size?: 'sm' | 'md' | 'lg' | 'xl'
-  /**
-   * Texto a ser exibido junto ao loading
-   */
   text?: string
-  /**
-   * Se true, centraliza o loading
-   */
   center?: boolean
-  /**
-   * Cor customizada
-   */
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'
-  /**
-   * Classes CSS adicionais
-   */
   className?: string
 }
 
-function Loading({
+export function Loading({
   variant = 'spinner',
   size = 'md',
   text,
@@ -208,72 +190,10 @@ export const ButtonLoading: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'sm' })
   return <Loading variant="spinner" size={size} />
 }
 
-export { Loading }
-import React from 'react'
-import { cn } from '@/lib/utils'
-
-interface LoadingProps {
-  variant?: 'spinner' | 'dots' | 'pulse'
-  size?: 'sm' | 'md' | 'lg'
-  className?: string
-}
-
-export function Loading({ 
-  variant = 'spinner', 
-  size = 'md', 
+export const MessageSkeleton: React.FC<{ isUser?: boolean; className?: string }> = ({ 
+  isUser = false, 
   className 
-}: LoadingProps) {
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6', 
-    lg: 'w-8 h-8'
-  }
-
-  if (variant === 'dots') {
-    return (
-      <div className={cn('flex items-center space-x-1', className)}>
-        <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-        <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-        <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-      </div>
-    )
-  }
-
-  if (variant === 'pulse') {
-    return (
-      <div className={cn('animate-pulse', className)}>
-        <div className={cn('bg-muted rounded', sizeClasses[size])}></div>
-      </div>
-    )
-  }
-
-  return (
-    <div className={cn('animate-spin', sizeClasses[size], className)}>
-      <svg viewBox="0 0 24 24" fill="none">
-        <circle
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-          className="opacity-25"
-        />
-        <path
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          className="opacity-75"
-        />
-      </svg>
-    </div>
-  )
-}
-
-interface MessageSkeletonProps {
-  isUser?: boolean
-  className?: string
-}
-
-export function MessageSkeleton({ isUser = false, className }: MessageSkeletonProps) {
+}) => {
   return (
     <div className={cn('flex gap-3 py-4 px-4', className)}>
       <div className="flex-shrink-0">

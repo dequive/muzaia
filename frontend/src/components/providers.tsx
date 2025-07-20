@@ -11,21 +11,23 @@ interface ProvidersProps {
 }
 
 export function Providers({ children }: ProvidersProps) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        refetchOnWindowFocus: false,
-      },
-    },
-  }))
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+          },
+        },
+      })
+  )
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
         attribute="class"
-        defaultTheme="light"
-        enableSystem={false}
+        defaultTheme="system"
+        enableSystem
         disableTransitionOnChange
       >
         {children}
