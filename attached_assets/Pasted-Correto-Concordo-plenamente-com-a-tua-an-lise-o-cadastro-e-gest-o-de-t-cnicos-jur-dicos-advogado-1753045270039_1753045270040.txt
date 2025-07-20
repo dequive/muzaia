@@ -1,0 +1,111 @@
+Correto. Concordo plenamente com a tua análise: **o cadastro e gestão de técnicos jurídicos/advogados não deve ser feito na mesma interface dos utilizadores finais.** São perfis com responsabilidades distintas, exigem validação adicional e implicam controle de acesso mais rigoroso. Abaixo segue um plano detalhado para isso:
+
+---
+
+## ✅ OBJETIVO
+
+Permitir o **registro controlado de técnicos jurídicos e advogados**, com validação de credenciais, gestão de perfis e segregação clara entre front-end público (usuários finais) e sistema administrativo.
+
+---
+
+## 🔐 PRINCÍPIO BASE: SEGREGAÇÃO DE INTERFACES E FUNÇÕES
+
+| Função                         | Interface                           | Acesso                    |
+| ------------------------------ | ----------------------------------- | ------------------------- |
+| Chat com IA + upload + voz     | Frontend público (Next.js)          | Qualquer utilizador       |
+| Cadastro e gestão de advogados | Portal administrativo (Admin Panel) | Apenas admins autorizados |
+| Login e atuação como advogado  | Painel técnico jurídico             | Apenas perfis validados   |
+
+---
+
+## 🧩 MÓDULO 1: PAINEL ADMINISTRATIVO (Interface separada)
+
+### 📍URL recomendada:
+
+`https://admin.mozaia.org`
+
+### 🔐 Acesso:
+
+* Protegido por autenticação com dois fatores (2FA)
+* JWT com roles (`admin`, `staff`)
+* Lista branca de IPs (opcional)
+
+### Funcionalidades:
+
+* **Cadastrar técnico jurídico/advogado**
+
+  * Nome completo
+  * Email profissional
+  * Especialização (penal, laboral, civil…)
+  * País + jurisdição
+  * Documento de habilitação (upload .pdf)
+  * Número de inscrição na ordem (opcional)
+  * Tipo de perfil: `advogado`, `técnico jurídico`, `estagiário`
+* **Aprovação manual**
+
+  * Admin revisa documentos e aprova conta
+  * Apenas após aprovação o profissional pode iniciar sessões
+* **Desativação / suspensão / logs de atuação**
+* **Visualizar métricas de atendimento (número de sessões, média de tempo, feedback dos usuários)**
+
+---
+
+## 🧩 MÓDULO 2: AUTENTICAÇÃO E GESTÃO DE ACESSO
+
+### 1. **Tabela de Utilizadores Profissionais**
+
+* `user_id`
+* `email`
+* `password_hash`
+* `role` → Enum: `common`, `staff`, `legal_tech`, `lawyer`, `admin`
+* `status`: `pending`, `approved`, `blocked`
+* `jurisdiction`, `specialty`, `license_doc_path`
+* `created_at`, `approved_by`, `last_active_at`
+
+### 2. **Autenticação**
+
+* JWT com `role` no payload
+* Endpoint: `/auth/login`, `/auth/signup-legal`
+* Proteção contra brute force
+* Logs de IP/login/sessões ativas
+
+---
+
+## 🧩 MÓDULO 3: PAINEL DO PROFISSIONAL (Técnico/Advogado)
+
+### 📍URL recomendada:
+
+`https://painel.mozaia.org`
+
+### Requisitos:
+
+* Login com conta aprovada
+* Ver lista de sessões em espera
+* Entrar numa conversa
+* Aceder ao histórico da IA
+* Responder com ou sem copiloto IA
+* Botão para “encerrar conversa”
+* Status: `online` / `ausente` / `ocupado`
+
+---
+
+## ✅ MELHOR OPÇÃO DE IMPLEMENTAÇÃO
+
+| Recurso                  | Opção sugerida                       |
+| ------------------------ | ------------------------------------ |
+| Interface Admin          | React + Next.js em `/admin` separado |
+| Gestão de acesso         | JWT + Role-based Access Control      |
+| Armazenamento documentos | S3 ou Supabase storage (restrito)    |
+| Aprovação manual         | Painel com botão de ativação         |
+| Logs e auditoria         | MongoDB ou PostgreSQL com tracking   |
+| Proteção                 | ReCaptcha + 2FA + verificação email  |
+
+---
+
+## 🧠 DICA AVANÇADA
+
+> Para ambientes jurídicos sérios, considera usar **OAuth corporativo (ex: login com email de entidade certificada)** ou **integração com bases oficiais (ex: Ordem dos Advogados)** via API, caso disponível no futuro.
+
+---
+
+Desejas que eu desenvolva o **modelo de dados para isso em SQLAlchemy ou Prisma**, ou queres que comece por desenhar o **painel administrativo React com proteção JWT e verificação de perfis**?
