@@ -8,7 +8,8 @@ import uuid
 from datetime import datetime
 from typing import Optional, List
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, Boolean, JSON, Text, Enum
+from sqlalchemy import Column, String, DateTime, Boolean, JSON, Text
+from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -58,8 +59,8 @@ class ProfessionalUser(Base, TimestampMixin):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(200), nullable=False)
-    role = Column(Enum(UserRole), default=UserRole.LEGAL_TECH)
-    status = Column(Enum(UserStatus), default=UserStatus.PENDING)
+    role = Column(SQLAlchemyEnum(UserRole), default=UserRole.LEGAL_TECH)
+    status = Column(SQLAlchemyEnum(UserStatus), default=UserStatus.PENDING)
     
     # Informações profissionais
     specializations = Column(JSON, default=list)  # Lista de especializações
@@ -119,7 +120,7 @@ class AdminUser(Base, TimestampMixin):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(200), nullable=False)
-    role = Column(Enum(UserRole), default=UserRole.ADMIN)
+    role = Column(SQLAlchemyEnum(UserRole), default=UserRole.ADMIN)
     is_active = Column(Boolean, default=True)
     is_super_admin = Column(Boolean, default=False)
     
