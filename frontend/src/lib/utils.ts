@@ -1,4 +1,3 @@
-
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { 
@@ -14,7 +13,7 @@ import {
   differenceInHours,
   differenceInMinutes
 } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { ptBR } from 'date-fns/locale/pt-BR'
 
 // =============================================================================
 // CORE UTILITIES
@@ -37,15 +36,15 @@ export function formatDate(date: string | Date, pattern: string = 'dd/MM/yyyy'):
 export function formatRelativeTime(date: string | Date): string {
   const dateObj = typeof date === 'string' ? parseISO(date) : date
   if (!isValid(dateObj)) return 'Data inválida'
-  
+
   if (isToday(dateObj)) {
     return `Hoje às ${format(dateObj, 'HH:mm')}`
   }
-  
+
   if (isYesterday(dateObj)) {
     return `Ontem às ${format(dateObj, 'HH:mm')}`
   }
-  
+
   return formatDistanceToNow(dateObj, { addSuffix: true, locale: ptBR })
 }
 
@@ -137,11 +136,11 @@ export function isValidUrl(url: string): boolean {
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes'
-  
+
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
