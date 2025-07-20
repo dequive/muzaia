@@ -56,6 +56,20 @@ class Settings(BaseSettings):
     reload: bool = Field(True, alias="RELOAD")
     log_level: str = Field("INFO", alias="LOG_LEVEL")
 
+    # Cache Settings
+    cache_ttl_sec: int = Field(3600, alias="CACHE_TTL_SEC")
+    cache_max_size: int = Field(1000, alias="CACHE_MAX_SIZE")
+
+    @property
+    def cache(self):
+        """Propriedade para compatibilidade com o código de cache"""
+        class CacheConfig:
+            def __init__(self, ttl_sec: int, max_size: int):
+                self.cache_ttl_sec = ttl_sec
+                self.max_size = max_size
+        
+        return CacheConfig(self.cache_ttl_sec, self.cache_max_size)
+
     @validator('secret_key')
     def validate_secret_key(cls, v):
         if not v or len(v) < 32:
@@ -94,6 +108,10 @@ class Settings(BaseSettings):
         env_file = '.env'
         env_file_encoding = 'utf-8'
         case_sensitive = False
+
+    model_config = {
+        'protected_namespaces': ('settings_',)
+    }
 
 
 settings = Settings()
