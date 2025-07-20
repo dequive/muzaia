@@ -35,7 +35,7 @@ export function useChat(conversationId?: string) {
     refetch: refetchConversations,
   } = useQuery({
     queryKey: ['conversations'],
-    queryFn: chatApi.getConversations,
+    queryFn: () => chatApi.getConversations(),
   });
 
   // Query para buscar mensagens da conversa atual

@@ -11,6 +11,7 @@ import { WelcomeScreen } from './welcome-screen'
 import { useChat } from '@/hooks/useChat'
 import { useChatStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { IntegrationTest } from './integration-test'
 
 export function ChatInterface() {
   const {
@@ -64,7 +65,12 @@ export function ChatInterface() {
   // Render different states
   if (!currentConversation && messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col space-y-6 p-6">
+        {/* Integration Test Section */}
+        <div className="bg-muted/30 rounded-lg p-6">
+          <IntegrationTest />
+        </div>
+        
         <WelcomeScreen onStartChat={handleNewChat} />
         <MessageInput
           onSendMessage={handleSendMessage}

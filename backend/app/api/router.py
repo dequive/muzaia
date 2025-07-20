@@ -1,6 +1,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import structlog
 from typing import Dict, Any
 
@@ -60,6 +61,62 @@ async def generate_response(prompt: str):
     except Exception as e:
         logger.error("Error generating response", error=str(e))
         raise HTTPException(status_code=500, detail="Error generating response")
+
+
+# Test endpoint for frontend integration
+@api_router.get("/test")
+async def test_integration():
+    """Endpoint de teste para verificar integração frontend-backend."""
+    return {
+        "status": "success",
+        "message": "Backend conectado com sucesso!",
+        "timestamp": "2025-01-20T16:25:01Z",
+        "backend_version": settings.PROJECT_VERSION
+    }
+
+# Endpoint para testar conversas
+@api_router.get("/conversations")
+async def get_conversations():
+    """Endpoint de teste para listar conversas."""
+    # Mock data para teste
+    return {
+        "conversations": [
+            {
+                "id": "1",
+                "title": "Conversa de Teste",
+                "created_at": "2025-01-20T16:00:00Z",
+                "updated_at": "2025-01-20T16:20:00Z",
+                "message_count": 2,
+                "context": "general",
+                "user_id": "user_1"
+            }
+        ],
+        "total": 1
+    }
+
+# Endpoint para testar mensagens
+@api_router.get("/conversations/{conversation_id}/messages")
+async def get_messages(conversation_id: str):
+    """Endpoint de teste para listar mensagens."""
+    return {
+        "messages": [
+            {
+                "id": "msg_1",
+                "conversation_id": conversation_id,
+                "role": "user",
+                "content": "Olá! Como você está?",
+                "created_at": "2025-01-20T16:00:00Z"
+            },
+            {
+                "id": "msg_2", 
+                "conversation_id": conversation_id,
+                "role": "assistant",
+                "content": "Olá! Estou bem e pronto para ajudar. Como posso auxiliá-lo hoje?",
+                "created_at": "2025-01-20T16:00:30Z"
+            }
+        ],
+        "total": 2
+    }
 
 
 # Inclui o roteador do LLM no roteador principal

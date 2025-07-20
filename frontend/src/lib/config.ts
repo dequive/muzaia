@@ -74,7 +74,7 @@ const baseConfig: Config = {
     }
   },
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://api.mozaia.mz',
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://0.0.0.0:8000',
     timeout: 30000,
     retries: 3,
     batchingEnabled: true,
