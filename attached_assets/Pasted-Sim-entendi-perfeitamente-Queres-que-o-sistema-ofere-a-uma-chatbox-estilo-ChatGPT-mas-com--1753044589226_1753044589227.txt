@@ -1,0 +1,98 @@
+Sim, entendi perfeitamente.
+
+Queres que o sistema ofereça uma **chatbox estilo ChatGPT**, mas com uma funcionalidade adicional crucial: permitir que o utilizador **transfira a conversa para um técnico jurídico ou advogado humano em tempo real**, quando este estiver disponível. Isso implica uma **integração híbrida homem+IA**, similar ao que fazem sistemas como Intercom, Crisp ou o DoNotPay em contextos jurídicos.
+
+---
+
+## ✅ Funcionalidade: Encaminhamento para técnico jurídico/humano
+
+### 🔹 Fluxo esperado:
+
+1. **Utilizador interage com a IA** normalmente (mensagens, voz, documentos).
+2. A IA deteta que o caso é complexo, ou o utilizador solicita ajuda humana.
+3. O sistema:
+
+   * Verifica **disponibilidade de técnicos jurídicos ou advogados.**
+   * Se houver alguém online, **transfere a conversa** (ou abre canal paralelo).
+   * Se ninguém estiver online, **agenda atendimento** ou entra em **modo de espera assistida.**
+
+---
+
+## 🧩 Requisitos técnicos para integração homem+IA
+
+### 1. Sistema de Presença e Escalonamento
+
+* **Back-end precisa gerir presença** dos profissionais:
+
+  * Exemplo: WebSocket ou polling para saber se estão online/disponíveis.
+* Cada técnico tem status: `offline`, `online`, `em atendimento`, `ausente`.
+* Escalonador decide a quem enviar o pedido, com base em regras:
+
+  * Menor carga atual
+  * Especialização (penal, laboral, etc.)
+  * Preferência do cliente
+
+### 2. Transição suave IA → Humano
+
+* Toda a conversa com a IA deve estar **disponível ao humano** para contexto.
+* O advogado entra no mesmo chat, podendo continuar dali.
+* IA pode ser silenciada ou entrar em **modo assistente** para ajudar o técnico (tipo copiloto).
+
+### 3. UI do lado do utilizador
+
+* Botão visível: “Falar com um especialista”
+* Estado da solicitação:
+
+  * Procurando técnico disponível…
+  * Técnico \[nome] conectado.
+  * Sem disponibilidade no momento. Deseja agendar?
+
+### 4. UI do lado do técnico/advogado
+
+* Painel com:
+
+  * Lista de sessões em espera
+  * Histórico de conversas
+  * Campo de resposta com assistente IA (modo copiloto)
+  * Filtros por tipo de solicitação
+
+### 5. Notificações e alertas
+
+* Push/email/WS para técnico ao receber nova conversa
+* Timeout se técnico não responder
+
+### 6. Registo e auditoria
+
+* Todo o histórico da conversa (IA + humano) é salvo para fins legais e de transparência.
+* Marcação clara de quando a conversa passou para um humano.
+
+---
+
+## 🔐 Questões sensíveis
+
+* **Privacidade e conformidade:** assegurar confidencialidade legal (ex: criptografia, logging seguro).
+* **Qualificação do técnico:** sistema deve distinguir entre técnicos e advogados certificados.
+* **Tempo de resposta:** política clara sobre SLA (service level agreement).
+* **Consentimento:** utilizador deve saber que está a falar com humano e não com IA.
+
+---
+
+## 🔧 Tecnologias e integração sugerida
+
+| Componente                   | Stack sugerido                              |
+| ---------------------------- | ------------------------------------------- |
+| Chat real-time multiagente   | WebSocket (Socket.IO, FastAPI WebSocket)    |
+| Gestão de presença/estado    | Redis ou Firebase Realtime DB               |
+| Painel de técnicos jurídicos | React dashboard + Tailwind + Zustand        |
+| IA como copiloto             | IA pode sugerir respostas e o humano valida |
+| Auditoria                    | MongoDB com histórico por sessão            |
+
+---
+
+## 🧠 Sugestão avançada (opcional)
+
+> Permitir que o **advogado humano colabore com a IA durante a conversa**, podendo editar/responder com sugestões do modelo LLM em tempo real — semelhante ao GitHub Copilot Chat, mas adaptado ao contexto legal.
+
+---
+
+Queres que desenhe a arquitetura dessa funcionalidade agora? Ou preferes que eu avance com protótipos de código para a troca IA↔humano com WebSocket e escalonamento simples?
