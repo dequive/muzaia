@@ -209,3 +209,89 @@ export const ButtonLoading: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'sm' })
 }
 
 export { Loading }
+import React from 'react'
+import { cn } from '@/lib/utils'
+
+interface LoadingProps {
+  variant?: 'spinner' | 'dots' | 'pulse'
+  size?: 'sm' | 'md' | 'lg'
+  className?: string
+}
+
+export function Loading({ 
+  variant = 'spinner', 
+  size = 'md', 
+  className 
+}: LoadingProps) {
+  const sizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-6 h-6', 
+    lg: 'w-8 h-8'
+  }
+
+  if (variant === 'dots') {
+    return (
+      <div className={cn('flex items-center space-x-1', className)}>
+        <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+        <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+        <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+      </div>
+    )
+  }
+
+  if (variant === 'pulse') {
+    return (
+      <div className={cn('animate-pulse', className)}>
+        <div className={cn('bg-muted rounded', sizeClasses[size])}></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn('animate-spin', sizeClasses[size], className)}>
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+          className="opacity-25"
+        />
+        <path
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          className="opacity-75"
+        />
+      </svg>
+    </div>
+  )
+}
+
+interface MessageSkeletonProps {
+  isUser?: boolean
+  className?: string
+}
+
+export function MessageSkeleton({ isUser = false, className }: MessageSkeletonProps) {
+  return (
+    <div className={cn('flex gap-3 py-4 px-4', className)}>
+      <div className="flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+      </div>
+      <div className="flex-1 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="w-20 h-4 bg-muted rounded animate-pulse" />
+          <div className="w-16 h-3 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          <div className="w-full h-4 bg-muted rounded animate-pulse" />
+          <div className="w-3/4 h-4 bg-muted rounded animate-pulse" />
+          {!isUser && (
+            <div className="w-1/2 h-4 bg-muted rounded animate-pulse" />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
