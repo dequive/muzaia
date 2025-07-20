@@ -12,8 +12,8 @@ const nextConfig = {
 
   experimental: {
     typedRoutes: true,
-    serverComponentsExternalPackages: ['sharp'],
   },
+  serverExternalPackages: ['@prisma/client'],
 
   headers: async () => {
     return [
