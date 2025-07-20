@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Any
 from enum import Enum
 from dataclasses import dataclass
 from sqlalchemy import Column, String, DateTime, Boolean, JSON, ForeignKey
-from sqlalchemy.types import Enum as ENUM
+from sqlalchemy.types import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -57,7 +57,7 @@ class Technician(Base, TimestampMixin):
     email = Column(String(255), nullable=False)
     phone = Column(String(50))
     specializations = Column(JSON, default=list)  # Lista de especializações
-    status = Column(Enum(TechnicianStatus), default=TechnicianStatus.OFFLINE)
+    status = Column(SQLEnum(TechnicianStatus), default=TechnicianStatus.OFFLINE)
     max_concurrent_conversations = Column(String, default="3")
     current_load = Column(String, default="0")
     last_activity = Column(DateTime(timezone=True), default=func.now())
@@ -90,8 +90,8 @@ class ConversationHandoff(Base, TimestampMixin):
     conversation_id = Column(UUID(as_uuid=True), ForeignKey('mozaia.conversations.id'), nullable=False)
     technician_id = Column(UUID(as_uuid=True), ForeignKey('mozaia.technicians.id'), nullable=True)
     requested_by = Column(String(100), nullable=False)  # user_id
-    status = Column(ENUM(HandoffStatus), default=HandoffStatus.PENDING)
-    specialization_requested = Column(ENUM(Specialization), default=Specialization.GENERAL)
+    status = Column(SQLEnum(HandoffStatus), default=HandoffStatus.PENDING)
+    specialization_requested = Column(SQLEnum(Specialization), default=Specialization.GENERAL)
     priority = Column(String, default="normal")  # normal, high, urgent
     reason = Column(String(500))  # Motivo da transferência
     ai_summary = Column(String(2000))  # Resumo da conversa pela IA

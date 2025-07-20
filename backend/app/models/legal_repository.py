@@ -7,17 +7,17 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Optional, List
-from enum import Enum
+from enum import Enum as PyEnum
 from sqlalchemy import Column, String, DateTime, Boolean, JSON, Text, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
-from sqlalchemy import Enum
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from app.database.models import Base, TimestampMixin
 
 
-class DocumentType(str, Enum):
+class DocumentType(str, PyEnum):
     """Tipos de documentos legais."""
     CONSTITUTION = "constitution"
     CODE = "code"
@@ -29,7 +29,7 @@ class DocumentType(str, Enum):
     CIRCULAR = "circular"
 
 
-class DocumentStatus(str, Enum):
+class DocumentStatus(str, PyEnum):
     """Status do documento legal."""
     PENDING = "pending"
     UNDER_REVIEW = "under_review"
@@ -39,7 +39,7 @@ class DocumentStatus(str, Enum):
     SUPERSEDED = "superseded"
 
 
-class Jurisdiction(str, Enum):
+class Jurisdiction(str, PyEnum):
     """Jurisdições legais."""
     MOZAMBIQUE = "mozambique"
     MAPUTO = "maputo"
@@ -54,7 +54,7 @@ class Jurisdiction(str, Enum):
     NIASSA = "niassa"
 
 
-class Language(str, Enum):
+class Language(str, PyEnum):
     """Idiomas suportados."""
     PORTUGUESE = "pt"
     ENGLISH = "en"
@@ -72,9 +72,9 @@ class LegalDocument(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(String(500), nullable=False)
     official_number = Column(String(100))  # Número oficial da lei
-    document_type = Column(Enum(DocumentType), nullable=False)
-    jurisdiction = Column(Enum(Jurisdiction), nullable=False)
-    language = Column(ENUM(Language), default=Language.PORTUGUESE)
+    document_type = Column(SQLEnum(DocumentType), nullable=False)
+    jurisdiction = Column(SQLEnum(Jurisdiction), nullable=False)
+    language = Column(SQLEnum(Language), default=Language.PORTUGUESE)
 
     # Datas importantes
     publication_date = Column(DateTime(timezone=True))
@@ -82,7 +82,7 @@ class LegalDocument(Base, TimestampMixin):
     expiration_date = Column(DateTime(timezone=True))
 
     # Status e validação
-    status = Column(Enum(DocumentStatus), default=DocumentStatus.PENDING)
+    status = Column(SQLEnum(DocumentStatus), default=DocumentStatus.PENDING)
     validated_by = Column(UUID(as_uuid=True))  # ID do profissional que validou
     validated_at = Column(DateTime(timezone=True))
     validation_notes = Column(Text)
@@ -245,4 +245,6 @@ class LegalQuery(Base, TimestampMixin):
 
     def __repr__(self):
         return f"<LegalQuery(conversation_id='{self.conversation_id}', escalated='{self.escalated_to_human}')>"
-`
+```
+
+The code has been modified to correct the Enum definitions in the SQLAlchemy models by aliasing the Python Enum and using SQLAlchemy's Enum.
