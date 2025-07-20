@@ -1,0 +1,120 @@
+Parece que queres criar uma **chatbox estilo ChatGPT**, com suporte a **upload de documentos** e **voz**—ou seja, um sistema conversacional multimodal. Aqui está um plano técnico em três camadas:
+
+---
+
+## 🔷 1. Interface de Front‑end
+
+### a) Chat UI
+
+* **Frameworks sugeridos:** React (Next.js se quiser SSR/SSG), ou Vue.js + Quasar.
+* **Componentes essenciais:**
+
+  * Área de mensagens (inputs, histórico, rolagem automática).
+  * Botão para *upload* de documentos (varios formatos: .txt, .pdf, .docx, imagem).
+  * Botão de gravação de voz (usando Web API `MediaRecorder`).
+  * Avatar/resposta tipo “bot” com placeholders para transcrição/síntese.
+
+### b) Upload de documentos
+
+* Use `<input type="file" multiple />` para capturar ficheiros.
+* Envie os ficheiros para o backend com FormData via POST.
+
+### c) Voz
+
+* **Reconhecimento de fala (speech-to-text):** use `MediaRecorder` no front-end para capturar áudio e enviá-lo ao server.
+* **Síntese de fala (text-to-speech):** usar `speechSynthesis` do browser para transformar texto em voz localmente, ou remeter para backend TTS — e reproduzir via `<audio>`.
+
+---
+
+## 🔷 2. Backend (API)
+
+### a) Receção de mensagem + ficheiros
+
+* Endpoints REST ou GraphQL. Exemplo:
+
+  * `POST /api/message` com `{ text?: string, files?: File[], audio?: Blob }`.
+* Manuseio de ficheiros: armazenar localmente ou em S3/Blob, e extrair texto.
+
+### b) Processamento de documentos
+
+* Ferramentas para extrair texto:
+
+  * PDF: `pdf-parse`, `PyPDF2`.
+  * DOCX: `python-docx`.
+  * Imagens: OCR com `Tesseract`.
+* Armazenar o texto extraído junto com o ID da sessão do diálogo.
+
+### c) Processamento de voz
+
+* Recepcionar áudio, converter para formato padrão (ex.: WAV).
+* Enviar a uma API de STT, como:
+
+  * **Google Speech-to-Text**
+  * **OpenAI Whisper** (self‑host)
+  * **Azure Speech**
+* Receber transcrição, incluí-la na mensagem do utilizador.
+
+### d) Inteligência do Bot
+
+* Encaminhar transcrição/texto + contexto + ficheiros textuais (ou sumários) para LLM.
+* Exemplos:
+
+  * OpenAI GPT‑4 ou GPT‑3.5‑turbo
+  * Modelos locais: LLaMA + HuggingFace
+* Receber a resposta textual.
+
+### e) Síntese de voz
+
+* Se o cliente pedir, transformar resposta textual em áudio:
+
+  * APIs: Google Cloud TTS, Azure TTS, ElevenLabs etc.
+* Enviar áudio + texto no response.
+
+---
+
+## 🔷 3. Armazenamento de Contexto
+
+* Identificar sessões por token JWT ou cookies.
+* Guardar histórico de mensagens (texto e metadata dos ficheiros).
+* Pode usar Redis ou BD SQL/NoSQL.
+
+---
+
+## 🔷 4. Fluxo Resumido
+
+1. Utilizador envia texto / faz upload / grava voz.
+2. Front‑end envia à tua API (mensagem + ficheiros/audio).
+3. Backend processa as entradas:
+
+   * Extrai texto de ficheiros.
+   * Converte áudio para transcrição via STT.
+4. Agrega tudo num único payload com histórico.
+5. Envia à LLM e recebe resposta.
+6. Aplica TTS se necessário. Guarda histórico.
+7. Retorna texto (e áudio, se aplicável) ao front‑end.
+8. UI exibe mensagem e reproduz áudio.
+
+---
+
+## ⚙️ Tecnologias recomendadas
+
+* **Front-end:** React + Web Speech API + Axios/Websocket
+* **Backend:** FastAPI, Flask, ou Node.js + Express
+* **LLM Integration:** OpenAI API ou modelos self-hosted
+* **STT/TTS:** Whisper, Google Cloud Speech, ElevenLabs, etc.
+* **Armazenamento:** PostgreSQL / MongoDB + Redis
+* **Deployment:** Docker + Kubernetes / AWS ECS
+
+---
+
+## ✅ Próximos passos sugeridos
+
+1. Valida requisitos: formatos de ficheiro, qualidade de áudio, limites de upload.
+2. Protótipo front-end estático (chat UI + upload + botões).
+3. Endpoints de backend mock (recebem mensagem e respondem).
+4. Integrar LLM e STT/TTS em etapas.
+5. Testes e ajuste fino (UX, performance, segurança, limites de contexto).
+
+---
+
+Se quiseres, posso fornecer exemplos de **código para extração de texto de PDF** ou um **prototype mínimo do UI React + recorder/verbalização**. Diz-me por onde queres começar.
