@@ -12,7 +12,7 @@ const nextConfig = {
 
   experimental: {
     typedRoutes: true,
-    allowedDevOrigins: ['replit.dev', '*.replit.dev'],
+    serverComponentsExternalPackages: ['sharp'],
   },
 
   headers: async () => {
