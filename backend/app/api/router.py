@@ -133,14 +133,3 @@ api_router.include_router(multimodal_router)
 api_router.include_router(handoff_router)
 api_router.include_router(admin_router)
 api_router.include_router(legal_repository_router)
-```from fastapi import APIRouter
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
-import structlog
-
-from app.core.conversation_orchestrator import ConversationOrchestrator
-
-logger = structlog.get_logger(__name__)
-
-router = APIRouter()
-orchestrator = ConversationOrchestrator()

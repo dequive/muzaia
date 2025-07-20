@@ -1,12 +1,11 @@
-
 'use client'
 
 import { ChatInterface } from '@/components/chat/chat-interface'
 import { ChatHeader } from '@/components/chat/header'
-import { ChatSidebar } from '@/components/chat/sidebar'
 import { ChatSettings } from '@/components/chat/chat-settings'
 import { useState } from 'react'
 import { useUIStore } from '@/store'
+import Sidebar from '@/components/chat/sidebar'
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -19,8 +18,8 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <ChatSidebar />
-      
+      <Sidebar className="w-80 border-r" />
+
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         <ChatHeader onToggleSidebar={toggleSidebar} />
