@@ -96,7 +96,7 @@ class DatabaseManager:
         """Fecha conexões com banco de dados."""
         if self._engine:
             await self._engine.dispose()
-            logger.info("Conexões com banco de dados fechadas")ados fechadas")
+            logger.info("Conexões com banco de dados fechadas")
 
     @property
     def engine(self):
