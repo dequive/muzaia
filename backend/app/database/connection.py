@@ -117,3 +117,13 @@ async def get_db_session():
     """Dependency para obter sessão do banco de dados."""
     async with db_manager.get_session() as session:
         yield session
+
+
+async def init_db():
+    """Inicializa o banco de dados."""
+    await db_manager.initialize()
+
+
+async def close_db():
+    """Fecha conexões do banco de dados."""
+    await db_manager.close()
