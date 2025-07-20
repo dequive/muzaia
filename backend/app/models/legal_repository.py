@@ -112,7 +112,7 @@ class LegalDocument(Base, TimestampMixin):
     human_reference_count = Column(String, default="0")
     last_referenced_at = Column(DateTime(timezone=True))
 
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Relacionamentos
     articles = relationship("LegalArticle", back_populates="document", cascade="all, delete-orphan")
@@ -164,7 +164,7 @@ class LegalArticle(Base, TimestampMixin):
     ai_query_count = Column(String, default="0")
     confidence_score = Column(String, default="0")  # Confiança da extração
 
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Relacionamentos
     document = relationship("LegalDocument", back_populates="articles")
@@ -245,6 +245,3 @@ class LegalQuery(Base, TimestampMixin):
 
     def __repr__(self):
         return f"<LegalQuery(conversation_id='{self.conversation_id}', escalated='{self.escalated_to_human}')>"
-```
-
-The code has been modified to correct the Enum definitions in the SQLAlchemy models by aliasing the Python Enum and using SQLAlchemy's Enum.

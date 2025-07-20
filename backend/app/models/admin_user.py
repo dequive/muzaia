@@ -1,4 +1,3 @@
-
 """
 Modelo para administradores e gestão de utilizadores profissionais.
 """
@@ -61,7 +60,7 @@ class ProfessionalUser(Base, TimestampMixin):
     full_name = Column(String(200), nullable=False)
     role = Column(SQLAlchemyEnum(UserRole), default=UserRole.LEGAL_TECH)
     status = Column(SQLAlchemyEnum(UserStatus), default=UserStatus.PENDING)
-    
+
     # Informações profissionais
     specializations = Column(JSON, default=list)  # Lista de especializações
     jurisdiction = Column(String(100))  # País/estado de atuação
@@ -69,25 +68,25 @@ class ProfessionalUser(Base, TimestampMixin):
     license_document_path = Column(String(500))  # Caminho para documento
     professional_email = Column(String(255))  # Email profissional
     phone = Column(String(50))
-    
+
     # Controle administrativo
     approved_by = Column(UUID(as_uuid=True))  # ID do admin que aprovou
     approved_at = Column(DateTime(timezone=True))
     last_active_at = Column(DateTime(timezone=True), default=func.now())
     login_attempts = Column(String, default="0")
     is_two_factor_enabled = Column(Boolean, default=False)
-    
+
     # Documentação e notas
     notes = Column(Text)  # Notas administrativas
     uploaded_documents = Column(JSON, default=list)  # Lista de documentos
     verification_notes = Column(Text)  # Notas da verificação
-    
+
     # Métricas de performance
     total_conversations = Column(String, default="0")
     average_response_time = Column(String, default="0")
     user_rating = Column(String, default="0")
-    
-    metadata = Column(JSON, default=dict)
+
+    extra_data = Column(JSON, default=dict)
 
     def set_password(self, password: str) -> None:
         """Define senha com hash seguro."""
@@ -123,18 +122,18 @@ class AdminUser(Base, TimestampMixin):
     role = Column(SQLAlchemyEnum(UserRole), default=UserRole.ADMIN)
     is_active = Column(Boolean, default=True)
     is_super_admin = Column(Boolean, default=False)
-    
+
     # Controle de acesso
     last_login_at = Column(DateTime(timezone=True))
     login_ip = Column(String(50))
     failed_login_attempts = Column(String, default="0")
     is_two_factor_enabled = Column(Boolean, default=True)
-    
+
     # Permissões específicas
     permissions = Column(JSON, default=list)  # Lista de permissões específicas
     accessible_features = Column(JSON, default=list)
-    
-    metadata = Column(JSON, default=dict)
+
+    extra_data = Column(JSON, default=dict)
 
     def set_password(self, password: str) -> None:
         """Define senha com hash seguro."""
@@ -167,8 +166,8 @@ class ProfessionalApprovalLog(Base, TimestampMixin):
     new_status = Column(String(50))
     documents_reviewed = Column(JSON, default=list)
     notes = Column(Text)
-    
-    metadata = Column(JSON, default=dict)
+
+    extra_data = Column(JSON, default=dict)
 
     def __repr__(self):
         return f"<ProfessionalApprovalLog(action='{self.action}', professional='{self.professional_user_id}')>"

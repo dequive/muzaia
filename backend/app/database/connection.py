@@ -14,7 +14,7 @@ from sqlalchemy.engine.events import event
 from app.core.config import settings
 from app.database.models import Base
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__))
 
 
 class DatabaseManager:
@@ -96,7 +96,7 @@ class DatabaseManager:
         """Fecha conexões com banco de dados."""
         if self._engine:
             await self._engine.dispose()
-            logger.info("Conexões com banco de dados fechadas")
+            logger.info("Conexões com banco de dados fechadas")ados fechadas")
 
     @property
     def engine(self):

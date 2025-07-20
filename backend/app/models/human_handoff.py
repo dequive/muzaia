@@ -1,3 +1,4 @@
+"""Renames 'metadata' column to 'extra_data' in Technician and ConversationHandoff models to avoid conflicts with SQLAlchemy's reserved attribute name."""
 """
 Sistema de gestão de transferência para técnicos jurídicos.
 """
@@ -100,7 +101,7 @@ class ConversationHandoff(Base, TimestampMixin):
     timeout_at = Column(DateTime(timezone=True))
     notes = Column(String(1000))  # Notas do técnico
     rating = Column(String)  # Avaliação do atendimento
-    meta_data = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Relacionamentos
     conversation = relationship("Conversation")
@@ -288,3 +289,4 @@ class HandoffManager:
 
         result = await self.db.execute(query, params)
         return result.fetchall()
+`
