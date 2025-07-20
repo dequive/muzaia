@@ -69,11 +69,7 @@ export function Sidebar() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterContext, setFilterContext] = useState<ContextType | 'all'>('all')
   const [showFilters, setShowFilters] = useState(false)
-  const [isHydrated, setIsHydrated] = useState(false)
-
-  useEffect(() => {
-    setIsHydrated(true)
-  }, [])
+  
 
   // Filtrar conversas
   const filteredConversations = conversations.filter((conv) => {
@@ -351,7 +347,7 @@ function ConversationItem({
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center">
               <Clock className="h-3 w-3 mr-1" />
-              {isHydrated ? formatRelativeTime(conversation.updated_at) : formatDate(conversation.updated_at)}
+              {formatDate(conversation.updated_at)}
             </span>
 
             <div className="flex items-center space-x-2">
