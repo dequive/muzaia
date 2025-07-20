@@ -1,3 +1,4 @@
+
 export default function HomePage() {
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -13,7 +14,7 @@ export default function HomePage() {
             href="/chat"
             className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Começar Chat
+            Iniciar Chat
           </a>
           <a
             href="/docs"
