@@ -8,7 +8,7 @@ channel = "stable-24_05"
 run = ["sh", "-c", "run"]
 
 [workflows]
-runButton = "Start Backend"
+runButton = "Start Frontend Dev"
 
 [[workflows.workflow]]
 name = "Start Backend"
@@ -31,6 +31,15 @@ args = "Start Frontend"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd frontend && npm install && npm run dev"
+
+[[workflows.workflow]]
+name = "Start Frontend Dev"
+author = 45133862
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && npm run dev"
 
 [[ports]]
 localPort = 3000

@@ -1,3 +1,4 @@
+
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { 
@@ -9,11 +10,11 @@ import {
   isValid, 
   startOfDay, 
   endOfDay, 
-  differenceInDays, 
-  differenceInHours, 
+  differenceInDays,
+  differenceInHours,
   differenceInMinutes
 } from 'date-fns'
-import { ptBR } from 'date-fns/locale/pt-BR'
+import { ptBR } from 'date-fns/locale'
 
 // =============================================================================
 // CORE UTILITIES
@@ -29,46 +30,59 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatDate(date: string | Date, pattern: string = 'dd/MM/yyyy'): string {
   const dateObj = typeof date === 'string' ? parseISO(date) : date
-  if (!isValid(dateObj)) return 'Data inválida'
+  
+  if (!isValid(dateObj)) {
+    return 'Data inválida'
+  }
+  
   return format(dateObj, pattern, { locale: ptBR })
 }
 
 export function formatRelativeTime(date: string | Date): string {
   const dateObj = typeof date === 'string' ? parseISO(date) : date
-  if (!isValid(dateObj)) return 'Data inválida'
-
+  
+  if (!isValid(dateObj)) {
+    return 'Data inválida'
+  }
+  
   if (isToday(dateObj)) {
-    return `Hoje às ${format(dateObj, 'HH:mm')}`
+    return `hoje às ${format(dateObj, 'HH:mm', { locale: ptBR })}`
   }
-
+  
   if (isYesterday(dateObj)) {
-    return `Ontem às ${format(dateObj, 'HH:mm')}`
+    return `ontem às ${format(dateObj, 'HH:mm', { locale: ptBR })}`
   }
-
-  return formatDistanceToNow(dateObj, { addSuffix: true, locale: ptBR })
+  
+  return formatDistanceToNow(dateObj, { 
+    addSuffix: true, 
+    locale: ptBR 
+  })
 }
 
-export function isWithinRange(date: Date, start: Date, end: Date): boolean {
-  return date >= startOfDay(start) && date <= endOfDay(end)
+export function getTimeDifference(date1: Date, date2: Date): {
+  days: number
+  hours: number
+  minutes: number
+} {
+  return {
+    days: differenceInDays(date2, date1),
+    hours: differenceInHours(date2, date1),
+    minutes: differenceInMinutes(date2, date1)
+  }
 }
 
-export function getDaysDifference(date1: Date, date2: Date): number {
-  return differenceInDays(date2, date1)
-}
-
-export function getHoursDifference(date1: Date, date2: Date): number {
-  return differenceInHours(date2, date1)
-}
-
-export function getMinutesDifference(date1: Date, date2: Date): number {
-  return differenceInMinutes(date2, date1)
+export function getDateRange(start: Date, end: Date) {
+  return {
+    start: startOfDay(start),
+    end: endOfDay(end)
+  }
 }
 
 // =============================================================================
 // STRING UTILITIES
 // =============================================================================
 
-export function truncate(str: string, length: number = 100): string {
+export function truncate(str: string, length: number): string {
   if (str.length <= length) return str
   return str.slice(0, length) + '...'
 }
@@ -80,35 +94,44 @@ export function capitalize(str: string): string {
 export function slugify(str: string): string {
   return str
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9 -]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 // =============================================================================
 // NUMBER UTILITIES
 // =============================================================================
 
-export function formatNumber(num: number): string {
-  return new Intl.NumberFormat('pt-BR').format(num)
-}
-
-export function formatCurrency(amount: number, currency: string = 'MZN'): string {
+export function formatCurrency(
+  amount: number, 
+  currency: string = 'MZN'
+): string {
   return new Intl.NumberFormat('pt-MZ', {
     style: 'currency',
-    currency,
+    currency
   }).format(amount)
 }
 
-export function formatPercentage(value: number, decimals: number = 1): string {
-  return `${(value * 100).toFixed(decimals)}%`
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat('pt-MZ').format(num)
+}
+
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 Bytes'
+  
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+  
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
 // =============================================================================
-// VALIDATION UTILITIES  
+// VALIDATION UTILITIES
 // =============================================================================
 
 export function isValidEmail(email: string): boolean {
@@ -117,35 +140,17 @@ export function isValidEmail(email: string): boolean {
 }
 
 export function isValidPhone(phone: string): boolean {
-  const phoneRegex = /^(?:\+?258)?[0-9]{8,9}$/
+  const phoneRegex = /^(\+258|00258|258)?[1-9]\d{7,8}$/
   return phoneRegex.test(phone.replace(/\s/g, ''))
 }
 
-export function isValidUrl(url: string): boolean {
+export function isValidURL(url: string): boolean {
   try {
     new URL(url)
     return true
   } catch {
     return false
   }
-}
-
-// =============================================================================
-// FILE UTILITIES
-// =============================================================================
-
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes'
-
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
-export function getFileExtension(filename: string): string {
-  return filename.slice(((filename.lastIndexOf('.') - 1) >>> 0) + 2)
 }
 
 // =============================================================================
@@ -161,21 +166,27 @@ export function groupBy<T, K extends keyof any>(
   key: (item: T) => K
 ): Record<K, T[]> {
   return array.reduce((groups, item) => {
-    const group = key(item)
-    if (!groups[group]) {
-      groups[group] = []
+    const groupKey = key(item)
+    if (!groups[groupKey]) {
+      groups[groupKey] = []
     }
-    groups[group].push(item)
+    groups[groupKey].push(item)
     return groups
   }, {} as Record<K, T[]>)
 }
 
-export function sortBy<T>(array: T[], key: keyof T, order: 'asc' | 'desc' = 'asc'): T[] {
+export function sortBy<T>(
+  array: T[], 
+  key: keyof T, 
+  direction: 'asc' | 'desc' = 'asc'
+): T[] {
   return [...array].sort((a, b) => {
-    if (order === 'asc') {
-      return a[key] > b[key] ? 1 : -1
-    }
-    return a[key] < b[key] ? 1 : -1
+    const aVal = a[key]
+    const bVal = b[key]
+    
+    if (aVal < bVal) return direction === 'asc' ? -1 : 1
+    if (aVal > bVal) return direction === 'asc' ? 1 : -1
+    return 0
   })
 }
 
@@ -183,7 +194,10 @@ export function sortBy<T>(array: T[], key: keyof T, order: 'asc' | 'desc' = 'asc
 // OBJECT UTILITIES
 // =============================================================================
 
-export function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+export function pick<T, K extends keyof T>(
+  obj: T, 
+  keys: K[]
+): Pick<T, K> {
   const result = {} as Pick<T, K>
   keys.forEach(key => {
     if (key in obj) {
@@ -193,7 +207,10 @@ export function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   return result
 }
 
-export function omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
+export function omit<T, K extends keyof T>(
+  obj: T, 
+  keys: K[]
+): Omit<T, K> {
   const result = { ...obj }
   keys.forEach(key => {
     delete result[key]
@@ -229,7 +246,7 @@ export function throttle<T extends (...args: any[]) => any>(
     if (!inThrottle) {
       func(...args)
       inThrottle = true
-      setTimeout(() => (inThrottle = false), limit)
+      setTimeout(() => inThrottle = false, limit)
     }
   }
 }

@@ -1,7 +1,7 @@
 
 'use client'
 
-import { ThemeProvider } from '@/components/providers/theme-provider'
+import { ThemeProvider } from '@/components/ui/theme-provider'
 
 interface ProvidersProps {
   children: React.ReactNode
