@@ -34,10 +34,10 @@ declare namespace __next_route_internal_types__ {
     | `/admin`
     | `/profile`
     | `/system`
-    | `/api/health`
     | `/admin`
     | `/admin/legal`
     | `/admin/login`
+    | `/api/health`
     | `/chat`
     | `/technician`
   type DynamicRoutes<T extends string = string> = never
