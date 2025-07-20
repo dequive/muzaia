@@ -453,14 +453,6 @@ export function slugify(str: string): string {
 }
 
 /**
- * Trunca texto com reticências
- */
-export function truncate(str: string, length: number): string {
-  if (str.length <= length) return str
-  return str.slice(0, length) + '...'
-}
-
-/**
  * Trunca texto com opções avançadas
  */
 export function truncate(
@@ -482,6 +474,14 @@ export function truncate(
   }
   
   return text.slice(0, length) + suffix
+}
+
+/**
+ * Trunca texto simples com reticências
+ */
+export function truncateSimple(str: string, length: number): string {
+  if (str.length <= length) return str
+  return str.slice(0, length) + '...'
 }
 
 /**
