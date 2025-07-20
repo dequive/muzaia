@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -43,6 +42,7 @@ export function ChatInterface() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isDark, setIsDark] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [handoffStatus, setHandoffStatus] = useState(null);
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -93,6 +93,17 @@ export function ChatInterface() {
         timestamp: new Date().toISOString(),
       }
     ])
+  }
+
+  // Dummy HandoffControls component, replace with actual implementation
+  const HandoffControls = ({ conversationId, userId, onHandoffStatusChange }: { conversationId: string, userId: string, onHandoffStatusChange: (status: any) => void }) => {
+    return (
+      <div className="p-4 bg-gray-100 border-b border-gray-200">
+        <Button onClick={() => alert('Transferir para especialista!')}>
+          Falar com especialista
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -224,7 +235,7 @@ export function ChatInterface() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <Button variant="ghost" size="sm">
                 <Share className="h-4 w-4" />
@@ -257,7 +268,7 @@ export function ChatInterface() {
                     <Sparkles className="h-4 w-4 text-white" />
                   </div>
                 )}
-                
+
                 <div
                   className={cn(
                     "max-w-[80%] p-4 rounded-2xl",
@@ -288,7 +299,7 @@ export function ChatInterface() {
                 )}
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -306,6 +317,13 @@ export function ChatInterface() {
             <div ref={messagesEndRef} />
           </div>
         </div>
+
+        {/* Handoff Controls */}
+        <HandoffControls
+          conversationId="current-conversation"
+          userId={user?.id || 'anonymous'}
+          onHandoffStatusChange={setHandoffStatus}
+        />
 
         {/* Message Input */}
         <MessageInput

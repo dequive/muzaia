@@ -6,6 +6,7 @@ from typing import Dict, Any
 
 from app.core.config import settings
 from app.api.multimodal import router as multimodal_router
+from app.api.handoff import router as handoff_router
 
 logger = structlog.get_logger(__name__)
 
@@ -122,3 +123,4 @@ async def get_messages(conversation_id: str):
 # Inclui o roteador do LLM no roteador principal
 api_router.include_router(llm_router)
 api_router.include_router(multimodal_router)
+api_router.include_router(handoff_router)
