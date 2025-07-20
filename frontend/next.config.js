@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  
+  // Replit specific configurations
+  output: 'standalone',
+  compress: true,
 
   images: {
     domains: [
