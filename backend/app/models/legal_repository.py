@@ -8,7 +8,8 @@ import uuid
 from datetime import datetime
 from typing import Optional, List
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, Boolean, JSON, Text, ENUM, ForeignKey, Integer
+from sqlalchemy import Column, String, DateTime, Boolean, JSON, Text, ForeignKey, Integer
+from sqlalchemy.types import Enum as ENUM
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -208,7 +209,7 @@ class DocumentValidationLog(Base, TimestampMixin):
     ip_address = Column(String(50))
     user_agent = Column(String(500))
     
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     # Relacionamentos
     document = relationship("LegalDocument", back_populates="validation_logs")
@@ -240,7 +241,7 @@ class LegalQuery(Base, TimestampMixin):
     processing_time_ms = Column(String)
     search_method = Column(String(50))  # "semantic", "keyword", "hybrid"
     
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     def __repr__(self):
         return f"<LegalQuery(conversation_id='{self.conversation_id}', escalated='{self.escalated_to_human}')>"

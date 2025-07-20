@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from enum import Enum
 from dataclasses import dataclass
-from sqlalchemy import Column, String, DateTime, Boolean, JSON, ForeignKey, ENUM
+from sqlalchemy import Column, String, DateTime, Boolean, JSON, ForeignKey
+from sqlalchemy.types import Enum as ENUM
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -63,7 +64,7 @@ class Technician(Base, TimestampMixin):
     last_activity = Column(DateTime(timezone=True), default=func.now())
     is_active = Column(Boolean, default=True)
     credentials = Column(JSON, default=dict)  # OAB, certificações, etc.
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     # Relacionamentos
     handoffs = relationship("ConversationHandoff", back_populates="technician")
@@ -100,7 +101,7 @@ class ConversationHandoff(Base, TimestampMixin):
     timeout_at = Column(DateTime(timezone=True))
     notes = Column(String(1000))  # Notas do técnico
     rating = Column(String)  # Avaliação do atendimento
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
     # Relacionamentos
     conversation = relationship("Conversation")
