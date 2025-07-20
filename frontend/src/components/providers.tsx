@@ -1,3 +1,4 @@
+
 'use client'
 
 import { ThemeProvider } from '@/components/providers/theme-provider'
@@ -10,14 +11,7 @@ interface ProvidersProps {
 }
 
 export function Providers({ children }: ProvidersProps) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 60 * 1000,
-        refetchOnWindowFocus: false,
-      },
-    },
-  }))
+  const [queryClient] = useState(() => new QueryClient())
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -27,8 +21,8 @@ export function Providers({ children }: ProvidersProps) {
         enableSystem
       >
         {children}
-        <ReactQueryDevtools initialIsOpen={false} />
       </ThemeProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   )
 }
