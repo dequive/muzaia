@@ -1,0 +1,126 @@
+./src/app/page.tsx
+Error: 
+  × the name `HomePage` is defined multiple times
+    ╭─[/home/runner/workspace/frontend/src/app/page.tsx:26:1]
+ 26 │   )
+ 27 │ }
+ 28 │ 
+ 29 │ export default function HomePage() {
+    ·                         ────┬───
+    ·                             ╰── previous definition of `HomePage` here
+ 30 │   return (
+ 31 │     <div className="min-h-screen flex items-center justify-center">
+ 32 │       <div className="text-center">
+ 33 │         <h1 className="text-4xl font-bold text-gray-800 mb-4">
+ 34 │           Bem-vindo ao Mozaia AI
+ 35 │         </h1>
+ 36 │         <p className="text-lg text-gray-600 mb-8">
+ 37 │           Orquestrador de LLMs com consenso inteligente
+ 38 │         </p>
+ 39 │         <div className="space-x-4">
+ 40 │           <a
+ 41 │             href="/chat"
+ 42 │             className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+ 43 │           >
+ 44 │             Iniciar Chat
+ 45 │           </a>
+ 46 │           <a
+ 47 │             href="/admin"
+ 48 │             className="inline-block bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+ 49 │           >
+ 50 │             Administração
+ 51 │           </a>
+ 52 │         </div>
+ 53 │       </div>
+ 54 │     </div>
+ 55 │   )
+ 56 │ }
+ 57 │ import { Metadata } from 'next'
+ 58 │ 
+ 59 │ export const metadata: Metadata = {
+ 60 │   title: 'Mozaia AI - Orquestrador de LLMs',
+ 61 │   description: 'Plataforma de IA com suporte a múltiplos LLMs e consenso inteligente',
+ 62 │ }
+ 63 │ 
+ 64 │ export default function HomePage() {
+    ·                         ────┬───
+    ·                             ╰── `HomePage` redefined here
+ 65 │   return (
+ 66 │     <div className="container mx-auto px-4 py-8">
+ 67 │       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+    ╰────
+
+  × the name `default` is exported multiple times
+    ╭─[/home/runner/workspace/frontend/src/app/page.tsx:26:1]
+ 26 │       )
+ 27 │     }
+ 28 │     
+ 29 │ ╭─▶ export default function HomePage() {
+ 30 │ │     return (
+ 31 │ │       <div className="min-h-screen flex items-center justify-center">
+ 32 │ │         <div className="text-center">
+ 33 │ │           <h1 className="text-4xl font-bold text-gray-800 mb-4">
+ 34 │ │             Bem-vindo ao Mozaia AI
+ 35 │ │           </h1>
+ 36 │ │           <p className="text-lg text-gray-600 mb-8">
+ 37 │ │             Orquestrador de LLMs com consenso inteligente
+ 38 │ │           </p>
+ 39 │ │           <div className="space-x-4">
+ 40 │ │             <a
+ 41 │ │               href="/chat"
+ 42 │ │               className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+ 43 │ │             >
+ 44 │ │               Iniciar Chat
+ 45 │ │             </a>
+ 46 │ │             <a
+ 47 │ │               href="/admin"
+ 48 │ │               className="inline-block bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+ 49 │ │             >
+ 50 │ │               Administração
+ 51 │ │             </a>
+ 52 │ │           </div>
+ 53 │ │         </div>
+ 54 │ │       </div>
+ 55 │ │     )
+ 56 │ ├─▶ }
+    · ╰──── previous exported here
+ 57 │     import { Metadata } from 'next'
+ 58 │     
+ 59 │     export const metadata: Metadata = {
+ 60 │       title: 'Mozaia AI - Orquestrador de LLMs',
+ 61 │       description: 'Plataforma de IA com suporte a múltiplos LLMs e consenso inteligente',
+ 62 │     }
+ 63 │     
+ 64 │ ╭─▶ export default function HomePage() {
+ 65 │ │     return (
+ 66 │ │       <div className="container mx-auto px-4 py-8">
+ 67 │ │         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+ 68 │ │           <h1 className="text-4xl font-bold mb-4">
+ 69 │ │             Bem-vindo ao Mozaia AI
+ 70 │ │           </h1>
+ 71 │ │           <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
+ 72 │ │             Orquestrador de LLMs com consenso inteligente para Moçambique
+ 73 │ │           </p>
+ 74 │ │           <div className="flex gap-4">
+ 75 │ │             <a 
+ 76 │ │               href="/chat" 
+ 77 │ │               className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+ 78 │ │             >
+ 79 │ │               Começar Chat
+ 80 │ │             </a>
+ 81 │ │             <a 
+ 82 │ │               href="/login" 
+ 83 │ │               className="bg-secondary text-secondary-foreground px-6 py-3 rounded-lg hover:bg-secondary/90 transition-colors"
+ 84 │ │             >
+ 85 │ │               Fazer Login
+ 86 │ │             </a>
+ 87 │ │           </div>
+ 88 │ │         </div>
+ 89 │ │       </div>
+ 90 │ │     )
+ 91 │ ├─▶ }
+    · ╰──── exported more than once
+    ╰────
+
+Error: 
+  ☞ Exported identifiers must be unique
