@@ -1,4 +1,4 @@
-
+"""Corrects the import and usage of Enum in the SQLAlchemy models."""
 """
 Modelos para o repositório jurídico centralizado.
 """
@@ -9,8 +9,8 @@ from datetime import datetime
 from typing import Optional, List
 from enum import Enum
 from sqlalchemy import Column, String, DateTime, Boolean, JSON, Text, ForeignKey, Integer
-from sqlalchemy.types import Enum as ENUM
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy import Enum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -72,46 +72,46 @@ class LegalDocument(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(String(500), nullable=False)
     official_number = Column(String(100))  # Número oficial da lei
-    document_type = Column(ENUM(DocumentType), nullable=False)
-    jurisdiction = Column(ENUM(Jurisdiction), nullable=False)
+    document_type = Column(Enum(DocumentType), nullable=False)
+    jurisdiction = Column(Enum(Jurisdiction), nullable=False)
     language = Column(ENUM(Language), default=Language.PORTUGUESE)
-    
+
     # Datas importantes
     publication_date = Column(DateTime(timezone=True))
     effective_date = Column(DateTime(timezone=True))
     expiration_date = Column(DateTime(timezone=True))
-    
+
     # Status e validação
-    status = Column(ENUM(DocumentStatus), default=DocumentStatus.PENDING)
+    status = Column(Enum(DocumentStatus), default=DocumentStatus.PENDING)
     validated_by = Column(UUID(as_uuid=True))  # ID do profissional que validou
     validated_at = Column(DateTime(timezone=True))
     validation_notes = Column(Text)
-    
+
     # Armazenamento
     storage_path = Column(String(1000))  # Caminho do documento original
     file_hash = Column(String(128))  # Hash para verificar integridade
     file_size = Column(String(20))
     mime_type = Column(String(100))
-    
+
     # Metadados temáticos
     legal_areas = Column(JSON, default=list)  # ["civil", "penal", "laboral"]
     keywords = Column(JSON, default=list)
     summary = Column(Text)
-    
+
     # Relacionamentos e versioning
     replaces_document_id = Column(UUID(as_uuid=True))  # Se substitui outra lei
     superseded_by_id = Column(UUID(as_uuid=True))  # Se foi substituída
     version = Column(String(20), default="1.0")
-    
+
     # Upload info
     uploaded_by = Column(UUID(as_uuid=True), nullable=False)
     upload_notes = Column(Text)
-    
+
     # Métricas de uso
     ai_query_count = Column(String, default="0")
     human_reference_count = Column(String, default="0")
     last_referenced_at = Column(DateTime(timezone=True))
-    
+
     metadata = Column(JSON, default=dict)
 
     # Relacionamentos
@@ -142,28 +142,28 @@ class LegalArticle(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     document_id = Column(UUID(as_uuid=True), ForeignKey('mozaia.legal_documents.id'), nullable=False)
-    
+
     # Estrutura do artigo
     article_number = Column(String(20))  # "1", "2-A", etc.
     chapter = Column(String(100))
     section = Column(String(100))
     subsection = Column(String(100))
     paragraph = Column(String(20))
-    
+
     # Conteúdo
     original_text = Column(Text, nullable=False)
     normalized_text = Column(Text)  # Texto limpo para IA
     summary = Column(Text)
-    
+
     # Indexação semântica
     semantic_tags = Column(JSON, default=list)
     legal_concepts = Column(JSON, default=list)
     references = Column(JSON, default=list)  # Referências a outros artigos
-    
+
     # Métricas
     ai_query_count = Column(String, default="0")
     confidence_score = Column(String, default="0")  # Confiança da extração
-    
+
     metadata = Column(JSON, default=dict)
 
     # Relacionamentos
@@ -195,20 +195,20 @@ class DocumentValidationLog(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     document_id = Column(UUID(as_uuid=True), ForeignKey('mozaia.legal_documents.id'), nullable=False)
     validator_id = Column(UUID(as_uuid=True), nullable=False)  # ID do profissional
-    
+
     action = Column(String(50), nullable=False)  # "uploaded", "validated", "rejected", etc.
     previous_status = Column(String(50))
     new_status = Column(String(50), nullable=False)
-    
+
     validation_criteria = Column(JSON, default=dict)  # Critérios checados
     issues_found = Column(JSON, default=list)  # Problemas identificados
     recommendations = Column(Text)
     notes = Column(Text)
-    
+
     # Dados da sessão
     ip_address = Column(String(50))
     user_agent = Column(String(500))
-    
+
     meta_data = Column(JSON, default=dict)
 
     # Relacionamentos
@@ -226,22 +226,23 @@ class LegalQuery(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id = Column(String(100))  # ID da conversa original
     user_query = Column(Text, nullable=False)
-    
+
     # Documentos encontrados
     matched_documents = Column(JSON, default=list)  # IDs dos documentos relevantes
     matched_articles = Column(JSON, default=list)  # IDs dos artigos citados
     confidence_scores = Column(JSON, default=dict)  # Scores de relevância
-    
+
     # Resultado da consulta
     ai_response = Column(Text)
     escalated_to_human = Column(Boolean, default=False)
     escalation_reason = Column(String(200))
-    
+
     # Métricas
     processing_time_ms = Column(String)
     search_method = Column(String(50))  # "semantic", "keyword", "hybrid"
-    
+
     meta_data = Column(JSON, default=dict)
 
     def __repr__(self):
         return f"<LegalQuery(conversation_id='{self.conversation_id}', escalated='{self.escalated_to_human}')>"
+`

@@ -1,4 +1,3 @@
-
 """
 Sistema de gestão de transferência para técnicos jurídicos.
 """
@@ -58,7 +57,7 @@ class Technician(Base, TimestampMixin):
     email = Column(String(255), nullable=False)
     phone = Column(String(50))
     specializations = Column(JSON, default=list)  # Lista de especializações
-    status = Column(ENUM(TechnicianStatus), default=TechnicianStatus.OFFLINE)
+    status = Column(Enum(TechnicianStatus), default=TechnicianStatus.OFFLINE)
     max_concurrent_conversations = Column(String, default="3")
     current_load = Column(String, default="0")
     last_activity = Column(DateTime(timezone=True), default=func.now())
@@ -134,18 +133,18 @@ class TechnicianPresence:
 
 class HandoffManager:
     """Gerenciador de transferências para técnicos."""
-    
+
     def __init__(self, db_session):
         self.db = db_session
         self._presence_cache: Dict[str, TechnicianPresence] = {}
-    
+
     async def request_handoff(
         self,
         request: HandoffRequest,
         ai_summary: Optional[str] = None
     ) -> ConversationHandoff:
         """Solicita transferência para técnico."""
-        
+
         # Criar registro de transferência
         handoff = ConversationHandoff(
             conversation_id=request.conversation_id,
@@ -156,12 +155,12 @@ class HandoffManager:
             ai_summary=ai_summary,
             timeout_at=datetime.utcnow() + timedelta(minutes=5)  # 5 min timeout
         )
-        
+
         # Buscar técnico disponível
         available_technician = await self._find_available_technician(
             request.specialization
         )
-        
+
         if available_technician:
             handoff.technician_id = available_technician.id
             handoff.status = HandoffStatus.PENDING
@@ -169,38 +168,38 @@ class HandoffManager:
         else:
             # Nenhum técnico disponível - agendar ou fila de espera
             handoff.status = HandoffStatus.PENDING
-        
+
         self.db.add(handoff)
         await self.db.commit()
-        
+
         return handoff
-    
+
     async def accept_handoff(
         self,
         handoff_id: str,
         technician_id: str
     ) -> bool:
         """Técnico aceita a transferência."""
-        
+
         handoff = await self.db.get(ConversationHandoff, handoff_id)
         if not handoff or handoff.status != HandoffStatus.PENDING:
             return False
-        
+
         technician = await self.db.get(Technician, technician_id)
         if not technician or not technician.is_available:
             return False
-        
+
         # Atualizar transferência
         handoff.technician_id = technician_id
         handoff.status = HandoffStatus.ACCEPTED
         handoff.accepted_at = datetime.utcnow()
-        
+
         # Incrementar carga do técnico
         technician.current_load = str(int(technician.current_load) + 1)
-        
+
         await self.db.commit()
         return True
-    
+
     async def complete_handoff(
         self,
         handoff_id: str,
@@ -208,31 +207,31 @@ class HandoffManager:
         rating: Optional[int] = None
     ) -> bool:
         """Completa a transferência."""
-        
+
         handoff = await self.db.get(ConversationHandoff, handoff_id)
         if not handoff or handoff.status != HandoffStatus.ACCEPTED:
             return False
-        
+
         # Atualizar transferência
         handoff.status = HandoffStatus.COMPLETED
         handoff.completed_at = datetime.utcnow()
         handoff.notes = notes
         handoff.rating = str(rating) if rating else None
-        
+
         # Decrementar carga do técnico
         if handoff.technician:
             current_load = int(handoff.technician.current_load)
             handoff.technician.current_load = str(max(0, current_load - 1))
-        
+
         await self.db.commit()
         return True
-    
+
     async def _find_available_technician(
         self,
         specialization: Specialization
     ) -> Optional[Technician]:
         """Encontra técnico disponível com especialização."""
-        
+
         # Query técnicos disponíveis
         technicians = await self.db.execute(
             """
@@ -243,49 +242,49 @@ class HandoffManager:
             ORDER BY CAST(current_load AS INTEGER) ASC, last_activity DESC
             """
         )
-        
+
         for tech in technicians:
             tech_specializations = tech.specializations or []
             if (specialization.value in tech_specializations or 
                 Specialization.GENERAL.value in tech_specializations):
                 return tech
-        
+
         return None
-    
+
     async def update_technician_presence(
         self,
         technician_id: str,
         status: TechnicianStatus
     ) -> bool:
         """Atualiza presença do técnico."""
-        
+
         technician = await self.db.get(Technician, technician_id)
         if not technician:
             return False
-        
+
         technician.status = status
         technician.last_activity = datetime.utcnow()
-        
+
         await self.db.commit()
         return True
-    
+
     async def get_pending_handoffs(
         self,
         technician_id: Optional[str] = None
     ) -> List[ConversationHandoff]:
         """Lista transferências pendentes."""
-        
+
         query = """
         SELECT * FROM mozaia.conversation_handoffs 
         WHERE status = 'pending'
         """
         params = {}
-        
+
         if technician_id:
             query += " AND (technician_id = :technician_id OR technician_id IS NULL)"
             params['technician_id'] = technician_id
-        
+
         query += " ORDER BY priority DESC, created_at ASC"
-        
+
         result = await self.db.execute(query, params)
         return result.fetchall()
