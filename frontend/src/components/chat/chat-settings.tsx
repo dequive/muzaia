@@ -59,15 +59,15 @@ export function ChatSettings() {
   const { ui, updateUI } = useUIStore()
   const { chatSettings, updateChatSettings } = useChatStore()
   const { models, health } = useSystem()
-  const [localSettings, setLocalSettings] = useState({
+  const [localSettings, setLocalSettings] = useState(() => ({
     ...chatSettings,
     generation_params: {
       temperature: 0.7,
       max_tokens: 2000,
       top_p: 0.9,
-      ...chatSettings.generation_params
+      ...(chatSettings?.generation_params || {})
     }
-  })
+  }))
   const [hasChanges, setHasChanges] = useState(false)
 
   const handleClose = () => {

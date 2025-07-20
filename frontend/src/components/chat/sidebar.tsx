@@ -1,409 +1,308 @@
-// Chat sidebar component
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Plus,
-  MessageSquare,
-  Search,
-  Settings,
-  MoreVertical,
-  Trash2,
-  Edit3,
-  Archive,
-  ChevronLeft,
+import { 
+  Plus, 
+  Search, 
   Filter,
+  MessageSquare, 
   Clock,
-  Star,
+  Archive,
+  Trash2,
+  Settings,
+  ChevronDown,
+  X,
+  Brain,
   Zap,
-  Scale,
-  Briefcase,
-  GraduationCap,
+  Target,
+  Shield,
+  HelpCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
-import { useChat } from '@/hooks/useChat'
-import { useChatStore, chatActions } from '@/store'
+import { useChatStore } from '@/store'
 import { useUIStore } from '@/store'
-import { formatDate, formatRelativeTime, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { formatDate } from '@/lib/utils/date'
 import type { Conversation, ContextType } from '@/types'
 
-const contextIcons = {
-  general: MessageSquare,
-  technical: Zap,
-  legal: Scale,
-  business: Briefcase,
-  academic: GraduationCap,
-} as const
+const contextOptions = [
+  { value: 'general', label: 'Geral', icon: Brain, color: 'bg-blue-100 text-blue-800' },
+  { value: 'technical', label: 'Técnico', icon: Zap, color: 'bg-yellow-100 text-yellow-800' },
+  { value: 'legal', label: 'Jurídico', icon: Shield, color: 'bg-red-100 text-red-800' },
+  { value: 'business', label: 'Negócios', icon: Target, color: 'bg-green-100 text-green-800' },
+  { value: 'academic', label: 'Acadêmico', icon: HelpCircle, color: 'bg-purple-100 text-purple-800' },
+]
 
-const contextColors = {
-  general: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  technical: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  legal: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-  business: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-  academic: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
+// Client-only time component to prevent hydration errors
+function ClientTime({ date }: { date: string }) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <span>{formatDate(date)}</span>
+  }
+
+  return <span>{formatDate(date)}</span>
 }
 
 export function Sidebar() {
-  const router = useRouter()
+  const { conversations, activeConversationId, setActiveConversation, deleteConversation, createConversation } = useChatStore()
   const { ui, updateUI } = useUIStore()
-  const { 
-    conversations, 
-    currentConversation, 
-    startNewChat, 
-    selectConversation,
-    loadingConversations 
-  } = useChat()
-
   const [searchTerm, setSearchTerm] = useState('')
   const [filterContext, setFilterContext] = useState<ContextType | 'all'>('all')
   const [showFilters, setShowFilters] = useState(false)
-  
 
   // Filtrar conversas
   const filteredConversations = conversations.filter((conv) => {
-    const matchesSearch = conv.title.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterContext === 'all' || conv.context === filterContext
-    return matchesSearch && matchesFilter
+    const matchesSearch = conv.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         conv.messages?.some(msg => 
+                           msg.content.toLowerCase().includes(searchTerm.toLowerCase())
+                         )
+    const matchesContext = filterContext === 'all' || conv.context === filterContext
+    return matchesSearch && matchesContext
   })
 
-  // Agrupar por data
-  const groupedConversations = filteredConversations.reduce((groups, conv) => {
-    const date = new Date(conv.created_at)
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(today.getDate() - 1)
-
-    let key: string
-    if (date.toDateString() === today.toDateString()) {
-      key = 'Hoje'
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      key = 'Ontem'
-    } else if (date > new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)) {
-      key = 'Esta semana'
-    } else {
-      key = 'Mais antigo'
-    }
-
-    if (!groups[key]) groups[key] = []
-    groups[key].push(conv)
-    return groups
-  }, {} as Record<string, Conversation[]>)
-
   const handleNewChat = () => {
-    startNewChat()
-    if (ui.sidebar_collapsed) {
-      updateUI({ sidebar_collapsed: false })
+    createConversation()
+  }
+
+  const handleDeleteConversation = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm('Tem certeza que deseja excluir esta conversa?')) {
+      deleteConversation(id)
     }
   }
 
-  const handleSelectConversation = (conversation: Conversation) => {
-    selectConversation(conversation)
-    router.push('/chat')
+  const getContextOption = (context: ContextType) => {
+    return contextOptions.find(opt => opt.value === context) || contextOptions[0]
   }
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{
-        width: ui.sidebar_collapsed ? 60 : 320,
-      }}
-      transition={{ duration: 0.2, ease: 'easeInOut' }}
-      className="bg-muted/50 border-r border-border flex flex-col h-full"
-    >
+    <div className={cn(
+      "h-full bg-background border-r border-border flex flex-col transition-all duration-300",
+      ui.sidebar_collapsed ? "w-16" : "w-80"
+    )}>
       {/* Header */}
       <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          {!ui.sidebar_collapsed && (
-            <h2 className="text-lg font-semibold">Conversas</h2>
-          )}
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleNewChat}
-              className={cn(
-                "h-8 w-8",
-                !ui.sidebar_collapsed && "h-9 px-3 w-auto"
-              )}
-            >
-              <Plus className="h-4 w-4" />
-              {!ui.sidebar_collapsed && <span className="ml-2">Nova</span>}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => updateUI({ sidebar_collapsed: !ui.sidebar_collapsed })}
-              className="h-8 w-8"
-            >
-              <ChevronLeft 
-                className={cn(
-                  "h-4 w-4 transition-transform",
-                  ui.sidebar_collapsed && "rotate-180"
-                )} 
-              />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      {!ui.sidebar_collapsed && (
-        <div className="p-4 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar conversas..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="h-8 px-2 text-xs"
-            >
-              <Filter className="h-3 w-3 mr-1" />
-              Filtros
-            </Button>
-            {filterContext !== 'all' && (
-              <Badge variant="secondary" className="text-xs">
-                {filterContext}
-                <button
-                  onClick={() => setFilterContext('all')}
-                  className="ml-1 hover:text-foreground"
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
-          </div>
-
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="grid grid-cols-2 gap-2"
+        {!ui.sidebar_collapsed && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">Conversas</h2>
+              <Button
+                onClick={() => updateUI({ chat_settings_open: true })}
+                variant="ghost"
+                size="sm"
               >
-                {Object.entries(contextColors).map(([context, color]) => (
-                  <Button
-                    key={context}
-                    variant={filterContext === context ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setFilterContext(context as ContextType)}
-                    className="h-8 text-xs justify-start"
-                  >
-                    <div className={cn("w-2 h-2 rounded-full mr-2", color)} />
-                    {context}
-                  </Button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
 
-      {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {loadingConversations ? (
-          <div className="p-4 space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-12 bg-muted rounded-lg" />
-              </div>
-            ))}
-          </div>
-        ) : Object.keys(groupedConversations).length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground">
-            {searchTerm ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
-          </div>
-        ) : (
-          <div className="p-2">
-            {Object.entries(groupedConversations).map(([group, convs]) => (
-              <div key={group} className="mb-4">
-                {!ui.sidebar_collapsed && (
-                  <h3 className="text-xs font-medium text-muted-foreground px-2 mb-2">
-                    {group}
-                  </h3>
-                )}
-                <div className="space-y-1">
-                  {convs.map((conversation) => (
-                    <ConversationItem
-                      key={conversation.id}
-                      conversation={conversation}
-                      isActive={currentConversation?.id === conversation.id}
-                      isCollapsed={ui.sidebar_collapsed}
-                      onClick={() => handleSelectConversation(conversation)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+            <Button onClick={handleNewChat} className="w-full justify-start" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Conversa
+            </Button>
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar conversas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Filters */}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center space-x-1"
+              >
+                <Filter className="h-3 w-3" />
+                <span className="text-xs">Filtros</span>
+                <ChevronDown className={cn("h-3 w-3 transition-transform", showFilters && "rotate-180")} />
+              </Button>
+
+              {filterContext !== 'all' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFilterContext('all')}
+                  className="text-xs"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Limpar
+                </Button>
+              )}
+            </div>
+
+            {/* Filter Options */}
+            <AnimatePresence>
+              {showFilters && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid grid-cols-2 gap-1 p-2 border rounded">
+                    <Button
+                      variant={filterContext === 'all' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setFilterContext('all')}
+                      className="text-xs justify-start"
+                    >
+                      Todos
+                    </Button>
+                    {contextOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        variant={filterContext === option.value ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setFilterContext(option.value as ContextType)}
+                        className="text-xs justify-start"
+                      >
+                        <option.icon className="h-3 w-3 mr-1" />
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>
 
-      {/* Settings */}
+      {/* Conversations List */}
+      <ScrollArea className="flex-1">
+        <div className="p-2">
+          {filteredConversations.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {!ui.sidebar_collapsed && (
+                <div className="space-y-2">
+                  <MessageSquare className="h-12 w-12 mx-auto opacity-50" />
+                  <p className="text-sm">Nenhuma conversa encontrada</p>
+                  {searchTerm && (
+                    <p className="text-xs">Tente ajustar os filtros de busca</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {filteredConversations.map((conversation) => {
+                const contextOption = getContextOption(conversation.context)
+                const isActive = activeConversationId === conversation.id
+
+                return (
+                  <div
+                    key={conversation.id}
+                    className={cn(
+                      "group relative p-3 rounded-lg cursor-pointer transition-all hover:bg-accent",
+                      isActive && "bg-accent border-l-4 border-l-primary"
+                    )}
+                    onClick={() => setActiveConversation(conversation.id)}
+                  >
+                    {ui.sidebar_collapsed ? (
+                      <div className="flex flex-col items-center space-y-1">
+                        <contextOption.icon className="h-5 w-5" />
+                        <div className="w-2 h-2 bg-primary rounded-full" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-sm font-medium truncate flex-1 mr-2">
+                            {conversation.title || 'Nova Conversa'}
+                          </h3>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Settings className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem>
+                                <Archive className="h-4 w-4 mr-2" />
+                                Arquivar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => handleDeleteConversation(conversation.id, e)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span className="flex items-center">
+                            <Clock className="h-3 w-3 mr-1" />
+                            <ClientTime date={conversation.updated_at} />
+                          </span>
+
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="secondary" className={cn("text-xs", contextOption.color)}>
+                              <contextOption.icon className="h-3 w-3 mr-1" />
+                              {contextOption.label}
+                            </Badge>
+
+                            {conversation.messages && conversation.messages.length > 0 && (
+                              <span className="text-xs bg-muted px-1 rounded">
+                                {conversation.messages.length}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {conversation.messages && conversation.messages.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                            {conversation.messages[conversation.messages.length - 1]?.content}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* Footer */}
       {!ui.sidebar_collapsed && (
         <div className="p-4 border-t border-border">
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => updateUI({ chat_settings_open: true })}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Configurações
-          </Button>
-        </div>
-      )}
-    </motion.aside>
-  )
-}
-
-interface ConversationItemProps {
-  conversation: Conversation
-  isActive: boolean
-  isCollapsed: boolean
-  onClick: () => void
-}
-
-function ConversationItem({ 
-  conversation, 
-  isActive, 
-  isCollapsed, 
-  onClick 
-}: ConversationItemProps) {
-  const [isHovered, setIsHovered] = useState(false)
-  const ContextIcon = contextIcons[conversation.context] || MessageSquare
-
-  const handleDelete = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    // TODO: Implementar delete
-    console.log('Delete conversation:', conversation.id)
-  }
-
-  const handleArchive = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    // TODO: Implementar archive
-    console.log('Archive conversation:', conversation.id)
-  }
-
-  const handleRename = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    // TODO: Implementar rename
-    console.log('Rename conversation:', conversation.id)
-  }
-
-  if (isCollapsed) {
-    return (
-      <Button
-        variant={isActive ? "secondary" : "ghost"}
-        size="sm"
-        onClick={onClick}
-        className="w-full h-12 p-0 flex items-center justify-center"
-        title={conversation.title}
-      >
-        <ContextIcon className="h-4 w-4" />
-      </Button>
-    )
-  }
-
-  return (
-    <Card
-      className={cn(
-        "p-3 cursor-pointer transition-all hover:shadow-sm",
-        isActive && "ring-2 ring-primary ring-opacity-20 bg-primary/5"
-      )}
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2 mb-1">
-            <ContextIcon className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-            <h4 className="text-sm font-medium truncate">
-              {conversation.title}
-            </h4>
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="flex items-center">
-              <Clock className="h-3 w-3 mr-1" />
-              {formatDate(conversation.updated_at)}
-            </span>
-
-            <div className="flex items-center space-x-2">
-              {conversation.avg_confidence && conversation.avg_confidence > 0.8 && (
-                <Star className="h-3 w-3 text-yellow-500" />
-              )}
-              <Badge 
-                variant="secondary" 
-                className={cn("text-xs", contextColors[conversation.context])}
-              >
-                {conversation.message_count}
-              </Badge>
-            </div>
+          <div className="text-xs text-muted-foreground text-center">
+            {filteredConversations.length} de {conversations.length} conversas
           </div>
         </div>
-
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="ml-2"
-            >
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                    <MoreVertical className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={handleRename}>
-                    <Edit3 className="h-4 w-4 mr-2" />
-                    Renomear
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleArchive}>
-                    <Archive className="h-4 w-4 mr-2" />
-                    Arquivar
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleDelete}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Excluir
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </Card>
+      )}
+    </div>
   )
 }
-
-// Export as ChatSidebar for backward compatibility
-export { Sidebar as ChatSidebar }
