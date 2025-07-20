@@ -131,4 +131,15 @@ export function setNestedValue(obj: any, path: string, value: any): void {
 export function cleanObject<T extends Record<string, any>>(
   obj: T,
   removeNull: boolean = true,
-  removeUndefined: boolean
+  removeUndefined: boolean = true
+): Partial<T> {
+  const cleaned: any = {}
+  
+  for (const [key, value] of Object.entries(obj)) {
+    if (removeUndefined && value === undefined) continue
+    if (removeNull && value === null) continue
+    cleaned[key] = value
+  }
+  
+  return cleaned
+}ean

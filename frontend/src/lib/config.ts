@@ -37,7 +37,10 @@ const CacheConfigSchema = z.object({
   enabled: z.boolean(),
   ttl: z.number().min(0),
   maxSize: z.number().min(0),
-  strategy: z.enum(['memory', 'localStorage', 'indexedDB'])
+  strategy: z.enum(['memory', 'localStorage', 'indexedDB']),
+  strategies: z.object({
+    api: z.enum(['memory', 'localStorage', 'indexedDB'])
+  })
 })
 
 const MonitoringConfigSchema = z.object({
@@ -47,13 +50,22 @@ const MonitoringConfigSchema = z.object({
   performanceMonitoring: z.boolean()
 })
 
+const AppConfigSchema = z.object({
+  version: z.string(),
+  environment: EnvironmentSchema
+})
+
 const ConfigSchema = z.object({
   environment: EnvironmentSchema,
+  app: AppConfigSchema,
   security: SecurityConfigSchema,
   api: ApiConfigSchema,
   chat: ChatConfigSchema,
   cache: CacheConfigSchema,
-  monitoring: MonitoringConfigSchema
+  monitoring: MonitoringConfigSchema,
+  features: z.object({
+    analytics: z.boolean()
+  })
 })
 
 type Config = z.infer<typeof ConfigSchema>
@@ -61,6 +73,10 @@ type Config = z.infer<typeof ConfigSchema>
 // Configurações base
 const baseConfig: Config = {
   environment: process.env.NODE_ENV as 'development' | 'test' | 'production',
+  app: {
+    version: '1.0.0',
+    environment: process.env.NODE_ENV as 'development' | 'test' | 'production'
+  },
   security: {
     ssl: true,
     cspEnabled: true,
@@ -91,13 +107,19 @@ const baseConfig: Config = {
     enabled: true,
     ttl: 300000, // 5 minutes
     maxSize: 100,
-    strategy: 'memory'
+    strategy: 'memory',
+    strategies: {
+      api: 'memory'
+    }
   },
   monitoring: {
     enabled: true,
     errorReporting: true,
     analytics: false,
     performanceMonitoring: true
+  },
+  features: {
+    analytics: false
   }
 }
 
