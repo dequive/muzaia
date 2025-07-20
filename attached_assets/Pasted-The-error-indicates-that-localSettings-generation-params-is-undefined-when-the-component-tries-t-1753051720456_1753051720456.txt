@@ -1,0 +1,93 @@
+The error indicates that `localSettings.generation_params` is `undefined` when the component tries to access the `temperature` property. Here's how to fix this:
+
+## Solution: Add Proper Initialization and Null Checks
+
+**Option 1: Initialize with default values**
+```tsx
+// In your ChatSettings component, ensure localSettings is properly initialized
+const [localSettings, setLocalSettings] = useState({
+  generation_params: {
+    temperature: 0.7,
+    // add other default params here
+  },
+  // other default settings
+});
+```
+
+**Option 2: Add null checks with fallbacks**
+```tsx
+// Update line 211 and similar lines:
+<Label className="text-xs">
+  Temperatura: {localSettings?.generation_params?.temperature ?? 0.7}
+</Label>
+
+// And for the Slider:
+<Slider
+  value={[localSettings?.generation_params?.temperature ?? 0.7]}
+  onValueChange={([value]) =>
+    setLocalSettings(prev => ({
+      ...prev,
+      generation_params: {
+        ...prev.generation_params,
+        temperature: value
+      }
+    }))
+  }
+/>
+```
+
+**Option 3: Complete defensive approach**
+```tsx
+// At the top of your component or in a useEffect
+useEffect(() => {
+  if (!localSettings.generation_params) {
+    setLocalSettings(prev => ({
+      ...prev,
+      generation_params: {
+        temperature: 0.7,
+        max_tokens: 1000,
+        // other default parameters
+      }
+    }));
+  }
+}, []);
+
+// Then use with optional chaining
+const temperature = localSettings.generation_params?.temperature ?? 0.7;
+
+return (
+  // ...
+  <Label className="text-xs">Temperatura: {temperature}</Label>
+  <Slider
+    value={[temperature]}
+    onValueChange={([value]) =>
+      setLocalSettings(prev => ({
+        ...prev,
+        generation_params: {
+          ...prev.generation_params,
+          temperature: value
+        }
+      }))
+    }
+  />
+);
+```
+
+## Quick Fix for Immediate Resolution:
+
+Replace line 211 with:
+```tsx
+<Label className="text-xs">
+  Temperatura: {localSettings?.generation_params?.temperature ?? 0.7}
+</Label>
+```
+
+And line 213 with:
+```tsx
+<Slider
+  value={[localSettings?.generation_params?.temperature ?? 0.7]}
+  // rest of props...
+/>
+```
+
+This will prevent the crash and provide sensible defaults. The root cause is likely that `localSettings` isn't being initialized properly when the component first mounts.
