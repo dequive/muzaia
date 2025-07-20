@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:prod": "NODE_ENV=production next build",
     "start": "next start",
+    "start:prod": "NODE_ENV=production next start -p 5000 -H 0.0.0.0",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
