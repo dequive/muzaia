@@ -23,6 +23,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Generate unique ID
+export function generateId() {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36)
+}
+
+// Get user initials from name or email
+export function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0))
+    .join('')
+    .toUpperCase()
+    .substring(0, 2)
+}
+
 // =============================================================================
 // DATE UTILITIES
 // =============================================================================

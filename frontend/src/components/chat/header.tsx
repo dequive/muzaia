@@ -222,3 +222,195 @@ export function Header() {
     </header>
   )
 }
+'use client'
+
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import {
+  Menu,
+  Settings,
+  Share,
+  RefreshCw,
+  MoreVertical,
+  Sparkles,
+  User,
+  LogOut,
+  Bell,
+  Moon,
+  Sun
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
+import { useAuth } from '@/hooks/useAuth'
+import { useSystem } from '@/hooks/useSystem'
+import { getInitials, cn } from '@/lib/utils'
+
+interface ChatHeaderProps {
+  onToggleSidebar?: () => void
+  sidebarOpen?: boolean
+  conversationTitle?: string
+  isStreaming?: boolean
+}
+
+export function ChatHeader({
+  onToggleSidebar,
+  sidebarOpen = true,
+  conversationTitle = "Mozaia AI Chat",
+  isStreaming = false
+}: ChatHeaderProps) {
+  const { user, signOut } = useAuth()
+  const { health } = useSystem()
+  const [isDark, setIsDark] = useState(false)
+
+  const handleShare = () => {
+    // Implement share functionality
+    console.log('Share conversation')
+  }
+
+  const handleNewChat = () => {
+    // Implement new chat functionality
+    window.location.reload()
+  }
+
+  return (
+    <div className="bg-white border-b border-gray-200 p-4">
+      <div className="flex items-center justify-between">
+        {/* Left section */}
+        <div className="flex items-center space-x-3">
+          {!sidebarOpen && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleSidebar}
+              className="text-gray-500"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
+          
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {conversationTitle}
+              </h2>
+              <div className="flex items-center space-x-2">
+                <p className="text-sm text-gray-500">
+                  Orquestrador de LLMs com consenso inteligente
+                </p>
+                {isStreaming && (
+                  <Badge variant="secondary" className="text-xs">
+                    Gerando...
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Right section */}
+        <div className="flex items-center space-x-2">
+          {/* System status */}
+          {health && (
+            <Badge 
+              variant={health.status === 'healthy' ? 'default' : 'destructive'}
+              className="text-xs"
+            >
+              {health.status === 'healthy' ? 'Online' : 'Offline'}
+            </Badge>
+          )}
+
+          {/* Action buttons */}
+          <Button variant="ghost" size="sm" onClick={handleShare}>
+            <Share className="h-4 w-4" />
+          </Button>
+          
+          <Button variant="ghost" size="sm" onClick={handleNewChat}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+
+          {/* User menu or login prompt */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-blue-600 text-white text-xs">
+                      {getInitials(user.email || 'User')}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem>
+                  <User className="h-4 w-4 mr-2" />
+                  Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configurações
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Bell className="h-4 w-4 mr-2" />
+                  Notificações
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsDark(!isDark)}>
+                  {isDark ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
+                  {isDark ? 'Modo Claro' : 'Modo Escuro'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="text-xs">
+                Modo Público
+              </Badge>
+              <Button
+                onClick={() => window.location.href = '/login'}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Entrar
+              </Button>
+            </div>
+          )}
+          
+          {/* More options */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <Settings className="h-4 w-4 mr-2" />
+                Configurações do Chat
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Share className="h-4 w-4 mr-2" />
+                Compartilhar Conversa
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </div>
+  )
+}

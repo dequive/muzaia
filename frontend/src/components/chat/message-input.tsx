@@ -56,11 +56,7 @@ export function MessageInput({
   const handleSend = async () => {
     if (!message.trim()) return
 
-    // Check if user is authenticated before sending
-    // if (!user) {
-    //   setShowLoginPrompt(true)
-    //   return
-    // }
+    // Allow anonymous users to send messages in public mode
 
     const content = message.trim()
     setMessage('')
@@ -189,7 +185,7 @@ export function MessageInput({
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={user ? placeholder : "Faça login para usar o chat..."}
+                placeholder={placeholder}
                 disabled={isLoading}
                 className="min-h-[48px] max-h-[200px] resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-12"
                 rows={1}
@@ -230,8 +226,8 @@ export function MessageInput({
         <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
           <div className="flex items-center space-x-2">
             {!user && (
-              <span className="text-amber-600">
-                ⚠️ Login necessário para usar o chat
+              <span className="text-blue-600">
+                💡 Experimente gratuitamente ou faça login para mais recursos
               </span>
             )}
             {isLoading && <span>Enviando...</span>}
