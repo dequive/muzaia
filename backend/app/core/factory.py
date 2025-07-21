@@ -187,8 +187,55 @@ class LLMFactory(AbstractLLMFactory):
 
     def _setup_default_providers(self) -> None:
         """Configura provedores padrão baseados nas configurações."""
-        # Todos os provedores foram removidos
-        logger.info("Nenhum provedor LLM configurado - todos foram removidos")
+        
+        # Importar classes dos modelos
+        from app.models.claude_llm import ClaudeLLM
+        from app.models.gemini_llm import GeminiLLM
+        
+        # Registrar Claude (Anthropic)
+        if settings.llm.anthropic_api_key:
+            self._registry.register_provider(
+                "anthropic",
+                ClaudeLLM,
+                [
+                    "claude-3-5-sonnet",
+                    "claude-3-5-sonnet-20241022",
+                    "claude-3-sonnet",
+                    "claude-3-opus",
+                    "claude-3-haiku"
+                ],
+                {
+                    "api_key": settings.llm.anthropic_api_key,
+                    "base_url": settings.llm.anthropic_base_url,
+                    "default_model": settings.llm.anthropic_model
+                }
+            )
+            logger.info("Provedor Anthropic Claude registrado")
+        
+        # Registrar Gemini (Google)
+        if settings.llm.google_api_key:
+            self._registry.register_provider(
+                "google",
+                GeminiLLM,
+                [
+                    "gemini-1.5-pro",
+                    "gemini-1.5-pro-latest",
+                    "gemini-1.5-flash",
+                    "gemini-pro"
+                ],
+                {
+                    "api_key": settings.llm.google_api_key,
+                    "base_url": settings.llm.gemini_base_url,
+                    "default_model": settings.llm.gemini_model
+                }
+            )
+            logger.info("Provedor Google Gemini registrado")
+        
+        total_providers = len(self._registry.get_all_providers())
+        if total_providers == 0:
+            logger.warning("Nenhum provedor LLM configurado - verifique as API keys no arquivo .env")
+        else:
+            logger.info(f"{total_providers} provedores LLM configurados com sucesso")
 
     async def create_llm(
         self, 
@@ -269,9 +316,37 @@ class LLMFactory(AbstractLLMFactory):
         # Mesclar configurações
         final_config = self._merge_configs(provider_name, user_config)
 
-        # Diferentes assinaturas de construtor
-        # Sem provedores disponíveis
-        raise LLMError(f"Nenhum provedor disponível para criar modelo {model_name}")
+        # Criar instância baseada no provedor
+        try:
+            if provider_name == "anthropic":
+                # Claude
+                instance = llm_class(
+                    model_name=model_name,
+                    api_key=final_config.get("api_key"),
+                    base_url=final_config.get("base_url", settings.llm.anthropic_base_url),
+                    session=self._session,
+                    timeout=final_config.get("timeout", settings.llm.timeout_seconds),
+                    max_retries=final_config.get("max_retries", 3)
+                )
+            
+            elif provider_name == "google":
+                # Gemini
+                instance = llm_class(
+                    model_name=model_name,
+                    api_key=final_config.get("api_key"),
+                    base_url=final_config.get("base_url", settings.llm.gemini_base_url),
+                    session=self._session,
+                    timeout=final_config.get("timeout", settings.llm.timeout_seconds),
+                    max_retries=final_config.get("max_retries", 3)
+                )
+            
+            else:
+                raise LLMError(f"Provedor '{provider_name}' não suportado")
+            
+            return instance
+            
+        except Exception as e:
+            raise LLMError(f"Erro ao criar instância {model_name}: {str(e)}") from e
 
     def _merge_configs(
         self, 
@@ -285,6 +360,16 @@ class LLMFactory(AbstractLLMFactory):
 
         # Configurações padrão por provedor
         default_configs = {
+            "anthropic": {
+                "timeout": 60.0,
+                "max_retries": 3,
+                "base_delay": 1.0
+            },
+            "google": {
+                "timeout": 45.0,
+                "max_retries": 3,
+                "base_delay": 1.0
+            }
         }
 
         # Aplicar configurações padrão

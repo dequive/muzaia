@@ -6,11 +6,31 @@ Estrutura base para implementações de clientes LLM.
 Todos os provedores específicos foram removidos.
 """
 
-# Mapeamento de provedores (vazio após remoção)
-PROVIDER_CLASSES = {}
+# Importar novos clientes LLM
+from .claude_llm import ClaudeLLM
+from .gemini_llm import GeminiLLM
 
-# Padrões de modelo por provedor (vazio após remoção)
-MODEL_PATTERNS = {}
+# Mapeamento de provedores
+PROVIDER_CLASSES = {
+    "anthropic": ClaudeLLM,
+    "google": GeminiLLM,
+}
+
+# Padrões de modelo por provedor
+MODEL_PATTERNS = {
+    # Claude models
+    "claude-3-5-sonnet": "anthropic",
+    "claude-3-5-sonnet-20241022": "anthropic",
+    "claude-3-sonnet": "anthropic",
+    "claude-3-opus": "anthropic",
+    "claude-3-haiku": "anthropic",
+    
+    # Gemini models
+    "gemini-1.5-pro": "google",
+    "gemini-1.5-pro-latest": "google",
+    "gemini-1.5-flash": "google",
+    "gemini-pro": "google",
+}
 
 def get_provider_for_model(model_name: str) -> str:
     """
@@ -20,13 +40,22 @@ def get_provider_for_model(model_name: str) -> str:
         model_name: Nome do modelo
         
     Returns:
-        'unknown' - todos os provedores foram removidos
+        Nome do provedor ou 'unknown' se não encontrado
     """
+    # Busca exata primeiro
+    if model_name in MODEL_PATTERNS:
+        return MODEL_PATTERNS[model_name]
+    
+    # Busca por padrões (prefixos)
+    for pattern, provider in MODEL_PATTERNS.items():
+        if model_name.startswith(pattern):
+            return provider
+    
     return "unknown"
 
 def get_available_providers() -> list[str]:
     """Retorna lista de provedores disponíveis."""
-    return []
+    return list(PROVIDER_CLASSES.keys())
 
 def get_provider_class(provider_name: str):
     """
@@ -36,9 +65,9 @@ def get_provider_class(provider_name: str):
         provider_name: Nome do provedor
         
     Returns:
-        None - todos os provedores foram removidos
+        Classe do provedor ou None se não encontrado
     """
-    return None
+    return PROVIDER_CLASSES.get(provider_name)
 
 __all__ = [
     "PROVIDER_CLASSES",

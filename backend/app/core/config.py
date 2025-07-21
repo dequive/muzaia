@@ -35,6 +35,16 @@ class SecuritySettings(BaseModel):
 class LLMSettings(BaseModel):
     """Configurações para modelos LLM."""
     timeout_seconds: int = 30
+    
+    # Anthropic Claude
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-3-5-sonnet-20241022"
+    anthropic_base_url: str = "https://api.anthropic.com"
+    
+    # Google Gemini
+    google_api_key: str = ""
+    gemini_model: str = "gemini-1.5-pro-latest"
+    gemini_base_url: str = "https://generativelanguage.googleapis.com"
 
 
 class Settings(BaseSettings):
