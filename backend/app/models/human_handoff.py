@@ -255,7 +255,8 @@ class HandoffManager:
     async def update_technician_presence(
         self,
         technician_id: str,
-        status: TechnicianStatus
+        status: TechnicianStatus,
+        extra_data: Optional[Dict] = None
     ) -> bool:
         """Atualiza presença do técnico."""
 
@@ -265,9 +266,77 @@ class HandoffManager:
 
         technician.status = status
         technician.last_activity = datetime.utcnow()
+        
+        if extra_data:
+            technician.meta_data = {**(technician.meta_data or {}), **extra_data}
 
         await self.db.commit()
+        
+        # Cache presence for faster lookups
+        self._cache_technician_presence(technician)
         return True
+
+    def _cache_technician_presence(self, technician: Technician):
+        """Cacheia informações de presença do técnico."""
+        presence = TechnicianPresence(
+            technician_id=str(technician.id),
+            status=technician.status,
+            current_load=int(technician.current_load),
+            max_load=int(technician.max_concurrent_conversations),
+            specializations=technician.specializations or [],
+            last_activity=technician.last_activity
+        )
+        self._presence_cache[str(technician.id)] = presence
+
+    async def get_all_technicians_presence(self) -> List[TechnicianPresence]:
+        """Retorna presença de todos os técnicos."""
+        result = await self.db.execute(
+            "SELECT * FROM mozaia.technicians WHERE is_active = true"
+        )
+        technicians = result.fetchall()
+        
+        presence_list = []
+        for tech in technicians:
+            presence = TechnicianPresence(
+                technician_id=str(tech.id),
+                status=TechnicianStatus(tech.status),
+                current_load=int(tech.current_load),
+                max_load=int(tech.max_concurrent_conversations),
+                specializations=tech.specializations or [],
+                last_activity=tech.last_activity
+            )
+            presence_list.append(presence)
+            self._presence_cache[str(tech.id)] = presence
+        
+        return presence_list
+
+    async def get_availability_stats(self) -> Dict[str, Any]:
+        """Retorna estatísticas de disponibilidade."""
+        presence_list = await self.get_all_technicians_presence()
+        
+        stats = {
+            "total_technicians": len(presence_list),
+            "online": len([p for p in presence_list if p.status == TechnicianStatus.ONLINE]),
+            "busy": len([p for p in presence_list if p.status == TechnicianStatus.BUSY]),
+            "away": len([p for p in presence_list if p.status == TechnicianStatus.AWAY]),
+            "offline": len([p for p in presence_list if p.status == TechnicianStatus.OFFLINE]),
+            "available_capacity": sum(
+                max(0, p.max_load - p.current_load) 
+                for p in presence_list 
+                if p.status == TechnicianStatus.ONLINE
+            ),
+            "specializations_available": {}
+        }
+        
+        # Contabilizar especialidades disponíveis
+        for presence in presence_list:
+            if presence.status == TechnicianStatus.ONLINE:
+                for spec in presence.specializations:
+                    if spec not in stats["specializations_available"]:
+                        stats["specializations_available"][spec] = 0
+                    stats["specializations_available"][spec] += 1
+        
+        return stats
 
     async def get_pending_handoffs(
         self,

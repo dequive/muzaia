@@ -71,11 +71,29 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // WebSocket connection simulation
+  // WebSocket connection 
   useEffect(() => {
-    const timer = setTimeout(() => setWsConnected(true), 2000)
-    return () => clearTimeout(timer)
-  }, [])
+    if (!user?.id) return
+
+    const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/ws/user/${user.id}`)
+    
+    ws.onopen = () => {
+      setWsConnected(true)
+      console.log('WebSocket connected')
+    }
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      handleWebSocketMessage(data)
+    }
+    
+    ws.onclose = () => {
+      setWsConnected(false)
+      console.log('WebSocket disconnected')
+    }
+
+    return () => ws.close()
+  }, [user?.id])
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -131,6 +149,35 @@ export function ChatInterface() {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
+  const handleWebSocketMessage = (data: any) => {
+    switch (data.type) {
+      case 'new_message':
+        if (data.sender_type !== 'user') {
+          // Add message from AI or technician
+          const newMessage = {
+            id: Date.now().toString(),
+            role: data.sender_type === 'technician' ? 'assistant' : 'assistant',
+            content: data.content,
+            timestamp: data.timestamp,
+            isStreaming: false
+          }
+          // Add to messages state - this would need to be connected to your chat state
+        }
+        break
+      
+      case 'handoff_accepted':
+        setShowHandoffPanel(false)
+        // Show technician connected notification
+        break
+      
+      case 'typing_indicator':
+        if (data.sender_type === 'technician') {
+          // Show typing indicator from technician
+        }
+        break
+    }
+  }
+
   const handleHandoffRequest = async () => {
     const request: HandoffRequest = {
       id: Date.now().toString(),
@@ -142,7 +189,7 @@ export function ChatInterface() {
     }
     
     setHandoffRequests(prev => [...prev, request])
-    setShowHandoffPanel(true)
+    setShowHandoffPanel(true)e)
   }
 
   const handleVoiceToggle = () => {

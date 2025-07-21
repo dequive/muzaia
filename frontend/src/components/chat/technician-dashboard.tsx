@@ -20,6 +20,11 @@ import {
   UserX,
   TrendingUp,
   Activity,
+  Bell,
+  Settings,
+  Eye,
+  FileText,
+  Send,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,354 +41,581 @@ interface HandoffRequest {
   id: string
   conversation_id: string
   user_name: string
+  user_id: string
   specialization: string
   priority: 'normal' | 'high' | 'urgent'
   reason: string
   summary: string
   created_at: string
   waiting_time: string
+  status: 'pending' | 'accepted' | 'completed'
 }
 
-interface TechnicianDashboardProps {
-  technicianId: string
-  technicianName: string
+interface ConversationHistory {
+  id: string
+  role: 'user' | 'assistant' | 'technician'
+  content: string
+  timestamp: string
+  attachments?: Array<{ name: string, type: string, url: string }>
 }
 
-const priorityColors = {
-  normal: 'bg-blue-100 text-blue-800',
-  high: 'bg-yellow-100 text-yellow-800',
-  urgent: 'bg-red-100 text-red-800',
+interface ActiveConversation {
+  id: string
+  user_name: string
+  user_id: string
+  started_at: string
+  messages: ConversationHistory[]
+  status: 'active' | 'paused' | 'completed'
+  ai_suggestions?: string[]
 }
 
-const statusOptions = [
-  { value: 'online', label: 'Online', color: 'green' },
-  { value: 'busy', label: 'Ocupado', color: 'yellow' },
-  { value: 'away', label: 'Ausente', color: 'orange' },
-  { value: 'offline', label: 'Offline', color: 'gray' },
-]
+export function TechnicianDashboard() {
+  const [isOnline, setIsOnline] = useState(false)
+  const [pendingHandoffs, setPendingHandoffs] = useState<HandoffRequest[]>([])
+  const [activeConversations, setActiveConversations] = useState<ActiveConversation[]>([])
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterSpecialization, setFilterSpecialization] = useState('all')
+  const [filterPriority, setFilterPriority] = useState('all')
+  const [newMessage, setNewMessage] = useState('')
+  const [wsConnected, setWsConnected] = useState(false)
+  const [stats, setStats] = useState({
+    totalHandoffs: 0,
+    completedToday: 0,
+    averageResponseTime: '2.5 min',
+    satisfaction: 4.8
+  })
 
-export function TechnicianDashboard({ technicianId, technicianName }: TechnicianDashboardProps) {
-  const [status, setStatus] = useState<string>('online')
-  const [pendingRequests, setPendingRequests] = useState<HandoffRequest[]>([])
-  const [activeConversations, setActiveConversations] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [selectedRequest, setSelectedRequest] = useState<HandoffRequest | null>(null)
-  const [notes, setNotes] = useState('')
-  const [autoAccept, setAutoAccept] = useState(false)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
-
-  // WebSocket connection for real-time updates
+  // WebSocket connection
   useEffect(() => {
-    const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/handoff/ws/technician/${technicianId}`)
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      
-      switch (data.type) {
-        case 'new_handoff_request':
-          setPendingRequests(prev => [data, ...prev])
-          if (notificationsEnabled) {
-            toast.success(`Nova solicitação: ${data.specialization}`)
-            // Play notification sound
-            new Audio('/sounds/notification.mp3').play().catch(() => {})
-          }
-          break
-        case 'handoff_cancelled':
-          setPendingRequests(prev => prev.filter(r => r.id !== data.handoff_id))
-          break
-      }
-    }
+    const technicianId = 'tech_123' // Pegar do auth context
+    const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/ws/technician/${technicianId}`)
     
     ws.onopen = () => {
-      // Send initial status
-      ws.send(JSON.stringify({ type: 'status_update', status }))
+      setWsConnected(true)
+      toast.success('Conectado ao sistema')
     }
-    
-    return () => ws.close()
-  }, [technicianId, status, notificationsEnabled])
 
-  // Load pending requests
-  useEffect(() => {
-    loadPendingRequests()
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      handleWebSocketMessage(data)
+    }
+
+    ws.onclose = () => {
+      setWsConnected(false)
+      toast.error('Conexão perdida')
+    }
+
+    return () => ws.close()
   }, [])
 
-  const loadPendingRequests = async () => {
-    try {
-      const response = await fetch(`/api/handoff/pending?technician_id=${technicianId}`)
-      const data = await response.json()
-      if (data.success) {
-        setPendingRequests(data.handoffs)
-      }
-    } catch (error) {
-      console.error('Error loading requests:', error)
+  const handleWebSocketMessage = (data: any) => {
+    switch (data.type) {
+      case 'new_handoff_request':
+        const newRequest: HandoffRequest = {
+          id: data.handoff_id,
+          conversation_id: data.conversation_id,
+          user_name: data.user_name || 'Usuário Anônimo',
+          user_id: data.user_id,
+          specialization: data.specialization,
+          priority: data.priority,
+          reason: data.reason,
+          summary: data.summary,
+          created_at: data.created_at,
+          waiting_time: '0 min',
+          status: 'pending'
+        }
+        setPendingHandoffs(prev => [newRequest, ...prev])
+        
+        // Notification sound and toast
+        new Audio('/sounds/notification.mp3').play().catch(() => {})
+        toast.success(`Nova solicitação: ${data.specialization}`, {
+          duration: 5000,
+          action: {
+            label: 'Ver',
+            onClick: () => handleAcceptHandoff(newRequest)
+          }
+        })
+        break
+
+      case 'new_message':
+        if (data.sender_type !== 'technician') {
+          setActiveConversations(prev => 
+            prev.map(conv => 
+              conv.id === data.conversation_id 
+                ? {
+                    ...conv,
+                    messages: [...conv.messages, {
+                      id: Date.now().toString(),
+                      role: data.sender_type,
+                      content: data.content,
+                      timestamp: data.timestamp
+                    }]
+                  }
+                : conv
+            )
+          )
+        }
+        break
+
+      case 'conversation_ended':
+        setActiveConversations(prev => 
+          prev.filter(conv => conv.id !== data.conversation_id)
+        )
+        toast.info('Conversa finalizada')
+        break
     }
   }
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleToggleOnline = async (online: boolean) => {
+    setIsOnline(online)
+    
     try {
-      const response = await fetch('/api/handoff/technician/status', {
+      await fetch('/api/technician/presence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          technician_id: technicianId,
-          status: newStatus
+          status: online ? 'online' : 'offline',
+          technician_id: 'tech_123'
         })
       })
 
-      if (response.ok) {
-        setStatus(newStatus)
-        toast.success(`Status alterado para ${newStatus}`)
-      }
+      toast.success(online ? 'Você está disponível' : 'Você está offline')
     } catch (error) {
-      console.error('Error updating status:', error)
       toast.error('Erro ao atualizar status')
     }
   }
 
-  const handleAcceptRequest = async (requestId: string) => {
-    setIsLoading(true)
+  const handleAcceptHandoff = async (request: HandoffRequest) => {
     try {
-      const response = await fetch(`/api/handoff/accept/${requestId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ technician_id: technicianId })
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        setPendingRequests(prev => prev.filter(r => r.id !== requestId))
-        toast.success('Solicitação aceita!')
-        // Add to active conversations
-        loadActiveConversations()
-      } else {
-        toast.error('Erro ao aceitar solicitação')
-      }
-    } catch (error) {
-      console.error('Error accepting request:', error)
-      toast.error('Erro de conexão')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleCompleteConversation = async (handoffId: string, rating?: number) => {
-    try {
-      const response = await fetch(`/api/handoff/complete/${handoffId}`, {
+      const response = await fetch(`/api/handoff/${request.id}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          notes: notes.trim() || undefined,
-          rating
+          technician_id: 'tech_123'
         })
       })
 
       if (response.ok) {
-        toast.success('Atendimento finalizado')
-        setNotes('')
-        loadActiveConversations()
+        // Move from pending to active
+        setPendingHandoffs(prev => prev.filter(h => h.id !== request.id))
+        
+        // Add to active conversations
+        const newConversation: ActiveConversation = {
+          id: request.conversation_id,
+          user_name: request.user_name,
+          user_id: request.user_id,
+          started_at: new Date().toISOString(),
+          messages: [{
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: request.summary,
+            timestamp: new Date().toISOString()
+          }],
+          status: 'active',
+          ai_suggestions: [
+            'Solicite mais detalhes sobre o caso',
+            'Pergunte sobre documentos relevantes',
+            'Esclareça o objetivo da consulta'
+          ]
+        }
+        
+        setActiveConversations(prev => [...prev, newConversation])
+        setSelectedConversation(request.conversation_id)
+        
+        toast.success(`Atendimento iniciado com ${request.user_name}`)
       }
     } catch (error) {
-      console.error('Error completing conversation:', error)
-      toast.error('Erro ao finalizar atendimento')
+      toast.error('Erro ao aceitar atendimento')
     }
   }
 
-  const loadActiveConversations = async () => {
-    // TODO: Implement API to get active conversations
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedConversation) return
+
+    const message = {
+      id: Date.now().toString(),
+      role: 'technician' as const,
+      content: newMessage,
+      timestamp: new Date().toISOString()
+    }
+
+    // Add to local state immediately
+    setActiveConversations(prev => 
+      prev.map(conv => 
+        conv.id === selectedConversation 
+          ? { ...conv, messages: [...conv.messages, message] }
+          : conv
+      )
+    )
+
+    setNewMessage('')
+
+    try {
+      await fetch('/api/chat/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation_id: selectedConversation,
+          content: newMessage,
+          sender_type: 'technician',
+          sender_id: 'tech_123'
+        })
+      })
+    } catch (error) {
+      toast.error('Erro ao enviar mensagem')
+    }
   }
 
-  const formatWaitingTime = (createdAt: string) => {
-    const now = new Date()
-    const created = new Date(createdAt)
-    const diffMinutes = Math.floor((now.getTime() - created.getTime()) / (1000 * 60))
+  const filteredHandoffs = pendingHandoffs.filter(handoff => {
+    const matchesSearch = handoff.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         handoff.reason.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSpecialization = filterSpecialization === 'all' || handoff.specialization === filterSpecialization
+    const matchesPriority = filterPriority === 'all' || handoff.priority === filterPriority
     
-    if (diffMinutes < 1) return 'Agora mesmo'
-    if (diffMinutes < 60) return `${diffMinutes}m`
-    return `${Math.floor(diffMinutes / 60)}h ${diffMinutes % 60}m`
-  }
+    return matchesSearch && matchesSpecialization && matchesPriority
+  })
+
+  const selectedConv = activeConversations.find(conv => conv.id === selectedConversation)
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Técnico</h1>
-          <p className="text-gray-600">Bem-vindo, {technicianName}</p>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          {/* Status Selector */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">Status:</span>
-            <Select value={status} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <div className="flex items-center space-x-2">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        option.color === 'green' && 'bg-green-500',
-                        option.color === 'yellow' && 'bg-yellow-500',
-                        option.color === 'orange' && 'bg-orange-500',
-                        option.color === 'gray' && 'bg-gray-500'
-                      )} />
-                      <span>{option.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <Avatar>
+                <AvatarFallback className="bg-blue-500 text-white">TJ</AvatarFallback>
+              </Avatar>
+              <div>
+                <h3 className="font-semibold text-gray-900">Dr. João Silva</h3>
+                <p className="text-sm text-gray-500">Advogado - OAB/MZ 12345</p>
+              </div>
+            </div>
+            <div className={cn(
+              "w-3 h-3 rounded-full",
+              wsConnected ? "bg-green-400" : "bg-red-400"
+            )} />
           </div>
 
-          {/* Settings */}
-          <div className="flex items-center space-x-2">
-            <Switch
-              checked={notificationsEnabled}
-              onCheckedChange={setNotificationsEnabled}
+          {/* Online Toggle */}
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Activity className="h-4 w-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {isOnline ? 'Disponível' : 'Offline'}
+              </span>
+            </div>
+            <Switch 
+              checked={isOnline} 
+              onCheckedChange={handleToggleOnline}
             />
-            <span className="text-sm">Notificações</span>
           </div>
         </div>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pendentes</p>
-                <p className="text-2xl font-bold text-gray-900">{pendingRequests.length}</p>
+        {/* Stats */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <div className="text-lg font-bold text-blue-600">{stats.totalHandoffs}</div>
+              <div className="text-xs text-blue-500">Atendimentos</div>
+            </div>
+            <div className="bg-green-50 p-3 rounded-lg">
+              <div className="text-lg font-bold text-green-600">{stats.completedToday}</div>
+              <div className="text-xs text-green-500">Hoje</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Handoffs */}
+        <div className="flex-1 overflow-hidden">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold text-gray-900 flex items-center">
+                <Bell className="h-4 w-4 mr-2" />
+                Solicitações ({filteredHandoffs.length})
+              </h4>
+              <Button variant="ghost" size="sm">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Filters */}
+            <div className="space-y-2 mb-4">
+              <Input
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-8"
+              />
+              <div className="flex space-x-2">
+                <Select value={filterSpecialization} onValueChange={setFilterSpecialization}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Área" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="criminal">Criminal</SelectItem>
+                    <SelectItem value="civil">Civil</SelectItem>
+                    <SelectItem value="labor">Trabalhista</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterPriority} onValueChange={setFilterPriority}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="urgent">Urgente</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <MessageSquare className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Ativas</p>
-                <p className="text-2xl font-bold text-gray-900">{activeConversations.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Tempo Médio</p>
-                <p className="text-2xl font-bold text-gray-900">12m</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Star className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Avaliação</p>
-                <p className="text-2xl font-bold text-gray-900">4.8</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Pending Requests */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Clock className="h-5 w-5" />
-            <span>Solicitações Pendentes</span>
-            <Badge variant="secondary">{pendingRequests.length}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {pendingRequests.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nenhuma solicitação pendente</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {pendingRequests.map((request) => (
+          {/* Handoff Requests */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <AnimatePresence>
+              {filteredHandoffs.map((handoff) => (
                 <motion.div
-                  key={request.id}
+                  key={handoff.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="border rounded-lg p-4 hover:bg-gray-50"
+                  exit={{ opacity: 0, y: -20 }}
+                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <Badge className={priorityColors[request.priority]}>
-                          {request.priority.toUpperCase()}
-                        </Badge>
-                        <Badge variant="outline">{request.specialization}</Badge>
-                        <span className="text-sm text-gray-500">
-                          Aguardando há {formatWaitingTime(request.created_at)}
-                        </span>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-xs">
+                          {handoff.user_name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium text-sm text-gray-900">
+                          {handoff.user_name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {handoff.waiting_time} • {handoff.specialization}
+                        </div>
                       </div>
-                      
-                      <h3 className="font-medium text-gray-900 mb-1">
-                        Usuário: {request.user_name || 'Anônimo'}
-                      </h3>
-                      
-                      <p className="text-sm text-gray-600 mb-2">
-                        <strong>Motivo:</strong> {request.reason}
-                      </p>
-                      
-                      {request.summary && (
-                        <p className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
-                          <strong>IA Resume:</strong> {request.summary}
-                        </p>
-                      )}
                     </div>
-                    
-                    <div className="flex space-x-2 ml-4">
-                      <Button
-                        onClick={() => handleAcceptRequest(request.id)}
-                        disabled={isLoading}
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Aceitar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedRequest(request)}
-                      >
-                        Ver Detalhes
-                      </Button>
-                    </div>
+                    <Badge 
+                      variant={handoff.priority === 'urgent' ? 'destructive' : 
+                               handoff.priority === 'high' ? 'default' : 'secondary'}
+                      className="text-xs"
+                    >
+                      {handoff.priority}
+                    </Badge>
+                  </div>
+
+                  <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+                    {handoff.reason}
+                  </p>
+
+                  <div className="flex space-x-2">
+                    <Button 
+                      size="sm" 
+                      className="flex-1 h-8"
+                      onClick={() => handleAcceptHandoff(handoff)}
+                    >
+                      <Phone className="h-3 w-3 mr-1" />
+                      Aceitar
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-8"
+                    >
+                      <Eye className="h-3 w-3" />
+                    </Button>
                   </div>
                 </motion.div>
               ))}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {selectedConv ? (
+          <>
+            {/* Chat Header */}
+            <div className="bg-white border-b border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Avatar>
+                    <AvatarFallback>
+                      {selectedConv.user_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      {selectedConv.user_name}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Ativo desde {new Date(selectedConv.started_at).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="bg-green-50 text-green-700">
+                    Ativo
+                  </Badge>
+                  <Button variant="outline" size="sm">
+                    <FileText className="h-4 w-4 mr-1" />
+                    Resumo
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {selectedConv.messages.map((message) => (
+                <div 
+                  key={message.id}
+                  className={cn(
+                    "flex",
+                    message.role === 'technician' ? 'justify-end' : 'justify-start'
+                  )}
+                >
+                  <div className={cn(
+                    "max-w-xs lg:max-w-md p-3 rounded-lg",
+                    message.role === 'technician' 
+                      ? 'bg-blue-500 text-white' 
+                      : message.role === 'user'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+                  )}>
+                    <p className="text-sm">{message.content}</p>
+                    <p className={cn(
+                      "text-xs mt-1",
+                      message.role === 'technician' ? 'text-blue-100' : 'text-gray-500'
+                    )}>
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* AI Suggestions */}
+            {selectedConv.ai_suggestions && selectedConv.ai_suggestions.length > 0 && (
+              <div className="bg-blue-50 border-t border-blue-200 p-3">
+                <p className="text-xs font-medium text-blue-800 mb-2">
+                  💡 Sugestões da IA:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedConv.ai_suggestions.map((suggestion, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs bg-white border-blue-200 hover:bg-blue-50"
+                      onClick={() => setNewMessage(suggestion)}
+                    >
+                      {suggestion}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Message Input */}
+            <div className="bg-white border-t border-gray-200 p-4">
+              <div className="flex space-x-2">
+                <Textarea
+                  placeholder="Digite sua mensagem..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="resize-none"
+                  rows={2}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendMessage()
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim()}
+                  className="self-end"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          // Empty State
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Nenhuma conversa selecionada
+              </h3>
+              <p className="text-gray-500">
+                Aceite uma solicitação para começar a conversar
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Active Conversations List */}
+      {activeConversations.length > 0 && (
+        <div className="w-64 bg-white border-l border-gray-200">
+          <div className="p-4 border-b border-gray-200">
+            <h4 className="font-semibold text-gray-900 flex items-center">
+              <Users className="h-4 w-4 mr-2" />
+              Ativos ({activeConversations.length})
+            </h4>
+          </div>
+          <div className="overflow-y-auto">
+            {activeConversations.map((conv) => (
+              <div
+                key={conv.id}
+                onClick={() => setSelectedConversation(conv.id)}
+                className={cn(
+                  "p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50",
+                  selectedConversation === conv.id && "bg-blue-50 border-blue-200"
+                )}
+              >
+                <div className="flex items-center space-x-2 mb-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {conv.user_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-gray-900 truncate">
+                      {conv.user_name}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {conv.messages.length} mensagens
+                    </div>
+                  </div>
+                </div>
+                {conv.messages.length > 0 && (
+                  <p className="text-xs text-gray-600 line-clamp-2">
+                    {conv.messages[conv.messages.length - 1].content}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
