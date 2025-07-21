@@ -55,7 +55,7 @@ export function useChat(conversationId?: string) {
   const generateMutation = useMutation({
     mutationFn: async (request: GenerationRequest) => {
       chatActions.setLoading(true);
-      
+
       try {
         const response = await chatApi.generate(request);
         return response;
