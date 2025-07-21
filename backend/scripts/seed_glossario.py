@@ -1,7 +1,7 @@
 
 #!/usr/bin/env python3
 """
-Script para popular o glossário com termos jurídicos iniciais
+Script para popular o glossário com termos jurídicos da legislação moçambicana
 """
 
 import sys
@@ -13,110 +13,125 @@ from app.database.connection import get_db
 from app.models.glossario import GlossarioTermo, CategoriaJuridica, NivelTecnico, StatusGlossario
 import uuid
 
-# Termos iniciais para o glossário
-TERMOS_INICIAIS = [
+# Termos jurídicos específicos da legislação moçambicana
+TERMOS_MOCAMBICANOS = [
     {
-        "termo": "Habeas Corpus",
-        "definicao": "Instrumento jurídico que visa proteger o direito de liberdade de locomoção, impedindo ou cessando prisão ilegal ou abusiva.",
+        "termo": "Assembleia da República",
+        "definicao": "Órgão supremo do Estado de representação de todo o povo moçambicano, que exerce o poder legislativo na República de Moçambique.",
         "categoria": CategoriaJuridica.DIREITO_CONSTITUCIONAL,
         "nivel_tecnico": NivelTecnico.INTERMEDIARIO,
-        "exemplo": "O advogado impetrou habeas corpus em favor do réu preso ilegalmente.",
-        "sinonimos": ["remédio constitucional", "garantia de liberdade"],
-        "tags": ["liberdade", "prisão", "constitucional", "garantia"]
+        "exemplo": "A Assembleia da República aprovou a nova lei de terras.",
+        "lei_referencia": "Constituição da República de Moçambique",
+        "artigo_referencia": "Artigo 168",
+        "sinonimos": ["Parlamento", "Legislativo"],
+        "tags": ["constituição", "parlamento", "poder legislativo"]
     },
     {
-        "termo": "Mandado de Segurança",
-        "definicao": "Ação constitucional que visa proteger direito líquido e certo não amparado por habeas corpus ou habeas data, quando o responsável pela ilegalidade for autoridade pública.",
-        "categoria": CategoriaJuridica.DIREITO_CONSTITUCIONAL,
+        "termo": "Direito de Uso e Aproveitamento da Terra (DUAT)",
+        "definicao": "Direito que confere ao seu titular as faculdades de usar a terra e de aproveitar os recursos naturais nela existentes, respeitadas as disposições da presente Lei e demais legislação aplicável.",
+        "categoria": CategoriaJuridica.LEI_TERRAS,
         "nivel_tecnico": NivelTecnico.AVANCADO,
-        "exemplo": "Foi impetrado mandado de segurança contra o ato administrativo que negou a licença.",
-        "sinonimos": ["MS", "remédio constitucional"],
-        "tags": ["direito líquido", "autoridade pública", "ato administrativo"]
+        "exemplo": "O agricultor obteve o DUAT para explorar a parcela de terra.",
+        "lei_referencia": "Lei nº 19/97",
+        "artigo_referencia": "Artigo 13",
+        "sinonimos": ["DUAT", "direito de terra"],
+        "tags": ["terra", "agricultura", "propriedade", "DUAT"]
     },
     {
-        "termo": "Petição Inicial",
-        "definicao": "Peça processual que dá início ao processo judicial, contendo os fatos, fundamentos jurídicos e pedido do autor.",
-        "categoria": CategoriaJuridica.PROCESSO_CIVIL,
+        "termo": "Lobolo",
+        "definicao": "Instituição do direito costumeiro moçambicano pela qual a família do noivo entrega bens à família da noiva como forma de celebrar e validar o casamento tradicional.",
+        "categoria": CategoriaJuridica.DIREITO_COSTUMEIRO,
         "nivel_tecnico": NivelTecnico.BASICO,
-        "exemplo": "A petição inicial deve conter todos os requisitos previstos no artigo 319 do CPC.",
-        "sinonimos": ["inicial", "peça inicial"],
-        "tags": ["processo", "inicial", "petição", "autor"]
+        "exemplo": "O lobolo foi realizado segundo as tradições da comunidade.",
+        "lei_referencia": "Lei nº 10/2004",
+        "artigo_referencia": "Artigo 15",
+        "sinonimos": ["dote", "casamento tradicional"],
+        "tags": ["casamento", "tradição", "família", "costumes"]
     },
     {
-        "termo": "Contestação",
-        "definicao": "Resposta do réu à petição inicial, apresentando sua defesa e eventuais alegações contra o pedido do autor.",
-        "categoria": CategoriaJuridica.PROCESSO_CIVIL,
+        "termo": "Autoridade Tradicional",
+        "definicao": "Entidade que encarna o poder tradicional com legitimidade política e sócio-cultural, derivada de instituições endógenas, baseadas nos valores histórico-culturais da comunidade.",
+        "categoria": CategoriaJuridica.DIREITO_COSTUMEIRO,
+        "nivel_tecnico": NivelTecnico.INTERMEDIARIO,
+        "exemplo": "A autoridade tradicional mediou o conflito entre as famílias.",
+        "decreto_referencia": "Decreto nº 15/2000",
+        "sinonimos": ["régulo", "chefe tradicional", "sobeta"],
+        "tags": ["tradição", "autoridade", "comunidade", "mediação"]
+    },
+    {
+        "termo": "Tribunal Comunitário",
+        "definicao": "Estrutura da organização judiciária que tem jurisdição sobre pequenos delitos, contravenções e questões cíveis de menor complexidade, funcionando ao nível da localidade.",
+        "categoria": CategoriaJuridica.CODIGO_PROCESSO_CIVIL,
+        "nivel_tecnico": NivelTecnico.INTERMEDIARIO,
+        "exemplo": "O caso foi julgado no tribunal comunitário da localidade.",
+        "lei_referencia": "Lei nº 4/92",
+        "sinonimos": ["tribunal local"],
+        "tags": ["justiça", "comunidade", "tribunal", "localidade"]
+    },
+    {
+        "termo": "Contravenção",
+        "definicao": "Infração de menor gravidade punida com multa ou prisão correcional até seis meses, conforme o Código Penal moçambicano.",
+        "categoria": CategoriaJuridica.CODIGO_PENAL,
         "nivel_tecnico": NivelTecnico.BASICO,
-        "exemplo": "O réu apresentou contestação negando os fatos alegados pelo autor.",
-        "sinonimos": ["defesa", "resposta do réu"],
-        "tags": ["defesa", "réu", "processo", "resposta"]
+        "exemplo": "A venda ambulante sem licença constitui uma contravenção.",
+        "lei_referencia": "Código Penal",
+        "artigo_referencia": "Artigo 35",
+        "sinonimos": ["infração menor"],
+        "tags": ["crime", "multa", "infração", "penalidade"]
     },
     {
-        "termo": "Dolo",
-        "definicao": "Vontade livre e consciente de praticar um crime, abrangendo tanto a intenção direta quanto a eventual.",
-        "categoria": CategoriaJuridica.DIREITO_PENAL,
-        "nivel_tecnico": NivelTecnico.INTERMEDIARIO,
-        "exemplo": "O réu agiu com dolo ao planejar e executar o crime premeditadamente.",
-        "sinonimos": ["intenção criminosa", "má-fé"],
-        "tags": ["crime", "intenção", "vontade", "consciência"]
-    },
-    {
-        "termo": "Culpa",
-        "definicao": "Conduta em que o agente, embora não querendo o resultado, age com negligência, imprudência ou imperícia.",
-        "categoria": CategoriaJuridica.DIREITO_PENAL,
-        "nivel_tecnico": NivelTecnico.INTERMEDIARIO,
-        "exemplo": "O acidente ocorreu por culpa do motorista que dirigia em velocidade excessiva.",
-        "sinonimos": ["negligência", "imprudência"],
-        "tags": ["negligência", "imprudência", "imperícia", "responsabilidade"]
-    },
-    {
-        "termo": "Usucapião",
-        "definicao": "Modo originário de aquisição da propriedade pela posse prolongada da coisa, acompanhada de determinados requisitos legais.",
-        "categoria": CategoriaJuridica.DIREITO_CIVIL,
+        "termo": "Licença de Exploração Mineira",
+        "definicao": "Título que confere o direito de pesquisar, extrair e comercializar recursos minerais numa área determinada, pelo período e condições estabelecidas na lei.",
+        "categoria": CategoriaJuridica.LEI_MINAS,
         "nivel_tecnico": NivelTecnico.AVANCADO,
-        "exemplo": "Após 15 anos de posse mansa e pacífica, o ocupante pode requerer a usucapião do imóvel.",
-        "sinonimos": ["prescrição aquisitiva"],
-        "tags": ["propriedade", "posse", "aquisição", "tempo"]
+        "exemplo": "A empresa obteve licença de exploração mineira para extrair carvão.",
+        "lei_referencia": "Lei nº 20/2014",
+        "sinonimos": ["concessão mineira", "título mineiro"],
+        "tags": ["mineração", "licença", "exploração", "recursos"]
     },
     {
-        "termo": "Sociedade Anônima",
-        "definicao": "Tipo societário em que o capital social é dividido em ações, e a responsabilidade dos sócios é limitada ao valor das ações subscritas.",
-        "categoria": CategoriaJuridica.DIREITO_COMERCIAL,
-        "nivel_tecnico": NivelTecnico.INTERMEDIARIO,
-        "exemplo": "A empresa se constituiu como sociedade anônima para facilitar a captação de investimentos.",
-        "sinonimos": ["S.A.", "companhia"],
-        "tags": ["sociedade", "ações", "capital", "responsabilidade limitada"]
-    },
-    {
-        "termo": "Ato Administrativo",
-        "definicao": "Manifestação unilateral de vontade da Administração Pública que, agindo nessa qualidade, tenha por fim imediato adquirir, resguardar, transferir, modificar, extinguir e declarar direitos.",
-        "categoria": CategoriaJuridica.DIREITO_ADMINISTRATIVO,
+        "termo": "Regime Jurídico dos Investimentos",
+        "definicao": "Conjunto de normas que regulam os investimentos privados em Moçambique, definindo incentivos, garantias e procedimentos para investidores nacionais e estrangeiros.",
+        "categoria": CategoriaJuridica.LEI_INVESTIMENTO,
         "nivel_tecnico": NivelTecnico.AVANCADO,
-        "exemplo": "A concessão da licença ambiental é um ato administrativo vinculado.",
-        "sinonimos": ["ato da administração"],
-        "tags": ["administração pública", "vontade", "direitos", "vinculado"]
+        "exemplo": "O projeto enquadra-se no regime jurídico dos investimentos para beneficiar de incentivos fiscais.",
+        "lei_referencia": "Lei nº 3/93",
+        "sinonimos": ["lei de investimentos"],
+        "tags": ["investimento", "economia", "incentivos", "business"]
     },
     {
-        "termo": "Salário Mínimo",
-        "definicao": "Menor remuneração que um trabalhador pode receber por seu trabalho, fixada por lei e revista periodicamente.",
-        "categoria": CategoriaJuridica.DIREITO_TRABALHO,
+        "termo": "Salário Mínimo Nacional",
+        "definicao": "Remuneração mínima estabelecida por lei que deve ser paga a qualquer trabalhador em território moçambicano, revista periodicamente pelo Conselho de Ministros.",
+        "categoria": CategoriaJuridica.LEI_TRABALHO,
         "nivel_tecnico": NivelTecnico.BASICO,
-        "exemplo": "O valor do salário mínimo em Moçambique é estabelecido por decreto governamental.",
+        "exemplo": "O empregador foi multado por pagar abaixo do salário mínimo nacional.",
+        "lei_referencia": "Lei nº 23/2007",
         "sinonimos": ["remuneração mínima"],
         "tags": ["salário", "trabalhador", "remuneração", "lei"]
+    },
+    {
+        "termo": "Habeas Corpus",
+        "definicao": "Garantia constitucional que protege a liberdade individual contra prisões ilegais ou arbitrárias, permitindo que qualquer pessoa solicite a liberdade de quem esteja preso ilegalmente.",
+        "categoria": CategoriaJuridica.DIREITO_CONSTITUCIONAL,
+        "nivel_tecnico": NivelTecnico.AVANCADO,
+        "exemplo": "O advogado impetrou habeas corpus em favor do réu preso ilegalmente.",
+        "lei_referencia": "Constituição da República",
+        "artigo_referencia": "Artigo 60",
+        "sinonimos": ["remédio constitucional", "garantia de liberdade"],
+        "tags": ["liberdade", "prisão", "garantia", "constitucional"]
     }
 ]
 
 def seed_glossario():
-    """Popular o glossário com termos iniciais"""
+    """Popular o glossário com termos jurídicos moçambicanos"""
     
     # Obter sessão do banco
     db = next(get_db())
     
-    print("🌱 Iniciando população do glossário...")
+    print("🇲🇿 Iniciando população do glossário jurídico moçambicano...")
     
     try:
-        for termo_data in TERMOS_INICIAIS:
+        for termo_data in TERMOS_MOCAMBICANOS:
             # Verificar se o termo já existe
             existing = db.query(GlossarioTermo).filter(
                 GlossarioTermo.termo == termo_data["termo"]
@@ -135,12 +150,15 @@ def seed_glossario():
                 nivel_tecnico=termo_data["nivel_tecnico"],
                 exemplo=termo_data.get("exemplo"),
                 sinonimos=termo_data.get("sinonimos", []),
+                lei_referencia=termo_data.get("lei_referencia"),
+                artigo_referencia=termo_data.get("artigo_referencia"),
+                decreto_referencia=termo_data.get("decreto_referencia"),
                 tags=termo_data.get("tags", []),
                 jurisdicao="mozambique",
                 idioma="pt",
                 versao="1.0",
                 status=StatusGlossario.VALIDADO,
-                revisado_por="sistema",
+                revisado_por="sistema_juridico_mz",
                 is_active=True
             )
             
@@ -148,14 +166,14 @@ def seed_glossario():
             print(f"   ✅ Adicionado: {termo_data['termo']}")
         
         db.commit()
-        print(f"\n🎉 Glossário populado com sucesso!")
-        print(f"   📊 Total de termos criados: {len(TERMOS_INICIAIS)}")
+        print(f"\n🎉 Glossário jurídico moçambicano populado com sucesso!")
+        print(f"   📊 Total de termos criados: {len(TERMOS_MOCAMBICANOS)}")
+        print("   🏛️ Foco: Legislação e direito costumeiro de Moçambique")
         
     except Exception as e:
         db.rollback()
         print(f"❌ Erro ao popular glossário: {e}")
-        raise
-    
+        
     finally:
         db.close()
 

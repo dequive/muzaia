@@ -18,15 +18,34 @@ class StatusGlossario(str, enum.Enum):
     REVOGADO = "revogado"
 
 class CategoriaJuridica(str, enum.Enum):
+    # Direito Constitucional Moçambicano
     DIREITO_CONSTITUCIONAL = "direito_constitucional"
-    DIREITO_PENAL = "direito_penal"
-    DIREITO_CIVIL = "direito_civil"
-    DIREITO_COMERCIAL = "direito_comercial"
-    DIREITO_ADMINISTRATIVO = "direito_administrativo"
+    
+    # Códigos Principais
+    CODIGO_CIVIL = "codigo_civil"
+    CODIGO_PENAL = "codigo_penal"
+    CODIGO_PROCESSO_CIVIL = "codigo_processo_civil"
+    CODIGO_PROCESSO_PENAL = "codigo_processo_penal"
+    CODIGO_COMERCIAL = "codigo_comercial"
+    
+    # Direitos Específicos
+    DIREITO_FAMILIA = "direito_familia"
     DIREITO_TRABALHO = "direito_trabalho"
+    DIREITO_ADMINISTRATIVO = "direito_administrativo"
     DIREITO_TRIBUTARIO = "direito_tributario"
-    PROCESSO_CIVIL = "processo_civil"
-    PROCESSO_PENAL = "processo_penal"
+    DIREITO_TERRA = "direito_terra"
+    DIREITO_MINEIRO = "direito_mineiro"
+    DIREITO_AMBIENTAL = "direito_ambiental"
+    
+    # Legislação Específica de Moçambique
+    LEI_INVESTIMENTO = "lei_investimento"
+    LEI_TRABALHO = "lei_trabalho"
+    LEI_TERRAS = "lei_terras"
+    LEI_MINAS = "lei_minas"
+    LEI_FLORESTAL = "lei_florestal"
+    
+    # Direito Costumeiro e Tradicional
+    DIREITO_COSTUMEIRO = "direito_costumeiro"
 
 class GlossarioTermo(Base):
     __tablename__ = "glossario_termos"
@@ -38,8 +57,16 @@ class GlossarioTermo(Base):
     nivel_tecnico = Column(Enum(NivelTecnico), nullable=False, default=NivelTecnico.BASICO)
     exemplo = Column(Text)
     sinonimos = Column(ARRAY(String), default=[])
+    
+    # Específico para legislação moçambicana
     jurisdicao = Column(String(100), default="mozambique", index=True)
     idioma = Column(String(5), default="pt")
+    
+    # Referências legais moçambicanas
+    lei_referencia = Column(String(255))  # Ex: "Lei nº 19/97"
+    artigo_referencia = Column(String(100))  # Ex: "Artigo 35"
+    decreto_referencia = Column(String(255))  # Ex: "Decreto nº 43/2003"
+    
     versao = Column(String(10), default="1.0")
     status = Column(Enum(StatusGlossario), default=StatusGlossario.RASCUNHO, index=True)
     revisado_por = Column(String(255))
@@ -53,4 +80,4 @@ class GlossarioTermo(Base):
     tags = Column(ARRAY(String), default=[])
 
     def __repr__(self):
-        return f"<GlossarioTermo(termo='{self.termo}', categoria='{self.categoria}')>"
+        return f"<GlossarioTermo(termo='{self.termo}', categoria='{self.categoria}', lei='{self.lei_referencia}')>"
