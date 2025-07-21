@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -85,6 +84,17 @@ const STATUS_OPTIONS = [
   { value: 'revogado', label: 'Revogado', icon: XCircle, color: 'red' }
 ]
 
+// Function to extract error message from API response
+const getApiErrorMessage = (error: any): string => {
+  if (error?.response?.data?.message) {
+    return error.response.data.message;
+  } else if (error?.message) {
+    return error.message;
+  } else {
+    return 'Ocorreu um erro inesperado.';
+  }
+};
+
 export default function GlossarioPage() {
   const [termos, setTermos] = useState<GlossarioTermo[]>([])
   const [stats, setStats] = useState<GlossarioStats | null>(null)
@@ -123,12 +133,13 @@ export default function GlossarioPage() {
         nivel_tecnico: selectedNivel || undefined,
         status: selectedStatus || undefined
       })
-      
+
       setTermos(response.items || [])
       setTotalPages(response.pages || 1)
     } catch (error) {
-      console.error('Erro ao carregar termos:', error)
-      toast.error('Erro ao carregar termos do glossário')
+      const errorMessage = getApiErrorMessage(error)
+      console.error('Erro ao carregar termos:', errorMessage)
+      toast.error(`Erro ao carregar termos: ${errorMessage}`)
       setTermos([])
     } finally {
       setLoading(false)
@@ -154,7 +165,7 @@ export default function GlossarioPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     try {
       const data = {
         ...formData,
@@ -187,8 +198,9 @@ export default function GlossarioPage() {
       await fetchTermos()
       await fetchStats()
     } catch (error) {
-      console.error('Erro ao salvar termo:', error)
-      toast.error('Erro ao salvar termo')
+      const errorMessage = getApiErrorMessage(error)
+      console.error('Erro ao salvar termo:', errorMessage)
+      toast.error(`Erro ao salvar termo: ${errorMessage}`)
     }
   }
 
@@ -211,7 +223,7 @@ export default function GlossarioPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este termo?')) return
-    
+
     try {
       await glossarioApi.deleteTermo(id)
       toast.success('Termo excluído com sucesso!')
@@ -391,14 +403,14 @@ export default function GlossarioPage() {
                           </Badge>
                         </div>
                         <p className="text-gray-700 mb-3">{termo.definicao}</p>
-                        
+
                         {termo.exemplo && (
                           <div className="mb-3">
                             <span className="text-sm font-medium text-gray-600">Exemplo: </span>
                             <span className="text-sm text-gray-700 italic">{termo.exemplo}</span>
                           </div>
                         )}
-                        
+
                         {(termo.lei_referencia || termo.artigo_referencia || termo.decreto_referencia) && (
                           <div className="mb-3 p-2 bg-blue-50 rounded">
                             <span className="text-sm font-medium text-blue-700">Referências Legais:</span>
@@ -409,7 +421,7 @@ export default function GlossarioPage() {
                             </div>
                           </div>
                         )}
-                        
+
                         {termo.sinonimos.length > 0 && (
                           <div className="mb-3">
                             <span className="text-sm font-medium text-gray-600">Sinônimos: </span>
@@ -418,7 +430,7 @@ export default function GlossarioPage() {
                             </span>
                           </div>
                         )}
-                        
+
                         {termo.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {termo.tags.map((tag, index) => (
@@ -430,7 +442,7 @@ export default function GlossarioPage() {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="flex gap-2 ml-4">
                         <Button
                           variant="outline"
@@ -448,7 +460,7 @@ export default function GlossarioPage() {
                         </Button>
                       </div>
                     </div>
-                    
+
                     <div className="text-xs text-gray-500 border-t pt-2">
                       Versão: {termo.versao} | 
                       Criado: {new Date(termo.created_at).toLocaleDateString('pt-BR')} |
@@ -552,7 +564,7 @@ export default function GlossarioPage() {
                   {Object.entries(stats.por_lei).map(([lei, count]) => (
                     <div key={lei} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                       <span className="font-medium">{lei}</span>
-                      <Badge variant="outline">{count} termos</Badge>
+                      <Badge variant="outline">{count} termos}</Badge>
                     </div>
                   ))}
                 </div>

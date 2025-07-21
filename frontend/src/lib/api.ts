@@ -539,10 +539,13 @@ class EnhancedApiClient {
           data: error?.response?.data || null
         }
         
-        console.error('❌ API Error:', errorInfo)
+        // Only log if we have meaningful error info
+        if (errorInfo.message !== 'Unknown error' || errorInfo.status !== 0 || errorInfo.data) {
+          console.error('❌ API Error:', errorInfo)
+        }
         
-        // Also log the full error for debugging
-        if (process.env.NODE_ENV === 'development') {
+        // Also log the full error for debugging in development
+        if (isDebug) {
           console.error('Full error object:', error)
         }
 
@@ -1256,17 +1259,25 @@ export const getApiErrorMessage = (error: any): string => {
     // Try different error message formats
     if (error.response?.data) {
       const data = error.response.data
-      return data.message || 
-             data.error || 
-             data.detail || 
-             (typeof data === 'string' ? data : null) ||
-             error.message ||
-             'Erro desconhecido da API'
+      const message = data.message || 
+                     data.error || 
+                     data.detail || 
+                     (typeof data === 'string' ? data : null)
+      
+      if (message) {
+        return message
+      }
     }
+    
+    // Fallback to error message or default
     return error.message || 'Erro de conexão com a API'
   }
   
   if (error && typeof error === 'object') {
+    // Check if it's an empty object
+    if (Object.keys(error).length === 0) {
+      return 'Erro desconhecido - resposta vazia do servidor'
+    }
     return error.message || JSON.stringify(error) || 'Erro desconhecido'
   }
   
