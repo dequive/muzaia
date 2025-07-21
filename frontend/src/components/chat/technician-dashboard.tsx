@@ -337,7 +337,12 @@ export function TechnicianDashboard() {
                 <Bell className="h-4 w-4 mr-2" />
                 Solicitações ({filteredHandoffs.length})
               </h4>
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => window.open('/test', '_blank')}
+                title="Testes do Sistema"
+              >
                 <Settings className="h-4 w-4" />
               </Button>
             </div>

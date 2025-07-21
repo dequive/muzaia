@@ -480,7 +480,13 @@ export function ChatInterface() {
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                 <Share className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={() => window.open('/test', '_blank')}
+                title="Testes do Sistema"
+              >
                 <Settings className="h-4 w-4" />
               </Button>
             </div>
