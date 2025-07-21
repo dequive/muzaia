@@ -12,7 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   FileText, Upload, Shield, CheckCircle, XCircle, 
-  Clock, Search, Filter, Eye, Download, AlertTriangle 
+  Clock, Search, Filter, Eye, Download, AlertTriangle,
+  BarChart3, BookOpen, Gavel, Users
 } from 'lucide-react'
 
 interface LegalDocument {
@@ -32,6 +33,8 @@ interface LegalDocument {
   ai_query_count: string
   is_active: boolean
   can_be_referenced: boolean
+  summary?: string
+  validation_notes?: string
 }
 
 interface RepositoryStats {
@@ -50,6 +53,7 @@ export default function LegalRepositoryPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [selectedDocument, setSelectedDocument] = useState<LegalDocument | null>(null)
 
   // Upload form state
   const [uploadForm, setUploadForm] = useState({
@@ -73,14 +77,22 @@ export default function LegalRepositoryPage() {
       setIsLoading(true)
       
       // Carregar documentos
-      const docsResponse = await fetch('http://localhost:8000/api/legal/documents')
+      const docsResponse = await fetch('http://localhost:8000/api/legal/documents', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      })
       if (docsResponse.ok) {
         const docsData = await docsResponse.json()
         setDocuments(docsData.documents || [])
       }
 
       // Carregar estatísticas
-      const statsResponse = await fetch('http://localhost:8000/api/legal/stats')
+      const statsResponse = await fetch('http://localhost:8000/api/legal/stats', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      })
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
         setStats(statsData.stats)
@@ -114,12 +126,14 @@ export default function LegalRepositoryPage() {
 
       const response = await fetch('http://localhost:8000/api/legal/documents', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
         body: formData
       })
 
       if (response.ok) {
-        const result = await response.json()
-        alert('Documento carregado com sucesso!')
+        alert('Documento enviado com sucesso!')
         setUploadForm({
           title: '',
           official_number: '',
@@ -136,53 +150,79 @@ export default function LegalRepositoryPage() {
         setSelectedFile(null)
         loadData()
       } else {
-        alert('Erro ao carregar documento')
+        const error = await response.json()
+        alert(`Erro: ${error.detail}`)
       }
     } catch (error) {
       console.error('Error uploading document:', error)
-      alert('Erro ao carregar documento')
+      alert('Erro ao enviar documento')
     } finally {
       setIsUploading(false)
     }
   }
 
-  const handleValidation = async (documentId: string, action: 'approve' | 'reject', notes?: string) => {
+  const handleValidateDocument = async (documentId: string, notes?: string) => {
     try {
-      const formData = new FormData()
-      formData.append('action', action)
-      if (notes) formData.append('validation_notes', notes)
-
-      const response = await fetch(`http://localhost:8000/api/legal/documents/${documentId}/validate`, {
-        method: 'PUT',
-        body: formData
+      const response = await fetch(`http://localhost:8000/api/legal/${documentId}/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ validation_notes: notes })
       })
 
       if (response.ok) {
-        alert(`Documento ${action === 'approve' ? 'aprovado' : 'rejeitado'} com sucesso!`)
+        alert('Documento validado com sucesso!')
         loadData()
       } else {
-        alert('Erro na validação')
+        const error = await response.json()
+        alert(`Erro: ${error.detail}`)
       }
     } catch (error) {
       console.error('Error validating document:', error)
-      alert('Erro na validação')
+      alert('Erro ao validar documento')
+    }
+  }
+
+  const handleRejectDocument = async (documentId: string, reason: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/legal/${documentId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ rejection_reason: reason })
+      })
+
+      if (response.ok) {
+        alert('Documento rejeitado')
+        loadData()
+      } else {
+        const error = await response.json()
+        alert(`Erro: ${error.detail}`)
+      }
+    } catch (error) {
+      console.error('Error rejecting document:', error)
+      alert('Erro ao rejeitar documento')
     }
   }
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { color: 'bg-yellow-500', label: 'Pendente', icon: Clock },
-      approved: { color: 'bg-green-500', label: 'Aprovado', icon: CheckCircle },
-      rejected: { color: 'bg-red-500', label: 'Rejeitado', icon: XCircle },
-      under_review: { color: 'bg-blue-500', label: 'Em Revisão', icon: Eye }
+    const statusMap: Record<string, { variant: string; icon: any; label: string }> = {
+      pending: { variant: 'default', icon: Clock, label: 'Pendente' },
+      approved: { variant: 'default', icon: CheckCircle, label: 'Aprovado' },
+      rejected: { variant: 'destructive', icon: XCircle, label: 'Rejeitado' },
+      under_review: { variant: 'default', icon: Eye, label: 'Em Análise' }
     }
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
-    const Icon = config.icon
-    
+
+    const config = statusMap[status] || { variant: 'default', icon: AlertTriangle, label: status }
+    const IconComponent = config.icon
+
     return (
-      <Badge className={`${config.color} text-white`}>
-        <Icon className="w-3 h-3 mr-1" />
+      <Badge variant={config.variant as any} className="flex items-center gap-1">
+        <IconComponent className="w-3 h-3" />
         {config.label}
       </Badge>
     )
@@ -190,7 +230,7 @@ export default function LegalRepositoryPage() {
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (doc.official_number?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+                         doc.official_number?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || doc.status === statusFilter
     const matchesType = typeFilter === 'all' || doc.document_type === typeFilter
     
@@ -199,421 +239,426 @@ export default function LegalRepositoryPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">Carregando repositório legal...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Carregando repositório legal...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Repositório Jurídico
-          </h1>
-          <p className="text-gray-600">
-            Gestão centralizada de documentos legais para consulta da IA
-          </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <BookOpen className="w-8 h-8" />
+          Repositório de Leis
+        </h1>
+        <div className="text-sm text-gray-500">
+          Sistema de gestão e validação de documentos legais
         </div>
+      </div>
 
-        {/* Estatísticas */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <FileText className="h-8 w-8 text-blue-600 mr-3" />
+      {/* Estatísticas */}
+      {stats && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Documentos</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total_documents}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Aprovados</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.active_documents}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+              <Clock className="h-4 w-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">{stats.pending_validation}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Taxa de Aprovação</CardTitle>
+              <BarChart3 className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {stats.total_documents > 0 ? Math.round((stats.active_documents / stats.total_documents) * 100) : 0}%
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <Tabs defaultValue="documents" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="documents">📚 Documentos</TabsTrigger>
+          <TabsTrigger value="upload">📤 Upload</TabsTrigger>
+          <TabsTrigger value="validation">✅ Validação</TabsTrigger>
+          <TabsTrigger value="analytics">📊 Analytics</TabsTrigger>
+        </TabsList>
+
+        {/* Lista de Documentos */}
+        <TabsContent value="documents" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Documentos Legais</CardTitle>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Buscar por título ou número oficial..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-md"
+                >
+                  <option value="all">Todos os Status</option>
+                  <option value="pending">Pendente</option>
+                  <option value="approved">Aprovado</option>
+                  <option value="rejected">Rejeitado</option>
+                </select>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-md"
+                >
+                  <option value="all">Todos os Tipos</option>
+                  <option value="law">Lei</option>
+                  <option value="decree">Decreto</option>
+                  <option value="constitution">Constituição</option>
+                  <option value="regulation">Regulamento</option>
+                </select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredDocuments.map(doc => (
+                  <div key={doc.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg">{doc.title}</h3>
+                        {doc.official_number && (
+                          <p className="text-sm text-gray-600">Nº {doc.official_number}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                          {getStatusBadge(doc.status)}
+                          <Badge variant="outline">{doc.document_type}</Badge>
+                          <Badge variant="outline">{doc.jurisdiction}</Badge>
+                        </div>
+                        {doc.summary && (
+                          <p className="text-sm text-gray-700 mt-2">{doc.summary}</p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>Criado: {new Date(doc.created_at).toLocaleDateString()}</span>
+                          <span>Consultas IA: {doc.ai_query_count}</span>
+                          {doc.validated_at && (
+                            <span>Validado: {new Date(doc.validated_at).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {doc.status === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleValidateDocument(doc.id)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Aprovar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                const reason = prompt('Motivo da rejeição:')
+                                if (reason) handleRejectDocument(doc.id, reason)
+                              }}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Rejeitar
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedDocument(doc)}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Ver
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Upload de Documentos */}
+        <TabsContent value="upload" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload de Documento Legal</CardTitle>
+              <p className="text-sm text-gray-600">
+                Apenas documentos validados serão utilizados pela IA para responder consultas
+              </p>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleUpload} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">Total de Documentos</p>
-                    <p className="text-2xl font-bold text-gray-800">{stats.total_documents}</p>
+                    <Label htmlFor="title">Título *</Label>
+                    <Input
+                      id="title"
+                      value={uploadForm.title}
+                      onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="official_number">Número Oficial</Label>
+                    <Input
+                      id="official_number"
+                      value={uploadForm.official_number}
+                      onChange={(e) => setUploadForm(prev => ({ ...prev, official_number: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="document_type">Tipo de Documento *</Label>
+                    <select
+                      id="document_type"
+                      value={uploadForm.document_type}
+                      onChange={(e) => setUploadForm(prev => ({ ...prev, document_type: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      required
+                    >
+                      <option value="law">Lei</option>
+                      <option value="decree">Decreto</option>
+                      <option value="constitution">Constituição</option>
+                      <option value="regulation">Regulamento</option>
+                      <option value="code">Código</option>
+                      <option value="ordinance">Portaria</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="jurisdiction">Jurisdição *</Label>
+                    <select
+                      id="jurisdiction"
+                      value={uploadForm.jurisdiction}
+                      onChange={(e) => setUploadForm(prev => ({ ...prev, jurisdiction: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      required
+                    >
+                      <option value="mozambique">Moçambique</option>
+                      <option value="portugal">Portugal</option>
+                      <option value="brazil">Brasil</option>
+                      <option value="angola">Angola</option>
+                      <option value="other">Outra</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="publication_date">Data de Publicação</Label>
+                    <Input
+                      id="publication_date"
+                      type="date"
+                      value={uploadForm.publication_date}
+                      onChange={(e) => setUploadForm(prev => ({ ...prev, publication_date: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="effective_date">Data de Vigência</Label>
+                    <Input
+                      id="effective_date"
+                      type="date"
+                      value={uploadForm.effective_date}
+                      onChange={(e) => setUploadForm(prev => ({ ...prev, effective_date: e.target.value }))}
+                    />
                   </div>
                 </div>
+                
+                <div>
+                  <Label htmlFor="legal_areas">Áreas Jurídicas (separadas por vírgula)</Label>
+                  <Input
+                    id="legal_areas"
+                    value={uploadForm.legal_areas}
+                    onChange={(e) => setUploadForm(prev => ({ ...prev, legal_areas: e.target.value }))}
+                    placeholder="civil, penal, laboral"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="keywords">Palavras-chave (separadas por vírgula)</Label>
+                  <Input
+                    id="keywords"
+                    value={uploadForm.keywords}
+                    onChange={(e) => setUploadForm(prev => ({ ...prev, keywords: e.target.value }))}
+                    placeholder="contrato, responsabilidade, direitos"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="summary">Resumo</Label>
+                  <Textarea
+                    id="summary"
+                    value={uploadForm.summary}
+                    onChange={(e) => setUploadForm(prev => ({ ...prev, summary: e.target.value }))}
+                    rows={3}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="document_file">Arquivo do Documento *</Label>
+                  <Input
+                    id="document_file"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Formatos aceitos: PDF, DOC, DOCX (máx. 50MB)
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="upload_notes">Notas de Upload</Label>
+                  <Textarea
+                    id="upload_notes"
+                    value={uploadForm.upload_notes}
+                    onChange={(e) => setUploadForm(prev => ({ ...prev, upload_notes: e.target.value }))}
+                    rows={2}
+                  />
+                </div>
+                
+                <Button type="submit" disabled={isUploading} className="w-full">
+                  {isUploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Enviar Documento
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Validação */}
+        <TabsContent value="validation" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Documentos Pendentes de Validação</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {documents.filter(doc => doc.status === 'pending').map(doc => (
+                  <div key={doc.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{doc.title}</h3>
+                        <p className="text-sm text-gray-600">{doc.document_type} • {doc.jurisdiction}</p>
+                        {doc.summary && <p className="text-sm mt-2">{doc.summary}</p>}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const notes = prompt('Notas de validação (opcional):')
+                            handleValidateDocument(doc.id, notes || undefined)
+                          }}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Aprovar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            const reason = prompt('Motivo da rejeição:')
+                            if (reason) handleRejectDocument(doc.id, reason)
+                          }}
+                        >
+                          <XCircle className="w-4 h-4 mr-1" />
+                          Rejeitar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Analytics */}
+        <TabsContent value="analytics" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Documentos por Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {stats && Object.entries(stats.by_status).map(([status, count]) => (
+                  <div key={status} className="flex justify-between items-center py-2">
+                    <span className="capitalize">{status}</span>
+                    <Badge variant="outline">{count}</Badge>
+                  </div>
+                ))}
               </CardContent>
             </Card>
-
+            
             <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <CheckCircle className="h-8 w-8 text-green-600 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Documentos Ativos</p>
-                    <p className="text-2xl font-bold text-gray-800">{stats.active_documents}</p>
+              <CardHeader>
+                <CardTitle>Documentos por Tipo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {stats && Object.entries(stats.by_type).map(([type, count]) => (
+                  <div key={type} className="flex justify-between items-center py-2">
+                    <span className="capitalize">{type}</span>
+                    <Badge variant="outline">{count}</Badge>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Clock className="h-8 w-8 text-yellow-600 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Pendentes</p>
-                    <p className="text-2xl font-bold text-gray-800">{stats.pending_validation}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Shield className="h-8 w-8 text-purple-600 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Disponíveis para IA</p>
-                    <p className="text-2xl font-bold text-gray-800">
-                      {documents.filter(d => d.can_be_referenced).length}
-                    </p>
-                  </div>
-                </div>
+                ))}
               </CardContent>
             </Card>
           </div>
-        )}
-
-        <Tabs defaultValue="documents" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="documents">Documentos</TabsTrigger>
-            <TabsTrigger value="upload">Upload</TabsTrigger>
-            <TabsTrigger value="pending">Validação</TabsTrigger>
-          </TabsList>
-
-          {/* Lista de Documentos */}
-          <TabsContent value="documents">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Documentos Legais
-                </CardTitle>
-                
-                {/* Filtros */}
-                <div className="flex gap-4 mt-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Buscar por título ou número oficial..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="max-w-sm"
-                    />
-                  </div>
-                  
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-md"
-                  >
-                    <option value="all">Todos os Status</option>
-                    <option value="pending">Pendentes</option>
-                    <option value="approved">Aprovados</option>
-                    <option value="rejected">Rejeitados</option>
-                  </select>
-                  
-                  <select
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-md"
-                  >
-                    <option value="all">Todos os Tipos</option>
-                    <option value="constitution">Constituição</option>
-                    <option value="law">Lei</option>
-                    <option value="decree">Decreto</option>
-                    <option value="regulation">Regulamento</option>
-                  </select>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="space-y-4">
-                  {filteredDocuments.map((doc) => (
-                    <div key={doc.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-gray-800">{doc.title}</h3>
-                            {getStatusBadge(doc.status)}
-                            {doc.can_be_referenced && (
-                              <Badge className="bg-green-100 text-green-800">
-                                <Shield className="w-3 h-3 mr-1" />
-                                Disponível para IA
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div className="text-sm text-gray-600 space-y-1">
-                            {doc.official_number && (
-                              <p><strong>Nº Oficial:</strong> {doc.official_number}</p>
-                            )}
-                            <p><strong>Tipo:</strong> {doc.document_type} | <strong>Jurisdição:</strong> {doc.jurisdiction}</p>
-                            <p><strong>Áreas:</strong> {doc.legal_areas.join(', ') || 'Não especificadas'}</p>
-                            <p><strong>Consultas da IA:</strong> {doc.ai_query_count}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          {doc.status === 'pending' && (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => handleValidation(doc.id, 'approve')}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Aprovar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  const notes = prompt('Motivo da rejeição:')
-                                  if (notes) handleValidation(doc.id, 'reject', notes)
-                                }}
-                              >
-                                <XCircle className="w-4 h-4 mr-1" />
-                                Rejeitar
-                              </Button>
-                            </>
-                          )}
-                          
-                          <Button size="sm" variant="outline">
-                            <Eye className="w-4 h-4 mr-1" />
-                            Ver Detalhes
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {filteredDocuments.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Nenhum documento encontrado</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Upload de Documento */}
-          <TabsContent value="upload">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
-                  Upload de Documento Legal
-                </CardTitle>
-              </CardHeader>
-              
-              <CardContent>
-                <form onSubmit={handleUpload} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="title">Título do Documento *</Label>
-                      <Input
-                        id="title"
-                        value={uploadForm.title}
-                        onChange={(e) => setUploadForm({...uploadForm, title: e.target.value})}
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="official_number">Número Oficial</Label>
-                      <Input
-                        id="official_number"
-                        value={uploadForm.official_number}
-                        onChange={(e) => setUploadForm({...uploadForm, official_number: e.target.value})}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="document_type">Tipo de Documento *</Label>
-                      <select
-                        id="document_type"
-                        value={uploadForm.document_type}
-                        onChange={(e) => setUploadForm({...uploadForm, document_type: e.target.value})}
-                        className="w-full px-3 py-2 border rounded-md"
-                        required
-                      >
-                        <option value="law">Lei</option>
-                        <option value="constitution">Constituição</option>
-                        <option value="code">Código</option>
-                        <option value="decree">Decreto</option>
-                        <option value="regulation">Regulamento</option>
-                        <option value="ordinance">Portaria</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="jurisdiction">Jurisdição *</Label>
-                      <select
-                        id="jurisdiction"
-                        value={uploadForm.jurisdiction}
-                        onChange={(e) => setUploadForm({...uploadForm, jurisdiction: e.target.value})}
-                        className="w-full px-3 py-2 border rounded-md"
-                        required
-                      >
-                        <option value="mozambique">Moçambique</option>
-                        <option value="maputo">Maputo</option>
-                        <option value="gaza">Gaza</option>
-                        <option value="inhambane">Inhambane</option>
-                        <option value="sofala">Sofala</option>
-                        <option value="manica">Manica</option>
-                        <option value="tete">Tete</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="publication_date">Data de Publicação</Label>
-                      <Input
-                        id="publication_date"
-                        type="date"
-                        value={uploadForm.publication_date}
-                        onChange={(e) => setUploadForm({...uploadForm, publication_date: e.target.value})}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="effective_date">Data de Vigência</Label>
-                      <Input
-                        id="effective_date"
-                        type="date"
-                        value={uploadForm.effective_date}
-                        onChange={(e) => setUploadForm({...uploadForm, effective_date: e.target.value})}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="legal_areas">Áreas Legais (separadas por vírgula)</Label>
-                      <Input
-                        id="legal_areas"
-                        placeholder="civil, penal, laboral"
-                        value={uploadForm.legal_areas}
-                        onChange={(e) => setUploadForm({...uploadForm, legal_areas: e.target.value})}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="keywords">Palavras-chave (separadas por vírgula)</Label>
-                      <Input
-                        id="keywords"
-                        placeholder="contrato, responsabilidade, direitos"
-                        value={uploadForm.keywords}
-                        onChange={(e) => setUploadForm({...uploadForm, keywords: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="summary">Resumo do Documento</Label>
-                    <Textarea
-                      id="summary"
-                      rows={3}
-                      value={uploadForm.summary}
-                      onChange={(e) => setUploadForm({...uploadForm, summary: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="upload_notes">Notas do Upload</Label>
-                    <Textarea
-                      id="upload_notes"
-                      rows={2}
-                      value={uploadForm.upload_notes}
-                      onChange={(e) => setUploadForm({...uploadForm, upload_notes: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="document_file">Arquivo do Documento *</Label>
-                    <Input
-                      id="document_file"
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                      required
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Formatos aceitos: PDF, DOC, DOCX
-                    </p>
-                  </div>
-                  
-                  <Button type="submit" disabled={isUploading} className="w-full">
-                    {isUploading ? 'Carregando...' : 'Carregar Documento'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Documentos Pendentes de Validação */}
-          <TabsContent value="pending">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Documentos Pendentes de Validação
-                </CardTitle>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="space-y-4">
-                  {documents.filter(doc => doc.status === 'pending').map((doc) => (
-                    <div key={doc.id} className="border rounded-lg p-4 bg-yellow-50">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-800 mb-2">{doc.title}</h3>
-                          <div className="text-sm text-gray-600 space-y-1">
-                            {doc.official_number && (
-                              <p><strong>Nº Oficial:</strong> {doc.official_number}</p>
-                            )}
-                            <p><strong>Tipo:</strong> {doc.document_type} | <strong>Jurisdição:</strong> {doc.jurisdiction}</p>
-                            <p><strong>Carregado em:</strong> {new Date(doc.created_at).toLocaleDateString('pt-PT')}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleValidation(doc.id, 'approve')}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Aprovar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              const notes = prompt('Motivo da rejeição:')
-                              if (notes) handleValidation(doc.id, 'reject', notes)
-                            }}
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Rejeitar
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {documents.filter(doc => doc.status === 'pending').length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Nenhum documento pendente de validação</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

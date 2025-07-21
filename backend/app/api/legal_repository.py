@@ -1,4 +1,3 @@
-
 """
 API para gestão do repositório jurídico.
 """
@@ -160,188 +159,129 @@ async def upload_legal_document(
         logger.error("Error uploading legal document", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.get("/documents")
-async def list_legal_documents(
-    status: Optional[str] = None,
-    document_type: Optional[str] = None,
-    jurisdiction: Optional[str] = None,
-    search: Optional[str] = None,
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db_session),
-    user = Depends(get_current_legal_user)
-):
-    """Lista documentos legais com filtros."""
-    try:
-        query = select(LegalDocument)
-        
-        # Aplicar filtros
-        filters = []
-        if status:
-            filters.append(LegalDocument.status == DocumentStatus(status))
-        if document_type:
-            filters.append(LegalDocument.document_type == DocumentType(document_type))
-        if jurisdiction:
-            filters.append(LegalDocument.jurisdiction == Jurisdiction(jurisdiction))
-        if search:
-            search_filter = or_(
-                LegalDocument.title.ilike(f"%{search}%"),
-                LegalDocument.official_number.ilike(f"%{search}%"),
-                LegalDocument.summary.ilike(f"%{search}%")
-            )
-            filters.append(search_filter)
-        
-        if filters:
-            query = query.where(and_(*filters))
-        
-        # Ordenar por data de criação (mais recentes primeiro)
-        query = query.order_by(LegalDocument.created_at.desc())
-        
-        # Paginação
-        offset = (page - 1) * limit
-        query = query.offset(offset).limit(limit)
-        
-        result = await db.execute(query)
-        documents = result.scalars().all()
-        
-        # Contar total
-        count_query = select(func.count(LegalDocument.id))
-        if filters:
-            count_query = count_query.where(and_(*filters))
-        total_result = await db.execute(count_query)
-        total = total_result.scalar()
-        
-        return JSONResponse({
-            "success": True,
-            "documents": [
-                {
-                    "id": str(doc.id),
-                    "title": doc.title,
-                    "official_number": doc.official_number,
-                    "document_type": doc.document_type.value,
-                    "jurisdiction": doc.jurisdiction.value,
-                    "language": doc.language.value,
-                    "status": doc.status.value,
-                    "publication_date": doc.publication_date.isoformat() if doc.publication_date else None,
-                    "effective_date": doc.effective_date.isoformat() if doc.effective_date else None,
-                    "legal_areas": doc.legal_areas,
-                    "keywords": doc.keywords,
-                    "validated_at": doc.validated_at.isoformat() if doc.validated_at else None,
-                    "created_at": doc.created_at.isoformat() if doc.created_at else None,
-                    "ai_query_count": doc.ai_query_count,
-                    "is_active": doc.is_active,
-                    "can_be_referenced": doc.can_be_referenced
-                }
-                for doc in documents
-            ],
-            "pagination": {
-                "page": page,
-                "limit": limit,
-                "total": total,
-                "pages": (total + limit - 1) // limit
-            }
-        })
-        
-    except Exception as e:
-        logger.error("Error listing legal documents", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/documents/{document_id}/validate")
+@router.post("/{document_id}/validate")
 async def validate_legal_document(
     document_id: str,
-    action: str = Form(...),  # "approve" or "reject"
-    validation_notes: str = Form(None),
-    issues_found: str = Form("[]"),
-    recommendations: str = Form(None),
-    db: AsyncSession = Depends(get_db_session),
-    user = Depends(get_current_legal_user)
+    validation_notes: Optional[str] = None,
+    user: AdminUser | ProfessionalUser = Depends(get_current_legal_user),
+    db: AsyncSession = Depends(get_db_session)
 ):
-    """Validar ou rejeitar documento legal."""
+    """Valida um documento legal para uso da IA."""
     try:
+        # Verificar se usuário pode validar (apenas advogados e admins)
+        # if user.role not in [UserRole.LAWYER, UserRole.ADMIN]:
+        #    raise HTTPException(status_code=403, detail="Apenas advogados podem validar documentos")
+
+        # Buscar documento
         document = await db.get(LegalDocument, document_id)
         if not document:
             raise HTTPException(status_code=404, detail="Documento não encontrado")
-        
+
+        if document.status != DocumentStatus.PENDING:
+            raise HTTPException(status_code=400, detail="Documento não está pendente de validação")
+
+        # Atualizar status
         previous_status = document.status
-        
-        if action == "approve":
-            document.status = DocumentStatus.APPROVED
-            document.validated_by = user.id
-            document.validated_at = datetime.utcnow()
-            new_status = DocumentStatus.APPROVED.value
-            action_desc = "approved"
-        elif action == "reject":
-            document.status = DocumentStatus.REJECTED
-            new_status = DocumentStatus.REJECTED.value
-            action_desc = "rejected"
-        else:
-            raise HTTPException(status_code=400, detail="Ação deve ser 'approve' ou 'reject'")
-        
+        document.status = DocumentStatus.APPROVED
+        document.validated_by = user.id
+        document.validated_at = datetime.utcnow()
         document.validation_notes = validation_notes
-        
-        # Processar issues encontradas
-        import json
-        try:
-            issues_list = json.loads(issues_found)
-        except:
-            issues_list = [issues_found] if issues_found else []
-        
-        # Log da validação
-        log_entry = DocumentValidationLog(
+
+        # Criar log de validação
+        validation_log = DocumentValidationLog(
             document_id=document.id,
             validator_id=user.id,
-            action=action_desc,
+            action="approved",
             previous_status=previous_status.value,
-            new_status=new_status,
-            issues_found=issues_list,
-            recommendations=recommendations,
+            new_status=DocumentStatus.APPROVED.value,
             notes=validation_notes
         )
-        db.add(log_entry)
-        
+
+        db.add(validation_log)
         await db.commit()
-        
+
         return JSONResponse({
             "success": True,
-            "message": f"Documento {action_desc} com sucesso",
-            "new_status": new_status
+            "message": f"Documento '{document.title}' validado com sucesso",
+            "document_id": document_id
         })
-        
+
     except Exception as e:
         logger.error("Error validating legal document", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Erro interno")
 
 
-@router.get("/documents/{document_id}")
-async def get_legal_document_details(
+@router.post("/{document_id}/reject")
+async def reject_legal_document(
     document_id: str,
-    db: AsyncSession = Depends(get_db_session),
-    user = Depends(get_current_legal_user)
+    rejection_reason: str,
+    user: AdminUser | ProfessionalUser = Depends(get_current_legal_user),
+    db: AsyncSession = Depends(get_db_session)
 ):
-    """Obter detalhes completos de um documento legal."""
+    """Rejeita um documento legal."""
     try:
+        #if user.role not in [UserRole.LAWYER, UserRole.ADMIN]:
+        #    raise HTTPException(status_code=403, detail="Apenas advogados podem rejeitar documentos")
+
         document = await db.get(LegalDocument, document_id)
         if not document:
             raise HTTPException(status_code=404, detail="Documento não encontrado")
-        
+
+        previous_status = document.status
+        document.status = DocumentStatus.REJECTED
+
+        # Criar log
+        validation_log = DocumentValidationLog(
+            document_id=document.id,
+            validator_id=user.id,
+            action="rejected",
+            previous_status=previous_status.value,
+            new_status=DocumentStatus.REJECTED.value,
+            reason=rejection_reason,
+            notes=f"Rejeitado: {rejection_reason}"
+        )
+
+        db.add(validation_log)
+        await db.commit()
+
+        return JSONResponse({
+            "success": True,
+            "message": "Documento rejeitado",
+            "document_id": document_id
+        })
+
+    except Exception as e:
+        logger.error("Error rejecting legal document", error=str(e))
+        raise HTTPException(status_code=500, detail="Erro interno")
+
+
+@router.get("/{document_id}")
+async def get_legal_document_details(
+    document_id: str,
+    user: AdminUser | ProfessionalUser = Depends(get_current_legal_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Obtém detalhes completos de um documento legal."""
+    try:
+        # Buscar documento
+        document = await db.get(LegalDocument, document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Documento não encontrado")
+
         # Buscar artigos
         articles_result = await db.execute(
-            select(LegalArticle)
-            .where(LegalArticle.document_id == document.id)
-            .order_by(LegalArticle.article_number)
+            select(LegalArticle).where(LegalArticle.document_id == document.id)
         )
         articles = articles_result.scalars().all()
-        
+
         # Buscar logs de validação
         logs_result = await db.execute(
-            select(DocumentValidationLog)
-            .where(DocumentValidationLog.document_id == document.id)
-            .order_by(DocumentValidationLog.created_at.desc())
+            select(DocumentValidationLog).where(
+                DocumentValidationLog.document_id == document.id
+            ).order_by(DocumentValidationLog.created_at.desc())
         )
         logs = logs_result.scalars().all()
-        
+
         return JSONResponse({
             "success": True,
             "document": {
@@ -354,7 +294,6 @@ async def get_legal_document_details(
                 "status": document.status.value,
                 "publication_date": document.publication_date.isoformat() if document.publication_date else None,
                 "effective_date": document.effective_date.isoformat() if document.effective_date else None,
-                "expiration_date": document.expiration_date.isoformat() if document.expiration_date else None,
                 "legal_areas": document.legal_areas,
                 "keywords": document.keywords,
                 "summary": document.summary,
@@ -399,7 +338,7 @@ async def get_legal_document_details(
                 for log in logs
             ]
         })
-        
+
     except Exception as e:
         logger.error("Error getting legal document details", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -418,21 +357,21 @@ async def search_legal_content(
     try:
         # Base query para documentos ativos
         base_query = select(LegalDocument)
-        
+
         filters = []
         if only_active:
             filters.append(LegalDocument.status == DocumentStatus.APPROVED)
             filters.append(LegalDocument.validated_by.isnot(None))
-        
+
         # Filtros por tipo e jurisdição
         if document_types:
             types_list = document_types.split(',')
             filters.append(LegalDocument.document_type.in_(types_list))
-        
+
         if jurisdictions:
             jurisdictions_list = jurisdictions.split(',')
             filters.append(LegalDocument.jurisdiction.in_(jurisdictions_list))
-        
+
         # Busca textual
         search_filter = or_(
             LegalDocument.title.ilike(f"%{query}%"),
@@ -440,15 +379,15 @@ async def search_legal_content(
             LegalDocument.keywords.astext.ilike(f"%{query}%")
         )
         filters.append(search_filter)
-        
+
         if filters:
             base_query = base_query.where(and_(*filters))
-        
+
         base_query = base_query.limit(limit)
-        
+
         result = await db.execute(base_query)
         documents = result.scalars().all()
-        
+
         # Buscar artigos relevantes
         articles_query = select(LegalArticle).join(LegalDocument).where(
             and_(
@@ -460,10 +399,10 @@ async def search_legal_content(
                 )
             )
         ).limit(limit * 2)
-        
+
         articles_result = await db.execute(articles_query)
         articles = articles_result.scalars().all()
-        
+
         return JSONResponse({
             "success": True,
             "query": query,
@@ -494,7 +433,7 @@ async def search_legal_content(
             ],
             "total_found": len(documents) + len(articles)
         })
-        
+
     except Exception as e:
         logger.error("Error searching legal content", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -512,28 +451,28 @@ async def get_legal_repository_stats(
             LegalDocument.status,
             func.count(LegalDocument.id).label('count')
         ).group_by(LegalDocument.status)
-        
+
         result = await db.execute(stats_query)
         status_counts = {row.status.value: row.count for row in result}
-        
+
         # Contar por tipo
         type_query = select(
             LegalDocument.document_type,
             func.count(LegalDocument.id).label('count')
         ).where(LegalDocument.status == DocumentStatus.APPROVED).group_by(LegalDocument.document_type)
-        
+
         type_result = await db.execute(type_query)
         type_counts = {row.document_type.value: row.count for row in type_result}
-        
+
         # Contar por jurisdição
         jurisdiction_query = select(
             LegalDocument.jurisdiction,
             func.count(LegalDocument.id).label('count')
         ).where(LegalDocument.status == DocumentStatus.APPROVED).group_by(LegalDocument.jurisdiction)
-        
+
         jurisdiction_result = await db.execute(jurisdiction_query)
         jurisdiction_counts = {row.jurisdiction.value: row.count for row in jurisdiction_result}
-        
+
         return JSONResponse({
             "success": True,
             "stats": {
@@ -545,7 +484,7 @@ async def get_legal_repository_stats(
                 "pending_validation": status_counts.get("pending", 0) + status_counts.get("under_review", 0)
             }
         })
-        
+
     except Exception as e:
         logger.error("Error getting legal repository stats", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
