@@ -16,6 +16,9 @@ class CacheSettings(BaseModel):
     ttl_sec: int = 3600
     cache_ttl_sec: int = 3600  # Alias for compatibility
     max_size: int = 1000
+    cache_max_size: int = 1000  # Field that was missing
+    cache_compression: bool = True
+    cleanup_interval_sec: float = 300.0
 
 
 class DatabaseSettings(BaseModel):
