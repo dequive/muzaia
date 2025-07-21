@@ -529,15 +529,22 @@ class EnhancedApiClient {
           this.metrics.endRequest(error.config.metadata.requestId, undefined, error)
         }
 
-        // Log errors
-        console.error('❌ API Error:', {
+        // Log errors with better formatting
+        const errorInfo = {
           id: requestId,
           code: error?.code || 'UNKNOWN',
           status: error?.response?.status || 0,
           url: error?.config?.url || 'unknown',
           message: error?.message || 'Unknown error',
           data: error?.response?.data || null
-        })
+        }
+        
+        console.error('❌ API Error:', errorInfo)
+        
+        // Also log the full error for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Full error object:', error)
+        }
 
         // Handle specific error cases
         await this.handleError(error)
@@ -1125,6 +1132,67 @@ export const uploadApi = {
   },
 }
 
+// Glossario API
+export const glossarioApi = {
+  getTermos: async (params?: {
+    page?: number
+    limit?: number
+    query?: string
+    categoria?: string
+    status?: string
+    nivel_tecnico?: string
+  }): Promise<{
+    items: any[]
+    total: number
+    pages: number
+    current_page: number
+  }> => {
+    return api.get('/api/glossario/', { params })
+  },
+
+  getTermo: async (id: string): Promise<any> => {
+    return api.get(`/api/glossario/${id}`)
+  },
+
+  createTermo: async (data: {
+    termo: string
+    definicao: string
+    categoria: string
+    nivel_tecnico: string
+    exemplo?: string
+    sinonimos: string[]
+    jurisdicao: string
+    idioma: string
+    tags: string[]
+  }): Promise<any> => {
+    return api.post('/api/glossario/', data)
+  },
+
+  updateTermo: async (id: string, data: Partial<any>): Promise<any> => {
+    return api.put(`/api/glossario/${id}`, data)
+  },
+
+  deleteTermo: async (id: string): Promise<void> => {
+    await api.delete(`/api/glossario/${id}`)
+  },
+
+  getStats: async (): Promise<{
+    total_termos: number
+    por_categoria: Record<string, number>
+    por_nivel: Record<string, number>
+    por_status: Record<string, number>
+    por_jurisdicao: Record<string, number>
+  }> => {
+    return api.get('/api/glossario/stats/overview')
+  },
+
+  searchTermos: async (query: string, limit?: number): Promise<any[]> => {
+    return api.get('/api/glossario/search', { 
+      params: { query, limit: limit || 10 }
+    })
+  },
+}
+
 // Analytics API
 export const analyticsApi = {
   trackEvent: debounce(async (event: {
@@ -1185,12 +1253,24 @@ export const isApiError = (error: any): error is AxiosError => {
 
 export const getApiErrorMessage = (error: any): string => {
   if (isApiError(error)) {
-    return error.response?.data?.message || 
-           error.response?.data?.error || 
-           error.message ||
-           'Erro desconhecido da API'
+    // Try different error message formats
+    if (error.response?.data) {
+      const data = error.response.data
+      return data.message || 
+             data.error || 
+             data.detail || 
+             (typeof data === 'string' ? data : null) ||
+             error.message ||
+             'Erro desconhecido da API'
+    }
+    return error.message || 'Erro de conexão com a API'
   }
-  return error?.message || 'Erro desconhecido'
+  
+  if (error && typeof error === 'object') {
+    return error.message || JSON.stringify(error) || 'Erro desconhecido'
+  }
+  
+  return error?.toString() || 'Erro desconhecido'
 }
 
 export const checkApiHealth = async (): Promise<boolean> => {

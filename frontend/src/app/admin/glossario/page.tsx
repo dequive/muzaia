@@ -2,6 +2,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { glossarioApi } from '@/lib/api'
+import { toast } from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -103,32 +105,29 @@ export default function GlossarioPage() {
   const carregarDados = async () => {
     setIsLoading(true)
     try {
-      // Carregar termos
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '20'
-      })
-
-      if (searchTerm) params.append('query', searchTerm)
-      if (filtroCategoria !== 'all') params.append('categoria', filtroCategoria)
-      if (filtroStatus !== 'all') params.append('status', filtroStatus)
-      if (filtroNivel !== 'all') params.append('nivel_tecnico', filtroNivel)
-
-      const [termosResponse, statsResponse] = await Promise.all([
-        fetch(`http://localhost:8000/api/glossario/?${params}`),
-        fetch('http://localhost:8000/api/glossario/stats/overview')
-      ])
-
-      if (termosResponse.ok && statsResponse.ok) {
-        const termosData = await termosResponse.json()
-        const statsData = await statsResponse.json()
-        
-        setTermos(termosData.items)
-        setTotalPages(termosData.pages)
-        setStats(statsData)
+      // Preparar parâmetros
+      const params: any = {
+        page: currentPage,
+        limit: 20
       }
+
+      if (searchTerm) params.query = searchTerm
+      if (filtroCategoria !== 'all') params.categoria = filtroCategoria
+      if (filtroStatus !== 'all') params.status = filtroStatus
+      if (filtroNivel !== 'all') params.nivel_tecnico = filtroNivel
+
+      // Carregar dados usando API client
+      const [termosData, statsData] = await Promise.all([
+        glossarioApi.getTermos(params),
+        glossarioApi.getStats()
+      ])
+      
+      setTermos(termosData.items)
+      setTotalPages(termosData.pages)
+      setStats(statsData)
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
+      toast.error('Erro ao carregar dados do glossário')
     } finally {
       setIsLoading(false)
     }
@@ -142,60 +141,48 @@ export default function GlossarioPage() {
         tags: novoTermo.tags.split(',').map(s => s.trim()).filter(s => s)
       }
 
-      const response = await fetch('http://localhost:8000/api/glossario/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(termoData)
+      await glossarioApi.createTermo(termoData)
+      
+      setShowCreateModal(false)
+      setNovoTermo({
+        termo: '',
+        definicao: '',
+        categoria: 'direito_civil',
+        nivel_tecnico: 'basico',
+        exemplo: '',
+        sinonimos: '',
+        jurisdicao: 'mozambique',
+        idioma: 'pt',
+        tags: ''
       })
-
-      if (response.ok) {
-        setShowCreateModal(false)
-        setNovoTermo({
-          termo: '',
-          definicao: '',
-          categoria: 'direito_civil',
-          nivel_tecnico: 'basico',
-          exemplo: '',
-          sinonimos: '',
-          jurisdicao: 'mozambique',
-          idioma: 'pt',
-          tags: ''
-        })
-        carregarDados()
-      }
+      carregarDados()
+      toast.success('Termo criado com sucesso!')
     } catch (error) {
       console.error('Erro ao criar termo:', error)
+      toast.error('Erro ao criar termo')
     }
   }
 
   const validarTermo = async (termoId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/glossario/${termoId}?revisor=admin`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'validado' })
-      })
-
-      if (response.ok) {
-        carregarDados()
-      }
+      await glossarioApi.updateTermo(termoId, { status: 'validado' })
+      carregarDados()
+      toast.success('Termo validado com sucesso!')
     } catch (error) {
       console.error('Erro ao validar termo:', error)
+      toast.error('Erro ao validar termo')
     }
   }
 
   const excluirTermo = async (termoId: string) => {
     if (confirm('Tem certeza que deseja excluir este termo?')) {
       try {
-        const response = await fetch(`http://localhost:8000/api/glossario/${termoId}`, {
-          method: 'DELETE'
-        })
-
-        if (response.ok) {
-          carregarDados()
-        }
+        await glossarioApi.deleteTermo(termoId)
+        carregarDados()
+        toast.success('Termo excluído com sucesso!')
       } catch (error) {
         console.error('Erro ao excluir termo:', error)
+        toast.error('Erro ao excluir termo')
       }
     }
   }
