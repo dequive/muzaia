@@ -1,0 +1,138 @@
+This error suggests there's an issue with your API request handling in Next.js, where an empty error object `{}` is being logged. Let's break down the problem and solutions:
+
+### Root Cause Analysis
+1. The error originates from `src/lib/api.ts` (line 370)
+2. It's being processed through Axios, but the error object is empty
+3. The Next.js devtools are intercepting the console.error call
+
+### Common Causes
+1. **Network request failed** (CORS, offline, wrong URL)
+2. **Axios response interceptor** swallowing the error
+3. **API timeout** before receiving response
+4. **Malformed request** causing the API to fail silently
+
+### Debugging Steps
+
+#### 1. Check the API request in `src/lib/api.ts`
+Look for line 370 and surrounding code. You likely need better error handling:
+
+```typescript
+try {
+  const response = await axios.request(config);
+  return response.data;
+} catch (error) {
+  // Enhanced error logging
+  console.error('API Request Failed:', {
+    url: config.url,
+    method: config.method,
+    status: error.response?.status,
+    statusText: error.response?.statusText,
+    data: error.response?.data,
+    headers: error.response?.headers,
+    request: error.request,
+    config: error.config,
+    fullError: error
+  });
+  throw error; // Re-throw for upstream handling
+}
+```
+
+#### 2. Verify Axios Configuration
+Check if you have response interceptors that might be modifying errors:
+
+```typescript
+// Remove or modify any interceptors that might look like this:
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    // Bad practice - swallowing the error
+    return Promise.resolve({}); 
+  }
+);
+```
+
+#### 3. Network Inspection
+Open Chrome DevTools → Network tab and:
+1. Check if the request is being made
+2. Verify the request URL is correct
+3. Look for CORS errors (blocked requests)
+
+#### 4. Temporary Bypass Interceptors
+Test without any interceptors to see the raw error:
+
+```typescript
+const api = axios.create();
+const response = await api.get('/your-endpoint');
+```
+
+### Recommended Fixes
+
+#### 1. Proper Error Handling
+Update your error handling to capture all details:
+
+```typescript
+// In src/lib/api.ts
+export async function apiRequest(config) {
+  try {
+    const response = await axios({
+      ...config,
+      timeout: 10000, // 10s timeout
+      validateStatus: (status) => status < 500 // Don't throw on 4xx
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      // Server responded with non-2xx
+      console.error('API Error Response:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      // No response received
+      console.error('API No Response:', {
+        request: error.request,
+        message: error.message
+      });
+    } else {
+      // Setup error
+      console.error('API Setup Error:', error.message);
+    }
+    throw error; // Important for error boundaries
+  }
+}
+```
+
+#### 2. Next.js API Debugging
+If this is a Next.js API route:
+1. Check your API route handler (`pages/api/...`)
+2. Add proper error handling:
+
+```typescript
+// pages/api/your-endpoint.ts
+export default async function handler(req, res) {
+  try {
+    // Your logic
+    res.status(200).json({ data: 'success' });
+  } catch (error) {
+    console.error('API Route Error:', error);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
+```
+
+#### 3. Environment Verification
+Check if environment variables are properly loaded:
+```typescript
+console.log('API Base URL:', process.env.NEXT_PUBLIC_API_URL);
+```
+
+If you share:
+1. The relevant code from `src/lib/api.ts` around line 370
+2. Your Axios configuration/interceptors
+3. The API route you're calling
+
+I can provide more specific guidance. The current stack trace suggests the error is being caught but not properly propagated through your error handling layers.
