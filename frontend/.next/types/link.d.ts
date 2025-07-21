@@ -34,6 +34,8 @@ declare namespace __next_route_internal_types__ {
     | `/admin`
     | `/admin/legal`
     | `/admin/login`
+    | `/admin/professionals`
+    | `/admin/professionals/register`
     | `/api/health`
     | `/chat`
     | `/login`
