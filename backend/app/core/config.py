@@ -34,9 +34,6 @@ class SecuritySettings(BaseModel):
 
 class LLMSettings(BaseModel):
     """Configurações para modelos LLM."""
-    default_model: str = "gpt-3.5-turbo"
-    max_tokens: int = 2048
-    temperature: float = 0.7
     timeout_seconds: int = 30
 
 
