@@ -146,4 +146,8 @@ api_router.include_router(legal_repository_router)
 
 # Chat inteligente com base legal
 api_router.include_router(smart_legal_chat.router)
+
+# Testes simples
+from app.api import test_simple
+api_router.include_router(test_simple.router)
 `
