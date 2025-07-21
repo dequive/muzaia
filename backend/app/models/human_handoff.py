@@ -1,8 +1,8 @@
-"""Renames 'metadata' column to 'extra_data' in Technician and ConversationHandoff models to avoid conflicts with SQLAlchemy's reserved attribute name."""
+from __future__ import annotations
+
 """
 Sistema de gestão de transferência para técnicos jurídicos.
 """
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta
