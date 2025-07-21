@@ -1,0 +1,77 @@
+This error indicates that there's no `settings` object being exported from your `app.core.config` module. The import is failing because `settings` doesn't exist in that file.
+
+Here are the most common causes and solutions:
+
+## 1. Missing Settings Instance
+
+Your `config.py` file likely defines a `Settings` class but doesn't create an instance. You need to add:
+
+```python
+# In app/core/config.py
+from pydantic_settings import BaseSettings
+from pydantic import BaseModel
+
+class CacheSettings(BaseModel):
+    cache_ttl_sec: int = 3600
+
+class Settings(BaseSettings):
+    # Your configuration fields here
+    cache: CacheSettings = CacheSettings()
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+# Create the settings instance - this is what's missing!
+settings = Settings()
+```
+
+## 2. Check Your Current config.py File
+
+Can you show me the current content of your `app/core/config.py` file? The issue is likely one of these:
+
+- No `settings = Settings()` line
+- The settings instance has a different name
+- There's a syntax error preventing the file from loading
+- Import errors within the config file itself
+
+## 3. Temporary Debug Solution
+
+To quickly identify the issue, temporarily add some debug prints to your config.py:
+
+```python
+# At the top of app/core/config.py
+print("Loading config.py...")
+
+# Your Settings class definition here
+class Settings(BaseSettings):
+    # ... your config
+
+# At the bottom
+print("Creating settings instance...")
+settings = Settings()
+print("Settings created successfully!")
+```
+
+## 4. Alternative Quick Fix
+
+If you need to get the app running quickly, create a minimal config file:
+
+```python
+# In app/core/config.py
+from pydantic_settings import BaseSettings
+from pydantic import BaseModel
+
+class CacheSettings(BaseModel):
+    cache_ttl_sec: int = 3600
+
+class Settings(BaseSettings):
+    cache: CacheSettings = CacheSettings()
+    
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
+```
+
+Can you share the current content of your `config.py` file? That will help me provide a more specific solution. The error suggests the file exists but doesn't export a `settings` object that other modules are trying to import.
