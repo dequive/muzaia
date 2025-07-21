@@ -14,6 +14,7 @@ class CacheSettings(BaseModel):
     """Configurações de cache."""
     enabled: bool = True
     ttl_sec: int = 3600
+    cache_ttl_sec: int = 3600  # Alias for compatibility
     max_size: int = 1000
 
 
@@ -54,11 +55,25 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Mozaia Backend API"
     PROJECT_VERSION: str = "1.0.0"
     PROJECT_DESCRIPTION: str = "API para sistema de chat híbrido com IA e técnicos"
+    APP_NAME: str = "Mozaia LLM Orchestrator"
+    APP_VERSION: str = "2.0.0"
+    ENVIRONMENT: str = "development"
     
     # Configurações do servidor
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     DEBUG: bool = True
+    
+    # Database
+    DATABASE_URL: str = "sqlite+aiosqlite:///./mozaia.db"
+    
+    # Security
+    SECRET_KEY: str = "your-secret-key-change-in-production-please-32-chars-minimum"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379"
     
     # CORS
     ALLOWED_ORIGINS: List[str] = [

@@ -1,0 +1,72 @@
+O erro indica que o código está tentando acessar `settings.cache.cache_max_size`, mas o atributo `cache_max_size` não existe na classe `CacheSettings`.
+
+## **Solução: Adicionar o Campo Faltante**
+
+Adicione o campo `cache_max_size` na sua classe `CacheSettings`:
+
+```python
+# app/core/config.py
+from pydantic_settings import BaseSettings
+from pydantic import BaseModel
+
+class CacheSettings(BaseModel):
+    cache_ttl_sec: int = 3600
+    cache_max_size: int = 1000  # Adicione este campo que estava faltando
+
+class Settings(BaseSettings):
+    # Seus outros campos...
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REDIS_URL: str = "redis://localhost:6379"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_LLAMA_MODEL: str = "llama3:8b"
+    OLLAMA_GEMMA_MODEL: str = "gemma2:9b"
+    OPENROUTER_QWEN_MODEL: str = "qwen/qwen-2.5-72b-instruct"
+    COHERE_MODEL: str = "command-r-plus"
+    
+    cache: CacheSettings = CacheSettings()
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+settings = Settings()
+```
+
+## **Alternativa: Verificar Todos os Campos Necessários do Cache**
+
+Olhe no seu arquivo `cache.py` para ver quais outros atributos são acessados e adicione todos:
+
+```python
+class CacheSettings(BaseModel):
+    cache_ttl_sec: int = 3600
+    cache_max_size: int = 1000
+    # Adicione outros campos que podem ser necessários:
+    # cache_cleanup_interval: int = 300
+    # cache_memory_limit: int = 100_000_000  # 100MB
+    # cache_enabled: bool = True
+```
+
+## **Solução com Fallback no Cache**
+
+Ou, como solução temporária, você pode modificar o cache para usar valores padrão:
+
+```python
+# Em app/core/cache.py, linha ~109
+class AsyncInMemoryCache:
+    def __init__(self, max_size: Optional[int] = None, ttl_sec: Optional[int] = None):
+        # Use fallback se o atributo não existir
+        self._max_size = max_size or getattr(settings.cache, 'cache_max_size', 1000)
+        self._ttl = ttl_sec or getattr(settings.cache, 'cache_ttl_sec', 3600)
+```
+
+## **Verificar Outros Possíveis Campos Faltantes**
+
+Execute este comando para ver todos os atributos que o cache tenta acessar:
+
+```bash
+grep -n "settings\.cache\." backend/app/core/cache.py
+```
+
+Isso mostrará todas as linhas onde `settings.cache.` é usado, para você saber quais campos precisa adicionar.
+
+**A solução mais simples é adicionar `cache_max_size: int = 1000` na classe `CacheSettings`.**

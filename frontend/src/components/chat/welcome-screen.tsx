@@ -1,4 +1,3 @@
-
 'use client'
 
 import React from 'react'
@@ -43,12 +42,12 @@ const quickPrompts = [
   }
 ]
 
-export function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
-  const { chatSettings } = useChatStore()
+export function WelcomeScreen({ onStartChat }: { onStartChat: (prompt: string, context: string) => void }) {
+    const { chatSettings } = useChatStore();
 
-  const handlePromptClick = (prompt: string, context?: string) => {
-    onStartChat(prompt, context)
-  }
+    const handlePromptClick = (prompt: string, context: string) => {
+        onStartChat(prompt, context);
+    };
 
   return (
     <div className="flex-1 flex items-center justify-center p-8">
