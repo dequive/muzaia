@@ -181,27 +181,39 @@ export function useChat(conversationId?: string) {
   // Funções principais
   const sendMessage = useCallback(
     async (
-      content: string,
-      context: ContextType = chatSettings.default_context,
-      useStreaming: boolean = chatSettings.enable_streaming
+      messageData: { 
+        content: string, 
+        context_type?: ContextType, 
+        attachments?: any[] 
+      }
     ) => {
+      const { content, context_type = chatSettings.default_context } = messageData;
+      
       if (!content.trim()) return;
 
       let conversation = currentConversation;
 
       // Criar conversa se não existir
       if (!conversation) {
-        const title = content.slice(0, 50) + (content.length > 50 ? '...' : '');
-        const newConv = await createConversationMutation.mutateAsync({
-          title,
-          context,
-        });
-        conversation = newConv;
-      }
-
-      if (!conversation) {
-        toast.error('Erro ao criar conversa');
-        return;
+        try {
+          const title = content.slice(0, 50) + (content.length > 50 ? '...' : '');
+          const newConv = await createConversationMutation.mutateAsync({
+            title,
+            context: context_type,
+          });
+          conversation = newConv;
+        } catch (error) {
+          console.error('Error creating conversation:', error);
+          // Continue sem conversa para modo público
+          conversation = {
+            id: 'public-' + Date.now(),
+            title: 'Conversa Pública',
+            context: context_type,
+            user_id: 'public',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+        }
       }
 
       // Adicionar mensagem do usuário
@@ -210,18 +222,27 @@ export function useChat(conversationId?: string) {
       // Preparar request
       const request: GenerationRequest = {
         query: content,
-        context,
-        user_id: conversation.user_id,
-        params: chatSettings.generation_params,
+        context: context_type,
+        user_id: conversation.user_id || 'public',
+        params: chatSettings.generation_params || {
+          temperature: 0.7,
+          max_tokens: 2000,
+          top_p: 0.9
+        },
         min_confidence: 0.7,
-        enable_streaming: useStreaming,
+        enable_streaming: chatSettings.enable_streaming || false,
       };
 
       // Gerar resposta
-      if (useStreaming) {
-        await streamMutation.mutateAsync(request);
-      } else {
-        await generateMutation.mutateAsync(request);
+      try {
+        if (chatSettings.enable_streaming) {
+          await streamMutation.mutateAsync(request);
+        } else {
+          await generateMutation.mutateAsync(request);
+        }
+      } catch (error) {
+        console.error('Error generating response:', error);
+        toast.error('Erro ao gerar resposta. Tente novamente.');
       }
     },
     [

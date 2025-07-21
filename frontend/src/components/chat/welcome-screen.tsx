@@ -1,162 +1,219 @@
+
 'use client'
 
-import React from 'react'
+import { motion } from 'framer-motion'
+import { 
+  MessageSquare, 
+  Sparkles, 
+  Brain, 
+  Zap, 
+  Target, 
+  Shield,
+  HelpCircle,
+  ArrowRight,
+  Lightbulb
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useChatStore } from '@/store'
-import { MessageCircle, Upload, Mic, FileText, BookOpen, Gavel } from 'lucide-react'
+import type { ContextType } from '@/types'
 
 interface WelcomeScreenProps {
-  onStartChat: (prompt?: string, context?: string) => void
+  onStartChat: (prompt?: string, context?: ContextType) => void
 }
 
-const quickPrompts = [
+const quickStarters = [
   {
-    title: 'Análise de Contrato',
-    description: 'Analisar cláusulas e identificar riscos',
-    prompt: 'Preciso de ajuda para analisar um contrato. Pode me ajudar a identificar pontos importantes?',
-    context: 'contract_analysis',
-    icon: FileText
+    title: "Questão Jurídica",
+    description: "Tire dúvidas sobre leis e direitos",
+    icon: Shield,
+    context: "legal" as ContextType,
+    prompts: [
+      "Quais são os meus direitos como consumidor?",
+      "Como funciona o processo de divórcio?",
+      "Direitos trabalhistas em Moçambique"
+    ]
   },
   {
-    title: 'Pesquisa Jurídica',
-    description: 'Encontrar jurisprudência e legislação',
-    prompt: 'Estou pesquisando sobre um tema jurídico específico. Pode me ajudar a encontrar referências relevantes?',
-    context: 'legal_research',
-    icon: BookOpen
+    title: "Análise de Negócios", 
+    description: "Estratégias e planejamento empresarial",
+    icon: Target,
+    context: "business" as ContextType,
+    prompts: [
+      "Como criar um plano de negócios?",
+      "Estratégias de marketing digital",
+      "Análise de viabilidade financeira"
+    ]
   },
   {
-    title: 'Consultoria Legal',
-    description: 'Orientação sobre questões jurídicas',
-    prompt: 'Tenho uma dúvida jurídica e preciso de orientação. Pode me explicar os aspectos legais envolvidos?',
-    context: 'legal_consultation',
-    icon: Gavel
+    title: "Suporte Técnico",
+    description: "Programação e tecnologia",
+    icon: Zap,
+    context: "technical" as ContextType,
+    prompts: [
+      "Como implementar autenticação JWT?",
+      "Diferenças entre SQL e NoSQL",
+      "Melhores práticas de segurança"
+    ]
   },
   {
-    title: 'Redação Jurídica',
-    description: 'Criar ou revisar documentos legais',
-    prompt: 'Preciso redigir um documento jurídico. Pode me ajudar com a estrutura e conteúdo?',
-    context: 'legal_drafting',
-    icon: MessageCircle
+    title: "Consulta Geral",
+    description: "Qualquer outra dúvida",
+    icon: Brain,
+    context: "general" as ContextType,
+    prompts: [
+      "Explique-me como funciona a IA",
+      "Tendências tecnológicas 2024",
+      "Como melhorar a produtividade"
+    ]
   }
 ]
 
-export function WelcomeScreen({ onStartChat }: { onStartChat: (prompt: string, context: string) => void }) {
-    const { chatSettings } = useChatStore();
+export function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
+  const { chatSettings } = useChatStore()
 
-    const handlePromptClick = (prompt: string, context: string) => {
-        onStartChat(prompt, context);
-    };
+  const handlePromptClick = (prompt: string, context?: ContextType) => {
+    onStartChat(prompt, context)
+  }
+
+  const handleContextStart = (context: ContextType) => {
+    onStartChat(undefined, context)
+  }
 
   return (
-    <div className="flex-1 flex items-center justify-center p-8">
-      <div className="max-w-4xl mx-auto text-center space-y-8">
+    <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="max-w-4xl mx-auto text-center"
+      >
         {/* Header */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-              <MessageCircle className="w-6 h-6 text-primary" />
+        <div className="mb-8">
+          <div className="flex items-center justify-center mb-6">
+            <div className="relative">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shadow-lg">
+                <MessageSquare className="h-8 w-8 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 h-6 w-6 bg-green-500 rounded-full flex items-center justify-center">
+                <Sparkles className="h-3 w-3 text-white" />
+              </div>
             </div>
-            <h1 className="text-3xl font-bold">Mozaia Legal AI</h1>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Seu assistente jurídico inteligente com capacidades multimodais. 
-            Analise documentos, pesquise legislação e obtenha orientação legal especializada.
+
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Bem-vindo ao Mozaia AI
+          </h1>
+          
+          <p className="text-lg text-gray-600 dark:text-gray-300 mb-2">
+            Seu assistente inteligente com consenso de múltiplos modelos de IA
           </p>
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Upload className="w-3 h-3" />
-              Upload de Documentos
+          
+          <div className="flex items-center justify-center space-x-2">
+            <Badge variant="outline" className="text-xs">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Múltiplos LLMs
             </Badge>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Mic className="w-3 h-3" />
-              Comando de Voz
+            <Badge variant="outline" className="text-xs">
+              <Shield className="h-3 w-3 mr-1" />
+              Consenso Inteligente
             </Badge>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <MessageCircle className="w-3 h-3" />
-              Chat Inteligente
+            <Badge variant="outline" className="text-xs">
+              <Zap className="h-3 w-3 mr-1" />
+              Resposta Otimizada
             </Badge>
           </div>
         </div>
 
-        {/* Quick Start Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-          {quickPrompts.map((prompt, index) => {
-            const IconComponent = prompt.icon
+        {/* Quick Starters */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {quickStarters.map((starter, index) => {
+            const IconComponent = starter.icon
             return (
-              <Card 
-                key={index}
-                className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
-                onClick={() => handlePromptClick(prompt.prompt, prompt.context)}
+              <motion.div
+                key={starter.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <IconComponent className="w-4 h-4 text-primary" />
+                <Card className="h-full hover:shadow-lg transition-all duration-200 cursor-pointer group border-gray-200 hover:border-emerald-300"
+                      onClick={() => handleContextStart(starter.context)}>
+                  <CardContent className="p-4 text-center">
+                    <div className="mb-3">
+                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                        <IconComponent className="h-6 w-6 text-white" />
+                      </div>
                     </div>
-                    <CardTitle className="text-left text-base">{prompt.title}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm text-muted-foreground text-left">
-                    {prompt.description}
-                  </p>
-                </CardContent>
-              </Card>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                      {starter.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {starter.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             )
           })}
         </div>
 
-        {/* Features */}
-        <div className="text-center space-y-4">
-          <h3 className="text-lg font-semibold">Capacidades Principais</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto text-sm">
-            <div className="space-y-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto">
-                <FileText className="w-5 h-5 text-blue-600" />
-              </div>
-              <h4 className="font-medium">Análise de Documentos</h4>
-              <p className="text-muted-foreground">
-                Processe contratos, petições e outros documentos legais com precisão
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mx-auto">
-                <BookOpen className="w-5 h-5 text-green-600" />
-              </div>
-              <h4 className="font-medium">Pesquisa Jurídica</h4>
-              <p className="text-muted-foreground">
-                Acesso a jurisprudência, legislação e doutrina atualizada
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mx-auto">
-                <MessageCircle className="w-5 h-5 text-purple-600" />
-              </div>
-              <h4 className="font-medium">Assistência Inteligente</h4>
-              <p className="text-muted-foreground">
-                Orientação especializada com suporte a múltiplos formatos
-              </p>
-            </div>
+        {/* Sample Prompts */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mb-8"
+        >
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center justify-center">
+            <Lightbulb className="h-5 w-5 mr-2 text-yellow-500" />
+            Sugestões para começar
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-3 max-w-3xl mx-auto">
+            {quickStarters.flatMap(starter => 
+              starter.prompts.slice(0, 2).map((prompt, index) => (
+                <Button
+                  key={`${starter.context}-${index}`}
+                  variant="ghost"
+                  className="text-left justify-start h-auto p-4 border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all duration-200"
+                  onClick={() => handlePromptClick(prompt, starter.context)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <starter.icon className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {prompt}
+                    </span>
+                    <ArrowRight className="h-3 w-3 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </Button>
+              ))
+            )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Start Button */}
-        <div className="space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="space-y-4"
+        >
           <Button 
             size="lg" 
             onClick={() => onStartChat()}
-            className="px-8 py-3 text-base"
+            className="px-8 py-3 text-base bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
           >
+            <MessageSquare className="h-5 w-5 mr-2" />
             Iniciar Nova Conversa
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Powered by {chatSettings.selectedModel || 'Multiple AI Models'} • 
+          
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Powered by {chatSettings?.selectedModel || 'Multiple AI Models'} • 
             Secure & Private • LGPD Compliant
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   )
 }

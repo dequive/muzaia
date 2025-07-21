@@ -465,7 +465,13 @@ export function ChatInterface() {
         {/* Messages Area */}
         <div className="flex-1 overflow-hidden">
           {messages.length === 0 ? (
-            <WelcomeScreen onStartChat={handleSendMessage} />
+            <WelcomeScreen onStartChat={(prompt, context) => {
+              if (prompt) {
+                handleSendMessage(prompt);
+              } else if (context) {
+                setContextType(context);
+              }
+            }} />
           ) : (
             <MessageList
               messages={messages}
