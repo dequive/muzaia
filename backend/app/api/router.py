@@ -134,7 +134,7 @@ api_router.include_router(multimodal_router)
 api_router.include_router(handoff_router)
 api_router.include_router(admin_router)
 api_router.include_router(legal_repository_router)
-from app.api import websocket, technician, test_integration, professional_management, professional_auth, smart_legal_chat
+from app.api import websocket, technician, test_integration, professional_management, professional_auth, smart_legal_chat, glossario
 api_router.include_router(websocket.router)
 api_router.include_router(technician.router)
 api_router.include_router(test_integration.router)
@@ -150,4 +150,3 @@ api_router.include_router(smart_legal_chat.router)
 # Testes simples
 from app.api import test_simple
 api_router.include_router(test_simple.router)
-`
