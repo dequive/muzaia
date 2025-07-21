@@ -189,7 +189,7 @@ export function ChatInterface() {
     }
     
     setHandoffRequests(prev => [...prev, request])
-    setShowHandoffPanel(true)e)
+    setShowHandoffPanel(true)
   }
 
   const handleVoiceToggle = () => {
