@@ -32,6 +32,7 @@ declare namespace __next_route_internal_types__ {
     | `/`
     | `/admin`
     | `/admin`
+    | `/admin/glossario`
     | `/admin/legal`
     | `/admin/login`
     | `/admin/professionals`
