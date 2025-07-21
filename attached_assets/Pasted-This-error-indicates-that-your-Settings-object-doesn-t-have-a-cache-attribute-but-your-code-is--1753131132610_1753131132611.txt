@@ -1,0 +1,65 @@
+This error indicates that your `Settings` object doesn't have a `cache` attribute, but your code is trying to access `settings.cache.cache_ttl_sec` in the cache module.
+
+Here are the most likely causes and solutions:
+
+## 1. Missing Cache Configuration in Settings
+
+Your `Settings` class (likely in `app/core/config.py`) doesn't define a `cache` attribute. You need to add it:
+
+```python
+# In app/core/config.py
+from pydantic import BaseSettings
+from pydantic_settings import BaseSettings  # or this import depending on version
+
+class CacheSettings(BaseModel):
+    cache_ttl_sec: int = 3600  # Default 1 hour
+    # Add other cache-related settings
+
+class Settings(BaseSettings):
+    # Your existing settings
+    cache: CacheSettings = CacheSettings()
+    
+    class Config:
+        env_file = ".env"
+```
+
+## 2. Alternative: Use Default Value in Cache Module
+
+If you don't want to modify the Settings class immediately, you can provide a fallback in your cache module:
+
+```python
+# In app/core/cache.py
+def __init__(self, ttl_sec: Optional[int] = None):
+    # Use fallback if settings.cache doesn't exist
+    default_ttl = getattr(settings, 'cache', None)
+    if default_ttl and hasattr(default_ttl, 'cache_ttl_sec'):
+        self._ttl = ttl_sec or default_ttl.cache_ttl_sec
+    else:
+        self._ttl = ttl_sec or 3600  # Default fallback
+```
+
+## 3. Check Your Environment Configuration
+
+If you're using environment variables, make sure you have the cache settings defined:
+
+```bash
+# In your .env file
+CACHE_CACHE_TTL_SEC=3600
+```
+
+## 4. Verify Import Order
+
+The error suggests a circular import issue. Make sure your settings are properly initialized before being used. You might need to restructure the imports or use lazy loading:
+
+```python
+# In cache.py - lazy load settings
+def get_cache_ttl():
+    from app.core.config import settings
+    return getattr(settings.cache, 'cache_ttl_sec', 3600)
+
+class AsyncInMemoryCache:
+    def __init__(self, ttl_sec: Optional[int] = None):
+        self._ttl = ttl_sec or get_cache_ttl()
+```
+
+The most straightforward fix is option 1 - add the missing `cache` configuration to your Settings class. Can you share your current `Settings` class definition so I can provide a more specific solution?
