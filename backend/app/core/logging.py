@@ -1,27 +1,23 @@
 
+"""
+Configuração de logging estruturado.
+"""
 import logging
 import structlog
-from typing import Any, Dict
+from typing import Any
 
 
-def setup_logging(log_level: str = "INFO") -> None:
-    """
-    Configura o sistema de logging estruturado da aplicação.
-    """
-    # Configuração básica do Python logging
-    logging.basicConfig(
-        format="%(message)s",
-        level=getattr(logging, log_level.upper()),
-    )
+def setup_logging() -> None:
+    """Configura o sistema de logging."""
     
-    # Configuração do structlog
+    # Configurar structlog
     structlog.configure(
         processors=[
             structlog.stdlib.filter_by_level,
             structlog.stdlib.add_logger_name,
             structlog.stdlib.add_log_level,
             structlog.stdlib.PositionalArgumentsFormatter(),
-            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.TimeStamper(fmt="ISO"),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
@@ -32,10 +28,9 @@ def setup_logging(log_level: str = "INFO") -> None:
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
-
-
-def get_logger(name: str) -> Any:
-    """
-    Retorna um logger estruturado para o módulo especificado.
-    """
-    return structlog.get_logger(name)
+    
+    # Configurar logging padrão
+    logging.basicConfig(
+        format="%(message)s",
+        level=logging.INFO,
+    )

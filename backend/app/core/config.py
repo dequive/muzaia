@@ -1,117 +1,48 @@
-# -*- coding: utf-8 -*-
 """
-Configurações centralizadas da aplicação Mozaia.
+Configurações da aplicação.
 """
-from typing import List, Optional
-from pydantic import Field, validator
-from pydantic_settings import BaseSettings
 import os
+from typing import Optional, List
+from pydantic import BaseSettings, Field
+
+
+class DatabaseSettings(BaseSettings):
+    """Configurações do banco de dados."""
+    host: str = Field(default="localhost", env="DB_HOST")
+    port: int = Field(default=5432, env="DB_PORT") 
+    user: str = Field(default="muzaia_user", env="DB_USER")
+    password: str = Field(default="muzaia_password", env="DB_PASSWORD")
+    name: str = Field(default="muzaia_db", env="DB_NAME")
+
+    @property
+    def url(self) -> str:
+        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
 
 
 class Settings(BaseSettings):
     """Configurações principais da aplicação."""
+    # Aplicação
+    PROJECT_NAME: str = "Mozaia Backend API"
+    PROJECT_VERSION: str = "1.0.0"
+    DEBUG: bool = Field(default=True, env="DEBUG")
 
-    # App Settings
-    app_name: str = Field("Mozaia LLM Orchestrator", alias="APP_NAME")
-    app_version: str = Field("2.0.0", alias="APP_VERSION")
-    debug: bool = Field(False, alias="DEBUG")
-    environment: str = Field("production", alias="ENVIRONMENT")
-    host: str = Field("0.0.0.0", alias="HOST")
-    port: int = Field(8000, alias="PORT")
+    # Servidor
+    HOST: str = Field(default="0.0.0.0", env="HOST")
+    PORT: int = Field(default=8000, env="PORT")
 
-    # Database
-    database_url: str = Field(..., alias="DATABASE_URL")
-
-    # Security
-    secret_key: str = Field(..., alias="SECRET_KEY")
-    jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
-    access_token_expire_minutes: int = Field(30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
-
-    # Redis
-    redis_url: str = Field("redis://localhost:6379", alias="REDIS_URL")
-
-    # Models
-    ollama_base_url: str = Field("http://localhost:11434", alias="OLLAMA_BASE_URL")
-    ollama_llama_model: str = Field("llama3:8b", alias="OLLAMA_LLAMA_MODEL")
-    ollama_gemma_model: str = Field("gemma2:9b", alias="OLLAMA_GEMMA_MODEL")
-    openrouter_qwen_model: str = Field("qwen/qwen-2.5-72b-instruct", alias="OPENROUTER_QWEN_MODEL")
-    cohere_model: str = Field("command-r-plus", alias="COHERE_MODEL")
+    # Banco de dados
+    database: DatabaseSettings = DatabaseSettings()
 
     # CORS
-    allowed_origins: List[str] = Field(
-        ["http://localhost:3000", "https://mozaia.mz"], 
-        alias="ALLOWED_ORIGINS"
-    )
+    ALLOWED_ORIGINS: List[str] = Field(default=["*"], env="ALLOWED_ORIGINS")
 
-    # API
-    api_prefix: str = Field("/api/v1", alias="API_PREFIX")
-    project_name: str = Field("Mozaia API", alias="PROJECT_NAME")
-    project_version: str = Field("2.0.0", alias="PROJECT_VERSION")
+    # JWT
+    SECRET_KEY: str = Field(default="development-secret-key", env="SECRET_KEY")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
 
-    # LLM Settings
-    model_name: str = Field("llama3:8b", alias="MODEL_NAME")
-    llm_pool: int = Field(3, alias="LLM_POOL")
-
-    # Server Settings
-    reload: bool = Field(True, alias="RELOAD")
-    log_level: str = Field("INFO", alias="LOG_LEVEL")
-
-    # Cache Settings
-    cache_ttl_sec: int = Field(3600, alias="CACHE_TTL_SEC")
-    cache_max_size: int = Field(1000, alias="CACHE_MAX_SIZE")
-
-    @property
-    def cache(self):
-        """Propriedade para compatibilidade com o código de cache"""
-        class CacheConfig:
-            def __init__(self, ttl_sec: int, max_size: int):
-                self.cache_ttl_sec = ttl_sec
-                self.cache_max_size = max_size
-                self.cache_compression = True
-                self.cleanup_interval_sec = 300
-        
-        return CacheConfig(self.cache_ttl_sec, self.cache_max_size)
-
-    @validator('secret_key')
-    def validate_secret_key(cls, v):
-        if not v or len(v) < 32:
-            raise ValueError('SECRET_KEY deve ter pelo menos 32 caracteres')
-        return v
-
-    @validator('environment')
-    def validate_environment(cls, v):
-        allowed = ['development', 'staging', 'production', 'testing']
-        if v not in allowed:
-            raise ValueError(f'ENVIRONMENT deve ser um de: {allowed}')
-        return v
-
-    @validator('allowed_origins')
-    def parse_origins(cls, v):
-        if isinstance(v, str):
-            # Parse string format like '["url1", "url2"]'
-            if v.startswith('[') and v.endswith(']'):
-                import json
-                try:
-                    return json.loads(v)
-                except json.JSONDecodeError:
-                    return [v.strip('[]"\'')]
-            return [v]
-        return v
-
-    @property
-    def is_development(self) -> bool:
-        return self.environment == 'development'
-
-    @property
-    def is_production(self) -> bool:
-        return self.environment == 'production'
-
-    model_config = {
-        'env_file': '.env',
-        'env_file_encoding': 'utf-8',
-        'case_sensitive': False,
-        'protected_namespaces': ('settings_',)
-    }
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
 
 settings = Settings()

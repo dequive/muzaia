@@ -1,4 +1,3 @@
-"""Corrects the import and usage of Enum in the SQLAlchemy models."""
 """
 Modelos para o repositório jurídico centralizado.
 """
