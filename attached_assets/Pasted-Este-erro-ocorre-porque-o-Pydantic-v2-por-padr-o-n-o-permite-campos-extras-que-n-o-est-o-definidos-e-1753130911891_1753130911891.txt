@@ -1,0 +1,117 @@
+Este erro ocorre porque o Pydantic v2 por padrão não permite campos extras que não estão definidos explicitamente na classe `Settings`. Aqui estão as soluções:
+
+## Solução 1: Permitir campos extras na configuração
+
+No arquivo `config.py`, adicione `extra='allow'` na classe `Config`:
+
+```python
+from typing import Optional
+from pydantic_settings import BaseSettings
+from pydantic import Field
+
+class Settings(BaseSettings):
+    # Campos obrigatórios
+    database_url: str = Field(..., env="DATABASE_URL")
+    
+    # Campos opcionais já definidos
+    openai_api_key: Optional[str] = Field(None, env="OPENAI_API_KEY")
+    port: int = Field(8000, env="PORT")
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
+        extra = 'allow'  # ✅ Permite campos extras
+
+settings = Settings()
+```
+
+## Solução 2: Definir todos os campos explicitamente (Recomendado)
+
+```python
+from typing import Optional
+from pydantic_settings import BaseSettings
+from pydantic import Field
+
+class Settings(BaseSettings):
+    # Database
+    database_url: str = Field(..., env="DATABASE_URL")
+    
+    # AI Models
+    openai_api_key: Optional[str] = Field(None, env="OPENAI_API_KEY")
+    
+    # JWT
+    jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")
+    
+    # Redis
+    redis_url: str = Field("redis://localhost:6379", env="REDIS_URL")
+    
+    # Ollama
+    ollama_base_url: str = Field("http://localhost:11434", env="OLLAMA_BASE_URL")
+    ollama_llama_model: str = Field("llama3:8b", env="OLLAMA_LLAMA_MODEL")
+    ollama_gemma_model: str = Field("gemma2:9b", env="OLLAMA_GEMMA_MODEL")
+    
+    # OpenRouter
+    openrouter_qwen_model: str = Field("qwen/qwen-2.5-72b-instruct", env="OPENROUTER_QWEN_MODEL")
+    
+    # Cohere
+    cohere_model: str = Field("command-r-plus", env="COHERE_MODEL")
+    
+    # Server
+    port: int = Field(8000, env="PORT")
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
+
+settings = Settings()
+```
+
+## Solução 3: Usar model_config (Pydantic v2 style)
+
+```python
+from typing import Optional
+from pydantic_settings import BaseSettings
+from pydantic import Field, ConfigDict
+
+class Settings(BaseSettings):
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra='allow'  # Permite campos extras
+    )
+    
+    # Seus campos aqui
+    database_url: str = Field(..., env="DATABASE_URL")
+    openai_api_key: Optional[str] = Field(None, env="OPENAI_API_KEY")
+    port: int = Field(8000, env="PORT")
+    
+    # Campos específicos do JudasLegal
+    jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")
+    redis_url: str = Field("redis://localhost:6379", env="REDIS_URL")
+    ollama_base_url: str = Field("http://localhost:11434", env="OLLAMA_BASE_URL")
+    ollama_llama_model: str = Field("llama3:8b", env="OLLAMA_LLAMA_MODEL")
+    ollama_gemma_model: str = Field("gemma2:9b", env="OLLAMA_GEMMA_MODEL")
+    openrouter_qwen_model: str = Field("qwen/qwen-2.5-72b-instruct", env="OPENROUTER_QWEN_MODEL")
+    cohere_model: str = Field("command-r-plus", env="COHERE_MODEL")
+
+settings = Settings()
+```
+
+## Verificar o arquivo .env
+
+Certifique-se de que seu arquivo `.env` está no formato correto:
+
+```env
+DATABASE_URL=postgresql://user:password@localhost/judaslegal
+OPENAI_API_KEY=sk-...
+JWT_ALGORITHM=HS256
+REDIS_URL=redis://localhost:6379
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_LLAMA_MODEL=llama3:8b
+OLLAMA_GEMMA_MODEL=gemma2:9b
+OPENROUTER_QWEN_MODEL=qwen/qwen-2.5-72b-instruct
+COHERE_MODEL=command-r-plus
+PORT=8000
+```
+
+**Recomendação**: Use a **Solução 2** (definir todos os campos explicitamente) pois é mais segura e documenta claramente todas as configurações que sua aplicação espera. Isso também ajuda com type hints e validação automática.
