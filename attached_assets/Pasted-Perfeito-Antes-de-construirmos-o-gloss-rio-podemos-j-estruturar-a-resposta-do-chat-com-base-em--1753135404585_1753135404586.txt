@@ -1,0 +1,126 @@
+Perfeito. Antes de construirmos o glossário, podemos já estruturar a **resposta do chat com base em busca semântica no repositório legal** e redacção em **linguagem jurídica simples e acessível**. Abaixo está o plano técnico mínimo viável para essa funcionalidade.
+
+---
+
+## ✅ OBJETIVO
+
+O sistema de chat responderá **apenas com base nas leis registradas e validadas** no repositório, utilizando:
+
+1. **Busca semântica (vector search)** sobre as leis.
+2. **Geração controlada de linguagem natural (LLM)** com output simplificado.
+3. **Fallback e encaminhamento** para humanos quando:
+
+   * não há base legal suficiente (confiança baixa);
+   * o tema é sensível (ex: penal, família, direitos humanos);
+   * há ambiguidade ou conflito normativo.
+
+---
+
+## 🧠 ARQUITETURA TÉCNICA (MVP)
+
+### 🔹 1. **Indexação Vetorial (RAG)**
+
+* Ferramenta: **Qdrant** ou **Supabase pgvector**.
+* Conteúdo indexado: leis válidas, artigos, notas de rodapé.
+* Segmentação: por artigo/parágrafo + metadados (jurisdição, idioma, área, estado).
+
+```json
+{
+  "id": "lei_001_art_15",
+  "texto": "Todo cidadão tem direito à liberdade de expressão...",
+  "vector": [0.113, -0.752, ...],
+  "metadados": {
+    "lei": "Lei de Imprensa",
+    "idioma": "pt",
+    "tipo": "artigo",
+    "estado": "validado",
+    "tags": ["liberdade", "expressão", "direitos fundamentais"]
+  }
+}
+```
+
+### 🔹 2. **Pipeline de Consulta do Chat**
+
+```text
+[pergunta do utilizador]
+     ↓
+[pré-processamento: normalização, tradução opcional, simplificação]
+     ↓
+[busca semântica no repositório vetorial]
+     ↓
+[retorno de trechos relevantes + metadados]
+     ↓
+[prompt para LLM (ex: Mistral, Llama, Claude, Command R+)]
+     ↓
+[geração de resposta com linguagem simples, citando base legal]
+     ↓
+[verificação de confiança e sensibilidade]
+     ↓
+[resposta final OU encaminhamento para advogado]
+```
+
+---
+
+## 📄 EXEMPLO DE FLUXO REAL
+
+**Usuário**: “Posso ser preso sem mandado em Moçambique?”
+
+→ Busca semântica retorna:
+
+```json
+{
+  "trecho": "Ninguém pode ser preso sem mandado judicial, salvo em flagrante delito.",
+  "fonte": "Art. 64 da Constituição da República de Moçambique",
+  "lei": "Constituição da República",
+  "confiança": 0.91
+}
+```
+
+→ Resposta gerada:
+
+> Não. Em Moçambique, uma pessoa só pode ser presa sem mandado se for apanhada em flagrante delito (ou seja, durante o crime). Fora disso, é necessário um mandado judicial, segundo a Constituição (Art. 64).
+>
+> ⚖️ Fonte: Constituição da República de Moçambique.
+
+---
+
+## 📉 SE O MODELO TIVER BAIXA CONFIANÇA
+
+> Não encontrei base legal suficiente no nosso repositório para responder com certeza. Encaminhei a sua pergunta para um dos nossos juristas disponíveis.
+
+---
+
+## 🛠️ COMPONENTES A IMPLEMENTAR AGORA
+
+1. **`repositoriodasleis/`**
+
+   * Estrutura dos documentos (nome da lei, artigos, data, estado, etc.)
+   * Pré-processamento + segmentação por artigo
+2. **`indexador_semantico.py`**
+
+   * Transforma texto → vetores via `embedding` (OpenRouter ou local)
+   * Salva no banco vetorial (Qdrant / Supabase pgvector)
+3. **`retriever.py`**
+
+   * Busca vetorial com filtros (idioma, área, jurisdição, estado)
+4. **`llm_responder.py`**
+
+   * Prompt restritivo + output em linguagem simples
+5. **`confidence_gate.py`**
+
+   * Se `confiança < threshold`, encaminha a pergunta
+6. **`chat_api.py`**
+
+   * Endpoint `/chat/perguntar` com tratamento completo
+
+---
+
+## ❓CONFIRMAR
+
+Podemos começar com:
+
+* Estrutura `backend/repositoriolaws/` com indexador e buscador?
+* Script de ingestão de leis exemplo?
+* Geração inicial de embeddings via `OpenRouter` com `text-embedding-3-small` ou usas `ollama` local?
+
+Diz como preferes começar: **estruturar o repositório de leis e indexação**, ou **implementar logo o módulo `chat/perguntar` com RAG simplificado**?
