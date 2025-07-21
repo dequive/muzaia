@@ -1,0 +1,88 @@
+Excelente. Um **glossário jurídico controlado e versionável** é fundamental para garantir que a IA, advogados e utilizadores compreendam os termos com consistência. Este glossário servirá:
+
+* como **base semântica** para interpretação das leis no repositório;
+* como recurso de **resposta direta ao utilizador final (educação jurídica básica)**;
+* como **complemento à inferência LLM**, restringindo ambiguidades;
+* e como **fonte de metadados** para tagging e busca inteligente (por sinônimo, área, jurisdição).
+
+---
+
+## 📘 ESTRUTURA DO GLOSSÁRIO JURÍDICO
+
+### 🔹 Formato Sugerido (JSON + Base de Dados)
+
+Cada entrada do glossário terá:
+
+```json
+{
+  "termo": "Habeas Corpus",
+  "definicao": "Instrumento jurídico que visa proteger o direito de liberdade de locomoção...",
+  "sinonimos": ["remédio constitucional", "garantia de liberdade"],
+  "exemplo": "O advogado impetrou habeas corpus em favor do réu preso ilegalmente.",
+  "categoria": "Direito Constitucional",
+  "nivel_tecnico": "Avançado",
+  "jurisdicao": "Moçambique",
+  "idioma": "pt",
+  "versao": "1.0",
+  "revisado_por": "advogado_123",
+  "data_revisao": "2025-07-20"
+}
+```
+
+---
+
+## 📚 SUGESTÃO DE CAMPOS (DB: `glossario_termos`)
+
+| Campo           | Tipo     | Descrição                             |
+| --------------- | -------- | ------------------------------------- |
+| `id`            | UUID     | Identificador único                   |
+| `termo`         | string   | Termo jurídico                        |
+| `definicao`     | text     | Definição técnica ou acessível        |
+| `categoria`     | enum     | Ex: “Direito Penal”, “Processo Civil” |
+| `nivel_tecnico` | enum     | “Básico”, “Intermediário”, “Avançado” |
+| `exemplo`       | text     | Uso prático em frase                  |
+| `sinonimos`     | array    | Termos alternativos                   |
+| `jurisdicao`    | string   | “Moçambique”, “Internacional”, etc.   |
+| `idioma`        | string   | “pt”, “en”, “ts”, etc.                |
+| `versao`        | string   | Versão semântica da entrada           |
+| `status`        | enum     | “rascunho”, “validado”, “revogado”    |
+| `revisado_por`  | FK       | ID do advogado que validou            |
+| `data_revisao`  | datetime | Data da última revisão                |
+
+---
+
+## 📂 ORGANIZAÇÃO DE ARQUIVOS
+
+```bash
+legal_repository/
+├── glossario/
+│   ├── termos.json         # Versão serializada
+│   ├── termos.csv          # Para importação em planilha
+│   ├── categorias.json     # Lista controlada de áreas do Direito
+│   └── scripts/
+│       └── importar_glossario.py
+```
+
+---
+
+## ✅ FUNCIONALIDADES FUTURAS
+
+| Função                           | Descrição                                                       |
+| -------------------------------- | --------------------------------------------------------------- |
+| 🔍 Busca semântica               | Usuário digita "liberdade" e obtém "habeas corpus", "fiança"... |
+| 🏷️ Tag automático em documentos | IA sugere tags de glossário para novos documentos legais        |
+| 📘 Ajuda em linguagem simples    | IA explica termos com base no glossário (modo educacional)      |
+| 🔁 Histórico de revisões         | Alterações versionadas por jurista revisor                      |
+| 🌐 Multi-idioma com fallback     | Preferência por idioma local, fallback para português técnico   |
+
+---
+
+## 🚀 AÇÃO IMEDIATA
+
+Queres que inicie:
+
+* o *modelo de dados* e *endpoint REST* para manter o glossário?
+* a primeira versão da base de termos em português jurídico moçambicano?
+* a *integração com painel admin* para edição e validação?
+
+Posso gerar o módulo `glossario/` sob `backend/`, com as estruturas iniciais. Confirmas?
