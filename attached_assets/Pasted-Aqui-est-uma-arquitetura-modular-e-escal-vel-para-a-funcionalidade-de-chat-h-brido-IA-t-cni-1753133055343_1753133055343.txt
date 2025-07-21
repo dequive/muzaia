@@ -1,0 +1,135 @@
+Aqui está uma **arquitetura modular e escalável** para a funcionalidade de **chat híbrido IA ↔ técnico jurídico/advogado humano**, integrada ao sistema de conversação estilo ChatGPT.
+
+---
+
+## 🏗️ ARQUITETURA GERAL — Atendimento Jurídico Assistido por IA
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                             INTERFACE DO USUÁRIO                           │
+│  (Next.js / React)                                                        │
+│ ┌──────────────────────────────┐  ┌─────────────────────────────────────┐  │
+│ │  Chat com IA (ChatGPT-style) │⇄│ WebSocket Client (Mensagens em RT) │  │
+│ └──────────────────────────────┘  └─────────────────────────────────────┘  │
+│        ⇅                            ⇅                                       │
+│ Botão: "Falar com um advogado"   Upload: PDF, DOCX, Áudio, etc             │
+└────────────────────────────────────────────────────────────────────────────┘
+                         ⇅ REST / WebSocket / Streaming API
+┌────────────────────────────────────────────────────────────────────────────┐
+│                              BACKEND (FastAPI)                             │
+│ ┌────────────────────┐   ┌──────────────────────────┐   ┌────────────────┐ │
+│ │ API Mensagens      │   │ Processador Documentos   │   │ Fila WebSocket │ │
+│ │ /message           │   │ (PDF, DOCX, OCR, áudio)  │   │ (Redis/pubsub) │ │
+│ └────────────────────┘   └──────────────────────────┘   └────────────────┘ │
+│         ⇅                               ⇅                        ⇅         │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │              ORQUESTRADOR DE CONVERSAS E ESCALONAMENTO                │ │
+│ │ - Regista sessões e estados                                           │ │
+│ │ - Encaminha para LLM ou técnico humano                               │ │
+│ │ - Mantém histórico e contexto                                         │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+│        ⇅ IA                             ⇅ Humanos (via WebSocket)           │
+│ ┌───────────────────────┐        ┌───────────────────────────────────────┐ │
+│ │ Módulo LLM (GPT, etc) │        │ Interface Advogado (painel técnico)  │ │
+│ │ - RAG / Prompting     │        │ - Lista de chats ativos              │ │
+│ │ - Suporte streaming   │        │ - Visualização do histórico          │ │
+│ └───────────────────────┘        │ - Editor assistido por IA (copiloto) │ │
+│                                  └───────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔍 MÓDULOS PRINCIPAIS
+
+### 1. **Front-end (Next.js ou React)**
+
+* UI estilo ChatGPT
+* Botão para acionar atendimento humano
+* Upload de ficheiros/documentos
+* Gravação e reprodução de voz (Web APIs)
+* WebSocket ativo para mensagens em tempo real
+
+---
+
+### 2. **Backend API (FastAPI ou Node.js)**
+
+* `POST /message`: processa entrada textual, documentos ou áudio
+* `GET /availability`: verifica técnicos online
+* `POST /request_human`: aciona o escalonador
+
+---
+
+### 3. **Orquestrador de Conversas**
+
+* Gere sessões e contexto (ID da conversa, participantes, histórico)
+* Encaminha mensagens para IA ou advogado
+* Decide quando passar da IA para humano com base em:
+
+  * Pedido do utilizador
+  * Análise automática (ex: baixa confiança da IA)
+  * Regras de negócio (ex: temas sensíveis)
+
+---
+
+### 4. **Escalonador de Atendimento**
+
+* Consulta a presença dos técnicos (via Redis, Firebase, ou BD)
+* Seleciona técnico disponível com base em regras:
+
+  * Menor carga
+  * Especialidade jurídica
+  * Disponibilidade de horário
+* Reserva a sessão e notifica o técnico via WebSocket
+
+---
+
+### 5. **Painel do Técnico Jurídico (Web app separado ou módulo admin)**
+
+* Recebe convites de conversa via WebSocket
+* Visualiza histórico do utilizador com a IA
+* Pode responder diretamente
+* Opcional: recebe sugestões da IA em tempo real (copiloto)
+
+---
+
+### 6. **Módulo IA (LLM Router / RAG)**
+
+* Recebe entrada do utilizador e/ou documentos extraídos
+* Processa contexto + documentos via RAG, se aplicável
+* Retorna respostas via streaming para front-end
+* Pode ser integrado com:
+
+  * OpenAI GPT‑4
+  * Claude 3.5
+  * LLaMA 3 + Ollama (modelo local)
+  * Prompt enhancers + ferramentas RAG
+
+---
+
+### 7. **Processador de Documentos e Áudio**
+
+* Extrai texto de ficheiros `.pdf`, `.docx`, `.png/jpg` com OCR
+* Transcreve áudio com Whisper ou outro STT
+* Armazena o conteúdo associado à conversa atual
+
+---
+
+### 8. **Sistema de Auditoria e Logs**
+
+* Toda a interação (IA e humano) é registrada
+* Logs com timestamp, remetente, tipo (bot/humano)
+* Exportável para revisão jurídica ou conformidade legal
+
+---
+
+## 🧪 Extensões Futuras
+
+* Notificações por email/WhatsApp quando técnico entra na sala
+* Classificador de temas jurídicos para direcionamento especializado
+* SLA monitorado e fila de espera com tempo estimado
+* Recomendação automática de documentos e templates legais
+
+---
+
+Queres que converta esta arquitetura num diagrama visual (mermaid ou SVG)? Ou preferes que passemos já à criação dos módulos prioritários (por exemplo: orquestrador, chat WebSocket, painel do técnico)?
