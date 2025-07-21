@@ -40,6 +40,7 @@ declare namespace __next_route_internal_types__ {
     | `/profile`
     | `/system`
     | `/technician`
+    | `/test`
   type DynamicRoutes<T extends string = string> = never
 
   type RouteImpl<T> = 
