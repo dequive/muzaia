@@ -1,562 +1,297 @@
-
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import { 
   Send, 
-  Plus, 
-  Menu, 
-  Settings, 
+  Bot, 
   User, 
-  MessageSquare,
+  Loader2, 
   Sparkles,
-  ChevronDown,
-  Share,
+  Plus,
+  MoreHorizontal,
+  MessageSquare,
+  Zap,
   RefreshCw,
-  Sun,
-  Moon,
-  History,
-  Edit3,
-  Trash2,
-  LogIn,
-  LogOut,
-  PanelLeft,
-  Upload,
-  Paperclip,
-  Mic,
-  Phone,
-  UserPlus,
-  AlertTriangle,
-  CheckCircle,
-  Clock
+  Copy,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react'
-import { MessageInput } from './message-input'
-import { MessageList } from './message-list'
-import { WelcomeScreen } from './welcome-screen'
-import { EmptyState } from './empty-state'
-import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
-import type { Message, ContextType } from '@/types'
+import { Message } from '@/types'
 
-interface HandoffRequest {
-  id: string
-  user_name: string
-  reason: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  created_at: string
-  status: 'pending' | 'accepted' | 'completed'
-}
+export default function ChatInterface() {
+  const [input, setInput] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-export function ChatInterface() {
-  const { user, signOut } = useAuth()
-  const { messages, conversations, sendMessage, isLoading } = useChat()
-  
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [isDark, setIsDark] = useState(false)
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [currentConversation, setCurrentConversation] = useState(null)
-  const [handoffRequests, setHandoffRequests] = useState<HandoffRequest[]>([])
-  const [showHandoffPanel, setShowHandoffPanel] = useState(false)
-  const [wsConnected, setWsConnected] = useState(false)
-  const [contextType, setContextType] = useState<ContextType>('legal')
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
-  const [isRecording, setIsRecording] = useState(false)
-  
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { 
+    messages, 
+    isLoading, 
+    error, 
+    sendMessage, 
+    clearMessages 
+  } = useChat()
 
-  // WebSocket connection 
-  useEffect(() => {
-    if (!user?.id) return
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isLoading) return
 
-    const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/ws/user/${user.id}`)
-    
-    ws.onopen = () => {
-      setWsConnected(true)
-      console.log('WebSocket connected')
+    setIsTyping(true)
+    await sendMessage(input)
+    setInput('')
+    setIsTyping(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e)
     }
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      handleWebSocketMessage(data)
-    }
-    
-    ws.onclose = () => {
-      setWsConnected(false)
-      console.log('WebSocket disconnected')
-    }
-
-    return () => ws.close()
-  }, [user?.id])
-
-  // Auto scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   useEffect(() => {
-    scrollToBottom()
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
+    }
   }, [messages])
 
-  const handleSendMessage = async (content: string) => {
-    try {
-      setIsStreaming(true)
-      
-      const messageData = {
-        content,
-        context_type: contextType,
-        attachments: attachedFiles.map(file => ({
-          name: file.name,
-          type: file.type,
-          size: file.size
-        }))
-      }
-      
-      await sendMessage(messageData)
-      setAttachedFiles([])
-    } catch (error) {
-      console.error('Error sending message:', error)
-    } finally {
-      setIsStreaming(false)
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'
     }
-  }
+  }, [input])
 
-  const handleStopStreaming = () => {
-    setIsStreaming(false)
-  }
-
-  const handleNewChat = () => {
-    setCurrentConversation(null)
-    // Clear messages or create new conversation
-  }
-
-  const handleFileAttachment = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || [])
-    setAttachedFiles(prev => [...prev, ...files])
-  }
-
-  const handleRemoveFile = (index: number) => {
-    setAttachedFiles(prev => prev.filter((_, i) => i !== index))
-  }
-
-  const handleWebSocketMessage = (data: any) => {
-    switch (data.type) {
-      case 'new_message':
-        if (data.sender_type !== 'user') {
-          // Add message from AI or technician
-          const newMessage = {
-            id: Date.now().toString(),
-            role: data.sender_type === 'technician' ? 'assistant' : 'assistant',
-            content: data.content,
-            timestamp: data.timestamp,
-            isStreaming: false
-          }
-          // Add to messages state - this would need to be connected to your chat state
-        }
-        break
-      
-      case 'handoff_accepted':
-        setShowHandoffPanel(false)
-        // Show technician connected notification
-        break
-      
-      case 'typing_indicator':
-        if (data.sender_type === 'technician') {
-          // Show typing indicator from technician
-        }
-        break
-    }
-  }
-
-  const handleHandoffRequest = async () => {
-    const request: HandoffRequest = {
-      id: Date.now().toString(),
-      user_name: user?.email || 'Usuário Anônimo',
-      reason: 'Solicitação de transferência para técnico humano',
-      priority: 'medium',
-      created_at: new Date().toISOString(),
-      status: 'pending'
-    }
-    
-    setHandoffRequests(prev => [...prev, request])
-    setShowHandoffPanel(true)
-  }
-
-  const handleVoiceToggle = () => {
-    setIsRecording(!isRecording)
-    // Implement voice recording logic
-  }
+  const ExamplePrompts = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+      {[
+        "Explique o direito de propriedade em Moçambique",
+        "Como funciona o processo de divórcio?",
+        "Quais são os direitos trabalhistas básicos?",
+        "Explique a constituição moçambicana"
+      ].map((prompt, index) => (
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
+        >
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-1 border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm"
+            onClick={() => setInput(prompt)}
+          >
+            <CardContent className="p-4">
+              <p className="text-sm text-slate-700 dark:text-slate-300">{prompt}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  )
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {/* File input hidden */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
-
-      {/* Sidebar */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ x: -320 }}
-            animate={{ x: 0 }}
-            exit={{ x: -320 }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="w-80 bg-gray-900 dark:bg-gray-950 text-white flex flex-col border-r border-gray-700"
-          >
-            {/* Header */}
-            <div className="p-4 border-b border-gray-700/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <Sparkles className="h-5 w-5 text-white" />
-                  </div>
-                  <h1 className="text-lg font-semibold">Mozaia AI</h1>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSidebarOpen(false)}
-                  className="text-gray-400 hover:text-white h-8 w-8 p-0"
-                >
-                  <PanelLeft className="h-4 w-4" />
-                </Button>
-              </div>
+    <div className="flex flex-col h-full">
+      {/* Chat Header */}
+      <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-full flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-white" />
             </div>
-
-            {/* New Chat Button */}
-            <div className="p-3">
-              <Button
-                onClick={handleNewChat}
-                className="w-full bg-transparent hover:bg-gray-800 text-white border border-gray-600 hover:border-gray-500 h-11 rounded-lg transition-all duration-200"
+            <div>
+              <h2 className="font-semibold text-slate-900 dark:text-white">Assistente IA</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Especializado em Direito Moçambicano</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline" className="text-emerald-600 border-emerald-200">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
+              Online
+            </Badge>
+            {messages.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearMessages}
+                className="hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Conversa
               </Button>
-            </div>
-
-            {/* Context Selector */}
-            <div className="px-3 mb-4">
-              <label className="text-xs text-gray-400 mb-2 block">Contexto</label>
-              <select
-                value={contextType}
-                onChange={(e) => setContextType(e.target.value as ContextType)}
-                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
-              >
-                <option value="legal">Jurídico</option>
-                <option value="business">Negócios</option>
-                <option value="technical">Técnico</option>
-                <option value="general">Geral</option>
-              </select>
-            </div>
-
-            {/* Chat History */}
-            <div className="flex-1 overflow-y-auto px-3">
-              <div className="space-y-1">
-                {conversations.map((conv) => (
-                  <div key={conv.id} className="p-3 rounded-lg hover:bg-gray-800 cursor-pointer transition-colors group">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <MessageSquare className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm text-gray-100 truncate">
-                            {conv.title || 'Nova Conversa'}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            {new Date(conv.updated_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1">
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-red-400">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Handoff Panel Toggle */}
-            {handoffRequests.length > 0 && (
-              <div className="px-3 py-2 border-t border-gray-700">
-                <Button
-                  onClick={() => setShowHandoffPanel(!showHandoffPanel)}
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-                  size="sm"
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Solicitações ({handoffRequests.length})
-                </Button>
-              </div>
             )}
-
-            {/* User Section */}
-            <div className="p-4 border-t border-gray-700/50">
-              {user ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-emerald-600 text-white">
-                        {user.email?.[0]?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-white truncate">
-                        {user.email}
-                      </div>
-                      <div className="text-xs text-gray-400">Online</div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={signOut}
-                    className="text-gray-400 hover:text-white h-8 w-8 p-0"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  onClick={() => window.location.href = '/login'}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-11 rounded-lg"
-                >
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Fazer Login
-                </Button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Handoff Panel */}
-      <AnimatePresence>
-        {showHandoffPanel && (
-          <motion.div
-            initial={{ x: -320 }}
-            animate={{ x: 0 }}
-            exit={{ x: -320 }}
-            className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col"
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Transferências</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowHandoffPanel(false)}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {handoffRequests.map((request) => (
-                <Card key={request.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-medium text-sm">{request.user_name}</div>
-                        <div className="text-xs text-gray-500 mt-1">{request.reason}</div>
-                      </div>
-                      <Badge 
-                        variant={
-                          request.priority === 'urgent' ? 'destructive' :
-                          request.priority === 'high' ? 'warning' :
-                          'secondary'
-                        }
-                        className="text-xs"
-                      >
-                        {request.priority}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center mt-3 space-x-2">
-                      <Badge variant="outline" className="text-xs">
-                        {request.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
-                        {request.status === 'accepted' && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {request.status}
-                      </Badge>
-                      <span className="text-xs text-gray-400">
-                        {new Date(request.created_at).toLocaleTimeString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              {!sidebarOpen && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSidebarOpen(true)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 h-8 w-8 p-0"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              )}
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Mozaia AI - Assistente Jurídico
-                </h2>
-                <div className="flex items-center space-x-2">
-                  <div className={cn(
-                    "w-2 h-2 rounded-full",
-                    wsConnected ? "bg-green-500" : "bg-gray-400"
-                  )} />
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {wsConnected ? 'Online' : 'Conectando...'}
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    {contextType}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleFileAttachment}
-                className="h-8 w-8 p-0"
-                title="Anexar documento"
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleVoiceToggle}
-                className={cn(
-                  "h-8 w-8 p-0",
-                  isRecording && "text-red-500 bg-red-50 dark:bg-red-900/20"
-                )}
-                title="Gravação de voz"
-              >
-                <Mic className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleHandoffRequest}
-                className="h-8 w-8 p-0"
-                title="Solicitar técnico humano"
-              >
-                <Phone className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <Share className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 w-8 p-0"
-                onClick={() => window.open('/test', '_blank')}
-                title="Testes do Sistema"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
+      </div>
 
-        {/* File Attachments Display */}
-        {attachedFiles.length > 0 && (
-          <div className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 p-3">
-            <div className="flex items-center space-x-2 overflow-x-auto">
-              {attachedFiles.map((file, index) => (
-                <div key={index} className="flex items-center space-x-2 bg-white dark:bg-gray-600 rounded-lg px-3 py-2 text-sm">
-                  <Paperclip className="h-4 w-4" />
-                  <span className="truncate max-w-32">{file.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveFile(index)}
-                    className="h-4 w-4 p-0 hover:text-red-500"
-                  >
-                    ×
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Messages Area */}
-        <div className="flex-1 overflow-hidden">
+      {/* Messages Area */}
+      <ScrollArea 
+        ref={scrollAreaRef}
+        className="flex-1 p-6"
+      >
+        <div className="space-y-6 max-w-4xl mx-auto">
           {messages.length === 0 ? (
-            <WelcomeScreen onStartChat={(prompt, context) => {
-              if (prompt) {
-                handleSendMessage(prompt);
-              } else if (context) {
-                setContextType(context);
-              }
-            }} />
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-12"
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <MessageSquare className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+                Como posso ajudar você hoje?
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                Sou especializado em direito moçambicano e posso ajudar com questões legais, análise de documentos e orientação jurídica.
+              </p>
+              <ExamplePrompts />
+            </motion.div>
           ) : (
-            <MessageList
-              messages={messages}
-              loading={isLoading}
-              streaming={isStreaming}
-              onMessageUpdate={(id, content) => {
-                // Handle message update
-              }}
-              onMessageDelete={(id) => {
-                // Handle message delete
-              }}
-              onRegenerate={(id) => {
-                // Handle regenerate
-              }}
-              onFeedback={(id, type) => {
-                // Handle feedback
-              }}
-            />
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+            <AnimatePresence>
+              {messages.map((message: Message, index) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className={`flex gap-4 ${
+                    message.role === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
+                >
+                  {message.role === 'assistant' && (
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-full flex items-center justify-center">
+                        <Bot className="h-5 w-5 text-white" />
+                      </div>
+                    </div>
+                  )}
 
-        {/* Message Input */}
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <MessageInput
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-            isStreaming={isStreaming}
-            onStopStreaming={handleStopStreaming}
-            placeholder={`Escreva sua questão jurídica em ${contextType === 'legal' ? 'português' : 'sua linguagem preferida'}...`}
-          />
+                  <div className={`max-w-2xl ${message.role === 'user' ? 'order-2' : ''}`}>
+                    <div
+                      className={`px-6 py-4 rounded-2xl shadow-sm ${
+                        message.role === 'user'
+                          ? 'bg-gradient-to-r from-blue-600 to-emerald-600 text-white'
+                          : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                    </div>
+
+                    {message.role === 'assistant' && (
+                      <div className="flex items-center mt-2 space-x-2">
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <ThumbsUp className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <ThumbsDown className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {message.role === 'user' && (
+                    <div className="flex-shrink-0 order-3">
+                      <div className="w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-white" />
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
+
+          {(isLoading || isTyping) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-4 justify-start"
+            >
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-full flex items-center justify-center">
+                  <Bot className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-6 py-4 rounded-2xl shadow-sm">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Analisando sua pergunta...</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
+      </ScrollArea>
+
+      {/* Error Display */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mx-6 mb-4"
+          >
+            <div className="p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-xl">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Input Area */}
+      <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm">
+        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+          <div className="relative">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Digite sua pergunta jurídica aqui... (Shift + Enter para nova linha)"
+              disabled={isLoading}
+              className="min-h-[60px] max-h-[200px] resize-none pr-16 rounded-2xl border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800"
+              rows={1}
+            />
+            <div className="absolute right-3 bottom-3 flex items-center space-x-2">
+              <Badge variant="secondary" className="text-xs">
+                <Zap className="h-3 w-3 mr-1" />
+                {input.length}/2000
+              </Badge>
+              <Button 
+                type="submit" 
+                disabled={!input.trim() || isLoading}
+                size="sm"
+                className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white shadow-lg rounded-xl"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3 text-xs text-slate-500 dark:text-slate-400">
+            <p>O Mozaia pode cometer erros. Considere verificar informações importantes.</p>
+            <div className="flex items-center space-x-2">
+              <kbd className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs">Enter</kbd>
+              <span>para enviar</span>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   )
