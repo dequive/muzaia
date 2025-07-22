@@ -535,17 +535,21 @@ class EnhancedApiClient {
           code: error?.code || 'UNKNOWN',
           status: error?.response?.status || 0,
           url: error?.config?.url || 'unknown',
+          method: error?.config?.method?.toUpperCase() || 'UNKNOWN',
           message: this.extractErrorMessage(error),
-          data: error?.response?.data || null
+          data: error?.response?.data || null,
+          isNetworkError: !error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')
         }
         
         // Always log API errors with proper formatting
         console.error('❌ API Error:', {
-          status: errorInfo.status,
+          method: errorInfo.method,
           url: errorInfo.url,
-          message: errorInfo.message,
+          status: errorInfo.status || 'No Response',
           code: errorInfo.code,
-          ...(errorInfo.data && { data: errorInfo.data })
+          message: errorInfo.message,
+          isNetworkError: errorInfo.isNetworkError,
+          ...(errorInfo.data && { responseData: errorInfo.data })
         })
         
         // Also log the full error for debugging in development
@@ -577,7 +581,20 @@ class EnhancedApiClient {
    * Extrai mensagem de erro da resposta da API
    */
   private extractErrorMessage(error: AxiosError): string {
-    // Try different sources for error message
+    // Handle specific network errors
+    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+      return 'Falha na conexão com o servidor. Verifique se o backend está executando na porta 8000.'
+    }
+    
+    if (error.code === 'ECONNREFUSED') {
+      return 'Conexão recusada. O servidor backend não está acessível.'
+    }
+    
+    if (error.code === 'ECONNABORTED') {
+      return 'Timeout da requisição. O servidor demorou muito para responder.'
+    }
+    
+    // Try different sources for error message from response
     if (error.response?.data) {
       const data = error.response.data as any
       
@@ -594,12 +611,15 @@ class EnhancedApiClient {
       
       // If data is an object but no standard message field
       if (typeof data === 'object' && Object.keys(data).length > 0) {
-        return `Erro da API: ${JSON.stringify(data)}`
+        return `Erro da API (${error.response.status}): ${JSON.stringify(data)}`
       }
     }
     
-    // Fallback to error message or generic message
-    return error.message || 'Erro de conexão com a API'
+    // Add status code to message if available
+    const statusText = error.response?.status ? ` (Status: ${error.response.status})` : ''
+    const baseMessage = error.message || 'Erro de conexão com a API'
+    
+    return `${baseMessage}${statusText}`
   }
 
   /**

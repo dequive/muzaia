@@ -131,6 +131,10 @@ export default function GlossarioPage() {
   const fetchTermos = async () => {
     try {
       setLoading(true)
+      
+      // First check if backend is reachable
+      console.log('🔍 Tentando conectar ao backend em:', process.env.NEXT_PUBLIC_API_URL || 'http://0.0.0.0:8000')
+      
       const response = await glossarioApi.getTermos({
         page: currentPage,
         limit: 20,
@@ -146,10 +150,23 @@ export default function GlossarioPage() {
       console.error('❌ Glossario API Error:', {
         error,
         type: typeof error,
-        keys: error && typeof error === 'object' ? Object.keys(error) : [],
-        message: getApiErrorMessage(error)
+        errorCode: error?.code,
+        errorMessage: error?.message,
+        responseStatus: error?.response?.status,
+        responseData: error?.response?.data,
+        isNetworkError: !error?.response,
+        fullError: error
       })
-      toast.error(getApiErrorMessage(error))
+      
+      const errorMessage = getApiErrorMessage(error)
+      toast.error(errorMessage)
+      
+      // If it's a network error, show additional help
+      if (!error?.response) {
+        toast.error('💡 Dica: Verifique se o backend está executando na porta 8000', {
+          duration: 8000
+        })
+      }
     } finally {
       setLoading(false)
     }
