@@ -12,6 +12,7 @@ from typing import Dict, Any, Optional, List, AsyncGenerator, TypedDict
 from contextlib import asynccontextmanager
 
 from app.schemas import LLMResponse, GenerationParams
+from app.schemas import ModelResponse
 
 
 class LLMStreamChunk(TypedDict, total=False):
