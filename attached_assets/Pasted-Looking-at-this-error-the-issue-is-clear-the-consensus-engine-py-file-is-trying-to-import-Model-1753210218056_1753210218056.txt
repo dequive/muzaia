@@ -1,0 +1,63 @@
+Looking at this error, the issue is clear: the `consensus_engine.py` file is trying to import `ModelResponse` from `app.schemas`, but that class doesn't exist in the schemas module.
+
+Here's how to fix this:
+
+## Option 1: Check if ModelResponse exists elsewhere
+First, search your codebase to see if `ModelResponse` is defined somewhere:
+
+```bash
+grep -r "class ModelResponse" backend/
+```
+
+If you find it in another file, you'll need to update the import in `consensus_engine.py`.
+
+## Option 2: Check what's actually available in app.schemas
+Look at your `/home/runner/workspace/backend/app/schemas/__init__.py` file to see what classes are exported:
+
+```python
+# Check what's in your schemas/__init__.py
+cat backend/app/schemas/__init__.py
+```
+
+## Option 3: Most likely fixes
+
+**If ModelResponse should be LLMResponse:**
+```python
+# In consensus_engine.py, line 21, change:
+from app.schemas import LLMResponse, ModelResponse
+
+# To:
+from app.schemas import LLMResponse
+# And use LLMResponse wherever ModelResponse was used
+```
+
+**If you need to create ModelResponse:**
+Add it to your schemas. In `backend/app/schemas/` create or update the appropriate schema file:
+
+```python
+# In schemas/responses.py or similar
+from pydantic import BaseModel
+
+class ModelResponse(BaseModel):
+    # Add your fields here
+    model: str
+    response: str
+    # ... other fields
+```
+
+Then update `schemas/__init__.py`:
+```python
+from .responses import ModelResponse  # Add this line
+```
+
+## Quick fix to get running:
+If you just want to get the server running immediately, temporarily comment out the problematic import:
+
+```python
+# In consensus_engine.py, line 21:
+from app.schemas import LLMResponse  # , ModelResponse
+```
+
+And comment out any usage of `ModelResponse` in that file until you can properly define it.
+
+Check your schemas directory structure and let me know what classes are actually defined there, and I can help you fix the imports properly.
