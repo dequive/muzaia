@@ -1,0 +1,87 @@
+Com base nas tuas últimas directrizes, eis a **solução reformulada** incorporando:
+
+* 📚 **Repositório local de leis** (base legal interna, validada);
+* 🧠 **Respostas geradas por LLM** com RAG (retrieval augmented generation);
+* 🗣️ **Resposta natural na língua da pergunta** (PT, EN, ou outras);
+* 🛑 **Restrições rigorosas**: o sistema só responde *se* a informação vier do repositório validado;
+* 🧍 Encaminhamento para advogado humano em temas sensíveis ou fora de escopo.
+
+---
+
+## 🔧 ARQUITECTURA FUNCIONAL REFORMULADA
+
+```
+                          ┌─────────────────────────────┐
+                          │         UTILIZADOR          │
+                          └────────────┬────────────────┘
+                                       │
+                           (pergunta em qualquer língua)
+                                       │
+                        ┌──────────────▼─────────────┐
+                        │  MÓDULO DE PRÉ-PROCESSAMENTO │
+                        │  - Detecta idioma             │
+                        │  - Remove malícia ou spam     │
+                        │  - Normaliza input            │
+                        └──────────────┬─────────────┘
+                                       │
+                  ┌────────────────────▼──────────────────┐
+                  │   SISTEMA DE BUSCA SEMÂNTICA LOCAL     │
+                  │   - FAISS / Qdrant / Weaviate          │
+                  │   - Repositório legal validado         │
+                  │   - Apenas leis internas do sistema    │
+                  └────────────────────┬──────────────────┘
+                                       │
+                       ┌───────────────▼────────────────┐
+                       │     MOTOR DE RAG + LLM          │
+                       │ - Prompt em linguagem simples    │
+                       │ - Geração de resposta natural    │
+                       │ - Foco na precisão e concisão    │
+                       └───────────────┬────────────────┘
+                                       │
+                 ┌────────────────────▼─────────────────────┐
+                 │ VERIFICAÇÃO DE CONFIANÇA E COBERTURA LEGAL│
+                 │ - Responde apenas com base em documentos  │
+                 │ - Encaminha p/ advogado se necessário      │
+                 └────────────────────┬─────────────────────┘
+                                      │
+             ┌────────────────────────▼────────────────────────┐
+             │         CHAT DE RESPOSTA MULTILÍNGUE            │
+             │    - Na mesma língua usada pelo utilizador      │
+             │    - Interface web, mobile ou WhatsApp          │
+             └─────────────────────────────────────────────────┘
+```
+
+---
+
+## 🧱 COMPONENTES TÉCNICOS
+
+| Módulo                      | Tecnologia Sugerida                                               |
+| --------------------------- | ----------------------------------------------------------------- |
+| **Repositório Legal**       | PostgreSQL com full-text + embeddings (pgvector ou Qdrant)        |
+| **Normalização & Filtro**   | FastAPI + SpaCy (anti-spam / malícia)                             |
+| **Busca Semântica**         | Qdrant / FAISS com Embeddings OpenAI ou Cohere                    |
+| **LLM Natural Multilingue** | Mistral, LLaMA 3.1, Command R+, Qwen 3 — via Ollama ou API        |
+| **RAG Backend**             | Python async + arquitetura modular de provedores                  |
+| **Idioma automático**       | `langdetect` ou `fasttext` para identificação                     |
+| **Interface final**         | Next.js 14 (frontend) + integração WhatsApp via Twilio ou Gupshup |
+
+---
+
+## 🧩 GARANTIA DE CONFORMIDADE
+
+* Nenhuma resposta será inventada: só com base em **documentos validados** no repositório.
+* **Logs de evidência**: cada resposta terá o link ou excerto legal usado.
+* Escalonamento automático para advogado humano (via interface interna ou WhatsApp).
+* Módulo de treino supervisionado com feedback contínuo para refinar a precisão e evitar “respostas engraçadinhas”.
+
+---
+
+## ✅ Seguinte passo
+
+Posso agora:
+
+* Criar a **estrutura inicial da base de dados legal** (tabelas, schemas, campos);
+* Ou gerar a base de **busca semântica** e ingestão local dos documentos jurídicos;
+* Ou construir o primeiro **módulo de resposta jurídica com RAG** e linguagem natural.
+
+Qual o bloco a priorizar?
