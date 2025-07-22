@@ -1,0 +1,110 @@
+Analisando os erros que você compartilhou, eles indicam problemas de conectividade de rede em uma aplicação Next.js que está tentando fazer requisições HTTP usando Axios. Aqui estão as principais causas e soluções:
+
+## **Principais Problemas Identificados:**
+
+1. **Network Error** - Falha na conexão de rede
+2. **API Error com objeto vazio `{}`** - Erro na resposta da API
+3. **Múltiplas tentativas de retry** - O sistema está tentando várias vezes sem sucesso
+
+## **Soluções Recomendadas:**
+
+### 1. **Verificar Conectividade Básica**
+- Confirme se a aplicação tem acesso à internet
+- Teste se a API de destino está funcionando (use Postman ou curl)
+- Verifique se não há bloqueios de firewall ou proxy
+
+### 2. **Revisar Configuração do Axios**
+```typescript
+// Em src/lib/api.ts - adicione configurações de timeout e retry
+const apiClient = axios.create({
+  timeout: 10000, // 10 segundos
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
+
+// Adicione interceptors para melhor tratamento de erro
+apiClient.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('API Error Details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    return Promise.reject(error);
+  }
+);
+```
+
+### 3. **Melhorar Tratamento de Erros**
+```typescript
+// No seu EnhancedApiClient
+try {
+  const response = await axios.request(config);
+  return response;
+} catch (error) {
+  if (error.code === 'NETWORK_ERROR') {
+    console.error('Problema de rede detectado');
+    // Implementar lógica de fallback
+  }
+  
+  if (error.response?.status === 0) {
+    console.error('Sem resposta do servidor - verifique CORS');
+  }
+  
+  throw error;
+}
+```
+
+### 4. **Configurar CORS (se necessário)**
+Se a API está em domínio diferente:
+```javascript
+// next.config.js
+module.exports = {
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://sua-api.com/:path*'
+      }
+    ];
+  }
+};
+```
+
+### 5. **Implementar Retry Logic Inteligente**
+```typescript
+const retryRequest = async (fn, retries = 3) => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries > 0 && error.code === 'NETWORK_ERROR') {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return retryRequest(fn, retries - 1);
+    }
+    throw error;
+  }
+};
+```
+
+### 6. **Verificações de Ambiente**
+- **Desenvolvimento**: Confirme se a API local está rodando
+- **Produção**: Verifique URLs de produção e variáveis de ambiente
+- **HTTPS**: Certifique-se de usar HTTPS em produção
+
+### 7. **Debug Específico**
+Adicione logs mais detalhados:
+```typescript
+// Em api.ts linha 380/381
+console.error('❌ API Error:', {
+  url: config.url,
+  method: config.method,
+  error: error.message,
+  status: error.response?.status,
+  data: error.response?.data
+});
+```
+
+**Próximo passo**: Identifique qual API específica está falhando e verifique se ela está acessível. O erro vazio `{}` sugere que a resposta não está sendo capturada corretamente.
