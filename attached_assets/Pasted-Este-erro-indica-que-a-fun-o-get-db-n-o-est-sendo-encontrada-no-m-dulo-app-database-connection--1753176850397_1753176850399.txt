@@ -1,0 +1,183 @@
+Este erro indica que a função `get_db` não está sendo encontrada no módulo `app.database.connection`. Vamos resolver isso passo a passo:
+
+## **Diagnóstico do Problema**
+
+O erro mostra que:
+1. O uvicorn está tentando carregar a aplicação
+2. O arquivo `main.py` está importando o router do glossário
+3. O router do glossário está tentando importar `get_db` de `connection.py`
+4. A função `get_db` não existe ou não está exportada corretamente
+
+## **Soluções**
+
+### 1. **Verificar o arquivo `connection.py`**
+
+Primeiro, verifique se a função `get_db` existe em `/home/runner/workspace/backend/app/database/connection.py`:
+
+```python
+# app/database/connection.py
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+
+# Configuração do banco de dados
+SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"  # ou sua URL do banco
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {}
+)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# Esta é a função que deve existir
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+```
+
+### 2. **Se a função não existe, crie-a**
+
+Caso o arquivo `connection.py` esteja vazio ou incompleto, aqui está um template completo:
+
+```python
+# app/database/connection.py
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from typing import Generator
+
+# URL do banco de dados (ajuste conforme necessário)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+
+# Criar engine
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+)
+
+# Criar SessionLocal
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Base para os modelos
+Base = declarative_base()
+
+# Função get_db para dependency injection
+def get_db() -> Generator:
+    """
+    Dependency para obter sessão do banco de dados
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+```
+
+### 3. **Verificar a importação no glossario.py**
+
+Certifique-se de que o arquivo `glossario.py` está importando corretamente:
+
+```python
+# app/api/glossario.py
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.database.connection import get_db  # Esta linha deve funcionar agora
+
+router = APIRouter()
+
+@router.get("/glossario")
+async def get_glossario(db: Session = Depends(get_db)):
+    # Sua lógica aqui
+    return {"message": "Glossário"}
+```
+
+### 4. **Verificar a estrutura de diretórios**
+
+Certifique-se de que a estrutura está correta:
+
+```
+backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── glossario.py
+│   └── database/
+│       ├── __init__.py
+│       └── connection.py
+```
+
+### 5. **Verificar os arquivos `__init__.py`**
+
+Certifique-se de que todos os diretórios têm arquivos `__init__.py` (podem estar vazios):
+
+```python
+# app/__init__.py
+# (pode estar vazio)
+
+# app/api/__init__.py
+# (pode estar vazio)
+
+# app/database/__init__.py
+# (pode estar vazio)
+```
+
+### 6. **Alternativa: Importação condicional**
+
+Se ainda houver problemas, tente uma importação mais explícita:
+
+```python
+# app/api/glossario.py
+import sys
+import os
+
+# Adicionar o diretório raiz ao path se necessário
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+try:
+    from app.database.connection import get_db
+except ImportError:
+    from database.connection import get_db
+```
+
+### 7. **Comando para testar**
+
+Após fazer as correções, teste com:
+
+```bash
+# No diretório backend/
+python -c "from app.database.connection import get_db; print('Import OK')"
+
+# Ou execute o servidor
+uvicorn app.main:app --reload
+```
+
+### 8. **Debug adicional**
+
+Se o problema persistir, adicione debug temporário:
+
+```python
+# No início de app/api/glossario.py
+import os
+print("Current working directory:", os.getcwd())
+print("Python path:", sys.path)
+
+try:
+    from app.database.connection import get_db
+    print("Import successful!")
+except ImportError as e:
+    print(f"Import failed: {e}")
+    # Tente importação alternativa ou crie a função temporariamente
+```
+
+A causa mais provável é que a função `get_db` simplesmente não existe no arquivo `connection.py`. Implemente-a usando o exemplo do passo 1 ou 2, e o erro deve ser resolvido.
