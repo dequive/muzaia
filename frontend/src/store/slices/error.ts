@@ -1,16 +1,34 @@
+
 import { StateCreator } from 'zustand'
-import { AppError } from '@/lib/error'
-import type { ErrorState } from '@/lib/error'
+
+export interface AppError {
+  code: string
+  message: string
+  metadata?: Record<string, any>
+}
+
+export interface ErrorState {
+  code: string
+  message: string
+  metadata?: Record<string, any>
+  timestamp: number
+}
+
+export interface ErrorSlice {
+  error: ErrorState | null
+  setError: (error: Error | AppError) => void
+  clearError: () => void
+}
 
 export const createErrorSlice: StateCreator<ErrorSlice> = (set) => ({
   error: null,
   
-  setError: (error: Error) => 
+  setError: (error: Error | AppError) => 
     set((state) => ({
       error: {
-        code: error instanceof AppError ? error.code : 'UNKNOWN_ERROR',
+        code: 'code' in error ? error.code : 'UNKNOWN_ERROR',
         message: error.message,
-        metadata: error instanceof AppError ? error.metadata : undefined,
+        metadata: 'metadata' in error ? error.metadata : undefined,
         timestamp: Date.now()
       }
     })),

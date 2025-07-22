@@ -8,7 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select } from '@/components/ui/select'
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
@@ -318,51 +324,51 @@ export default function GlossarioPage() {
                 </div>
                 <div>
                   <Label htmlFor="categoria">Categoria</Label>
-                  <select
-                    id="categoria"
-                    className="w-full p-2 border rounded-md"
-                    value={selectedCategoria}
-                    onChange={(e) => setSelectedCategoria(e.target.value)}
-                  >
-                    <option value="">Todas as categorias</option>
-                    {CATEGORIAS_MOZAMBIQUE.map(cat => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as categorias" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todas as categorias</SelectItem>
+                      {CATEGORIAS_MOZAMBIQUE.map(cat => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="nivel">Nível Técnico</Label>
-                  <select
-                    id="nivel"
-                    className="w-full p-2 border rounded-md"
-                    value={selectedNivel}
-                    onChange={(e) => setSelectedNivel(e.target.value)}
-                  >
-                    <option value="">Todos os níveis</option>
-                    {NIVEIS_TECNICOS.map(nivel => (
-                      <option key={nivel.value} value={nivel.value}>
-                        {nivel.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={selectedNivel} onValueChange={setSelectedNivel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os níveis" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todos os níveis</SelectItem>
+                      {NIVEIS_TECNICOS.map(nivel => (
+                        <SelectItem key={nivel.value} value={nivel.value}>
+                          {nivel.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <select
-                    id="status"
-                    className="w-full p-2 border rounded-md"
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                  >
-                    <option value="">Todos os status</option>
-                    {STATUS_OPTIONS.map(status => (
-                      <option key={status.value} value={status.value}>
-                        {status.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todos os status</SelectItem>
+                      {STATUS_OPTIONS.map(status => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>

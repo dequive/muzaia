@@ -1,10 +1,15 @@
-// Error boundary component
+
 'use client'
 
 import React from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+interface ErrorFallbackProps {
+  error?: Error
+  resetError: () => void
+}
 
 interface Props {
   children: React.ReactNode
@@ -16,49 +21,36 @@ interface State {
   error?: Error
 }
 
-interface ErrorFallbackProps {
-  error?: Error
-  resetError: () => void
-}
-
+// Default error fallback component
 function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
-            <AlertTriangle className="h-6 w-6 text-destructive" />
-          </div>
-          <CardTitle>Algo deu errado</CardTitle>
-          <CardDescription>
-            Ocorreu um erro inesperado. Tente recarregar a página.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {error && process.env.NODE_ENV === 'development' && (
-            <div className="p-3 rounded-md bg-muted text-sm font-mono text-muted-foreground">
+    <Card className="max-w-md mx-auto mt-8">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-red-600">
+          <AlertTriangle size={20} />
+          Algo deu errado
+        </CardTitle>
+        <CardDescription>
+          Ocorreu um erro inesperado. Tente recarregar a página.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <details className="text-sm">
+            <summary className="cursor-pointer text-gray-600">
+              Detalhes do erro
+            </summary>
+            <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
               {error.message}
-            </div>
-          )}
-          <div className="flex space-x-2">
-            <Button
-              onClick={resetError}
-              className="flex-1 flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Tentar novamente
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => window.location.reload()}
-              className="flex-1"
-            >
-              Recarregar página
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            </pre>
+          </details>
+        )}
+        <Button onClick={resetError} className="w-full">
+          <RefreshCw size={16} className="mr-2" />
+          Tentar novamente
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -95,6 +87,4 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 }
 
-export { ErrorBoundary }
-  }
-}
+export { ErrorBoundary as default }
