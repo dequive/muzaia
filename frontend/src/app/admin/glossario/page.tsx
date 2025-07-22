@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { glossarioApi } from '@/lib/api'
+import { glossarioApi, checkApiHealth } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -134,6 +134,17 @@ export default function GlossarioPage() {
       
       // First check if backend is reachable
       console.log('🔍 Tentando conectar ao backend em:', process.env.NEXT_PUBLIC_API_URL || 'http://0.0.0.0:8000')
+      
+      // Quick health check before making the actual request
+      const healthCheck = await checkApiHealth()
+      if (!healthCheck.isHealthy) {
+        console.warn('⚠️ Backend não está saudável:', healthCheck.details)
+        toast.error('Backend não está acessível. Verifique se está executando na porta 8000.')
+        healthCheck.details.suggestions.forEach(suggestion => {
+          toast.error(suggestion, { duration: 6000 })
+        })
+        return
+      }
       
       const response = await glossarioApi.getTermos({
         page: currentPage,

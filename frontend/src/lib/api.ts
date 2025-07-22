@@ -542,19 +542,45 @@ class EnhancedApiClient {
         }
         
         // Always log API errors with proper formatting
-        console.error('❌ API Error:', {
+        console.error('❌ API Error Details:', {
+          timestamp: new Date().toISOString(),
           method: errorInfo.method,
           url: errorInfo.url,
+          baseURL: this.client.defaults.baseURL,
           status: errorInfo.status || 'No Response',
           code: errorInfo.code,
           message: errorInfo.message,
           isNetworkError: errorInfo.isNetworkError,
+          timeout: error?.config?.timeout,
+          headers: error?.config?.headers,
           ...(errorInfo.data && { responseData: errorInfo.data })
         })
         
+        // Additional specific error analysis
+        if (errorInfo.isNetworkError) {
+          console.error('🔍 Network Error Analysis:', {
+            possibleCauses: [
+              'Backend não está executando',
+              'URL da API incorreta',
+              'Problemas de CORS',
+              'Firewall bloqueando requisição',
+              'Timeout da rede'
+            ],
+            suggestedActions: [
+              'Verificar se backend está na porta 8000',
+              'Confirmar URL base da API',
+              'Testar conectividade com curl'
+            ]
+          })
+        }
+        
         // Also log the full error for debugging in development
         if (isDebug) {
-          console.error('Full error object:', error)
+          console.error('Full error object:', {
+            error,
+            stack: error?.stack,
+            config: error?.config
+          })
         }
 
         // Handle specific error cases
@@ -699,8 +725,21 @@ class EnhancedApiClient {
     const retryCount = (error.config as any).__retryCount || 0
     if (retryCount >= this.options.retryOptions.attempts) return false
 
-    // Retry on network errors or 5xx status codes
-    return !error.response || (error.response.status >= 500 && error.response.status < 600)
+    // Retry on network errors, timeouts, or 5xx status codes
+    const isNetworkError = !error.response && (
+      error.code === 'ERR_NETWORK' || 
+      error.code === 'ECONNREFUSED' || 
+      error.code === 'ECONNABORTED' ||
+      error.message === 'Network Error'
+    )
+    
+    const isServerError = error.response && 
+      error.response.status >= 500 && 
+      error.response.status < 600
+    
+    const isTimeout = error.code === 'ECONNABORTED'
+    
+    return isNetworkError || isServerError || isTimeout
   }
 
   /**
@@ -1344,13 +1383,70 @@ export const getApiErrorMessage = (error: any): string => {
   return error?.toString() || 'Erro desconhecido'
 }
 
-export const checkApiHealth = async (): Promise<boolean> => {
+export const checkApiHealth = async (): Promise<{
+  isHealthy: boolean
+  details: {
+    reachable: boolean
+    responseTime?: number
+    error?: string
+    suggestions: string[]
+  }
+}> => {
+  const startTime = Date.now()
+  const suggestions: string[] = []
+  
   try {
     await systemApi.getHealth()
-    return true
-  } catch (error) {
-    console.error('API health check failed:', error)
-    return false
+    const responseTime = Date.now() - startTime
+    
+    return {
+      isHealthy: true,
+      details: {
+        reachable: true,
+        responseTime,
+        suggestions: responseTime > 5000 ? ['Backend está lento, verificar recursos'] : []
+      }
+    }
+  } catch (error: any) {
+    const responseTime = Date.now() - startTime
+    
+    // Analyze error and provide suggestions
+    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+      suggestions.push(
+        'Verificar se o backend está executando na porta 8000',
+        'Confirmar URL da API nas variáveis de ambiente',
+        'Testar conectividade: curl http://0.0.0.0:8000/health'
+      )
+    } else if (error.code === 'ECONNREFUSED') {
+      suggestions.push(
+        'Backend não está escutando na porta 8000',
+        'Reiniciar o serviço backend',
+        'Verificar se a porta não está sendo usada por outro processo'
+      )
+    } else if (error.code === 'ECONNABORTED') {
+      suggestions.push(
+        'Timeout da requisição - backend muito lento',
+        'Verificar recursos do servidor',
+        'Aumentar timeout da requisição'
+      )
+    }
+    
+    console.error('API health check failed:', {
+      error: error.message,
+      code: error.code,
+      responseTime,
+      suggestions
+    })
+    
+    return {
+      isHealthy: false,
+      details: {
+        reachable: false,
+        responseTime,
+        error: error.message,
+        suggestions
+      }
+    }
   }
 }
 
