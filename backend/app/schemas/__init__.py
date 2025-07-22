@@ -21,6 +21,9 @@ from .llm import (
     LLMError
 )
 
+# Import ModelResponse from the main schemas file
+from ..schemas import ModelResponse
+
 __all__ = [
     # Glossário
     "GlossarioTermoBase",
@@ -39,5 +42,6 @@ __all__ = [
     "GenerationParams",
     "LLMRequest",
     "LLMResponse",
-    "LLMError"
+    "LLMError",
+    "ModelResponse"
 ]
