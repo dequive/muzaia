@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 Configurações centralizadas da aplicação Muzaia.
@@ -39,12 +38,12 @@ class SecuritySettings(BaseModel):
 class LLMSettings(BaseModel):
     """Configurações para modelos LLM."""
     timeout_seconds: int = 30
-    
+
     # Anthropic Claude
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-3-5-sonnet-20241022"
     anthropic_base_url: str = "https://api.anthropic.com"
-    
+
     # Google Gemini
     google_api_key: str = ""
     gemini_model: str = "gemini-1.5-pro-latest"
@@ -53,7 +52,7 @@ class LLMSettings(BaseModel):
 
 class Settings(BaseSettings):
     """Configurações principais da aplicação."""
-    
+
     # Informações básicas da aplicação
     PROJECT_NAME: str = "Mozaia Backend API"
     PROJECT_VERSION: str = "1.0.0"
@@ -61,23 +60,23 @@ class Settings(BaseSettings):
     APP_NAME: str = "Mozaia LLM Orchestrator"
     APP_VERSION: str = "2.0.0"
     ENVIRONMENT: str = "development"
-    
+
     # Configurações do servidor
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     DEBUG: bool = True
-    
+
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./mozaia.db"
-    
+
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production-please-32-chars-minimum"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    
+
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
-    
+
     # CORS
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
@@ -85,16 +84,33 @@ class Settings(BaseSettings):
         "https://localhost:5000",
         "*"  # Para desenvolvimento - remover em produção
     ]
-    
+
+    # URLs
+    BASE_URL: str = "https://68f4a38c-dc7e-4477-a5d0-2a575a69b246-00-1wr0h8c4r1ujt.spock.replit.dev:8000"
+    FRONTEND_URL: str = "https://68f4a38c-dc7e-4477-a5d0-2a575a69b246-00-1wr0h8c4r1ujt.spock.replit.dev:5000"
+
+    # JWT
+    JWT_SECRET_KEY: str = "your-jwt-secret-key-here"
+    JWT_ALGORITHM: str = "HS256"
+
+    # OAuth Google
+    GOOGLE_CLIENT_ID: str = "your-google-client-id"
+    GOOGLE_CLIENT_SECRET: str = "your-google-client-secret"
+
+    # OAuth Microsoft
+    MICROSOFT_CLIENT_ID: str = "your-microsoft-client-id"
+    MICROSOFT_CLIENT_SECRET: str = "your-microsoft-client-secret"
+    MICROSOFT_TENANT_ID: str = "common"
+
     # Configurações específicas
     cache: CacheSettings = CacheSettings()
     database: DatabaseSettings = DatabaseSettings()
     security: SecuritySettings = SecuritySettings()
     llm: LLMSettings = LLMSettings()
-    
+
     # Logging
     LOG_LEVEL: str = "INFO"
-    
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

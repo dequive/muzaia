@@ -1,4 +1,3 @@
-
 """
 API para chat inteligente com base no repositório jurídico.
 """
@@ -10,6 +9,7 @@ from typing import Optional, Dict, Any
 import structlog
 from datetime import datetime
 import uuid
+from pydantic import validator
 
 from app.database.connection import get_db_session
 from app.core.legal_responder import response_generator
@@ -25,18 +25,18 @@ class LegalChatRequest(BaseModel):
     conversa_id: Optional[str] = Field(None, description="ID da conversa (opcional)")
     contexto: Optional[Dict[str, Any]] = Field(None, description="Contexto adicional")
     jurisdicao_preferida: Optional[str] = Field("mozambique", description="Jurisdição preferida")
-    
+
     @validator('pergunta')
     def validate_legal_question(cls, v):
         """Validação básica para garantir que é uma pergunta."""
         if not v.strip():
             raise ValueError("Pergunta não pode estar vazia")
-        
+
         # Verificações básicas de spam/malícia
         spam_indicators = ["comprar", "vender", "desconto", "promoção", "grátis", "click aqui"]
         if any(spam in v.lower() for spam in spam_indicators):
             raise ValueError("Pergunta parece não ser relacionada com questões jurídicas")
-        
+
         return v
 
 
@@ -61,24 +61,24 @@ async def perguntar_legal(
     try:
         # Gerar ID da conversa se não fornecido
         conversation_id = request.conversa_id or str(uuid.uuid4())
-        
+
         logger.info(
             "Nova pergunta recebida",
             question=request.pergunta[:100],
             conversation_id=conversation_id
         )
-        
+
         # Processar pergunta com o gerador de respostas
         start_time = datetime.utcnow()
-        
+
         result = await response_generator.generate_response(
             user_query=request.pergunta,
             db=db,
             context=request.contexto
         )
-        
+
         processing_time = (datetime.utcnow() - start_time).total_seconds() * 1000
-        
+
         # Salvar log da query
         query_log = LegalQuery(
             conversation_id=conversation_id,
@@ -97,10 +97,10 @@ async def perguntar_legal(
                 "jurisdiction": request.jurisdicao_preferida
             }
         )
-        
+
         db.add(query_log)
         await db.commit()
-        
+
         # Preparar resposta
         response_data = {
             "sucesso": result.get("success", True),
@@ -117,7 +117,7 @@ async def perguntar_legal(
                 "tipo_resposta": result.get("response_type", "unknown")
             }
         }
-        
+
         # Se requer humano, criar ticket (implementar depois)
         if result.get("requires_human"):
             logger.info(
@@ -125,9 +125,9 @@ async def perguntar_legal(
                 conversation_id=conversation_id,
                 reason=result.get("escalation_reason")
             )
-        
+
         return JSONResponse(response_data)
-        
+
     except Exception as e:
         logger.error("Erro ao processar pergunta legal", error=str(e))
         raise HTTPException(
@@ -144,15 +144,15 @@ async def get_conversation_history(
     """Obtém histórico de uma conversa."""
     try:
         from sqlalchemy import select
-        
+
         result = await db.execute(
             select(LegalQuery)
             .where(LegalQuery.conversation_id == conversation_id)
             .order_by(LegalQuery.created_at)
         )
-        
+
         queries = result.scalars().all()
-        
+
         return JSONResponse({
             "conversa_id": conversation_id,
             "total_perguntas": len(queries),
@@ -168,7 +168,7 @@ async def get_conversation_history(
                 for q in queries
             ]
         })
-        
+
     except Exception as e:
         logger.error("Erro ao buscar histórico", error=str(e))
         raise HTTPException(status_code=500, detail="Erro interno")
@@ -182,17 +182,17 @@ async def get_chat_statistics(
     try:
         from sqlalchemy import select, func, and_
         from datetime import datetime, timedelta
-        
+
         # Estatísticas dos últimos 30 dias
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        
+
         # Total de consultas
         total_result = await db.execute(
             select(func.count(LegalQuery.id))
             .where(LegalQuery.created_at >= thirty_days_ago)
         )
         total_queries = total_result.scalar()
-        
+
         # Escalações para humanos
         escalated_result = await db.execute(
             select(func.count(LegalQuery.id))
@@ -204,10 +204,10 @@ async def get_chat_statistics(
             )
         )
         escalated_count = escalated_result.scalar()
-        
+
         # Taxa de sucesso da IA
         ai_success_rate = ((total_queries - escalated_count) / total_queries * 100) if total_queries > 0 else 0
-        
+
         return JSONResponse({
             "periodo": "últimos 30 dias",
             "total_consultas": total_queries,
@@ -220,7 +220,7 @@ async def get_chat_statistics(
                 "erro_sistema": 0   # Implementar contagem
             }
         })
-        
+
     except Exception as e:
         logger.error("Erro ao gerar estatísticas", error=str(e))
         raise HTTPException(status_code=500, detail="Erro interno")
@@ -236,22 +236,22 @@ async def submit_feedback(
         conversation_id = request.get("conversa_id")
         rating = request.get("avaliacao", 0)  # 1-5
         comment = request.get("comentario", "")
-        
+
         if not conversation_id:
             raise HTTPException(status_code=400, detail="ID da conversa obrigatório")
-        
+
         # Atualizar query com feedback (implementar campo feedback na model)
         logger.info(
             "Feedback recebido",
             conversation_id=conversation_id,
             rating=rating
         )
-        
+
         return JSONResponse({
             "sucesso": True,
             "mensagem": "Feedback registado com sucesso"
         })
-        
+
     except Exception as e:
         logger.error("Erro ao processar feedback", error=str(e))
         raise HTTPException(status_code=500, detail="Erro interno")
