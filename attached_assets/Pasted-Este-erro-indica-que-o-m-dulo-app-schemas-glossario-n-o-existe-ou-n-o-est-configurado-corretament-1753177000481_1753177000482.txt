@@ -1,0 +1,233 @@
+Este erro indica que o módulo `app.schemas.glossario` não existe ou não está configurado corretamente como um pacote Python. Vamos resolver isso:
+
+## **Diagnóstico do Problema**
+
+O erro mostra que:
+1. O arquivo `glossario.py` está tentando importar de `app.schemas.glossario`
+2. O Python não consegue encontrar o módulo `app.schemas`
+3. Provavelmente falta a estrutura de diretórios ou arquivos `__init__.py`
+
+## **Soluções**
+
+### 1. **Verificar/Criar a estrutura de diretórios**
+
+Certifique-se de que a estrutura está assim:
+
+```
+backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── glossario.py
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   └── glossario.py
+│   └── database/
+│       ├── __init__.py
+│       └── connection.py
+```
+
+### 2. **Criar o diretório schemas se não existir**
+
+```bash
+# No diretório backend/app/
+mkdir -p schemas
+touch schemas/__init__.py
+```
+
+### 3. **Criar o arquivo de schemas**
+
+Crie o arquivo `app/schemas/glossario.py`:
+
+```python
+# app/schemas/glossario.py
+from pydantic import BaseModel
+from typing import Optional, List
+from datetime import datetime
+
+class GlossarioBase(BaseModel):
+    termo: str
+    definicao: str
+    categoria: Optional[str] = None
+
+class GlossarioCreate(GlossarioBase):
+    pass
+
+class GlossarioUpdate(BaseModel):
+    termo: Optional[str] = None
+    definicao: Optional[str] = None
+    categoria: Optional[str] = None
+
+class GlossarioResponse(GlossarioBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class GlossarioList(BaseModel):
+    items: List[GlossarioResponse]
+    total: int
+    page: int
+    per_page: int
+```
+
+### 4. **Verificar o arquivo `__init__.py` em schemas**
+
+```python
+# app/schemas/__init__.py
+from .glossario import (
+    GlossarioBase,
+    GlossarioCreate,
+    GlossarioUpdate,
+    GlossarioResponse,
+    GlossarioList
+)
+
+__all__ = [
+    "GlossarioBase",
+    "GlossarioCreate", 
+    "GlossarioUpdate",
+    "GlossarioResponse",
+    "GlossarioList"
+]
+```
+
+### 5. **Corrigir a importação em glossario.py (API)**
+
+Ajuste o arquivo `app/api/glossario.py`:
+
+```python
+# app/api/glossario.py
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
+
+from app.database.connection import get_db
+from app.schemas.glossario import (
+    GlossarioCreate,
+    GlossarioUpdate,
+    GlossarioResponse,
+    GlossarioList
+)
+# Se você tem models, importe também:
+# from app.models.glossario import Glossario
+
+router = APIRouter(prefix="/glossario", tags=["glossario"])
+
+@router.get("/", response_model=List[GlossarioResponse])
+async def listar_glossario(db: Session = Depends(get_db)):
+    # Sua lógica aqui
+    return []
+
+@router.post("/", response_model=GlossarioResponse)
+async def criar_glossario(
+    glossario: GlossarioCreate,
+    db: Session = Depends(get_db)
+):
+    # Sua lógica aqui
+    pass
+```
+
+### 6. **Verificar todos os arquivos `__init__.py`**
+
+Certifique-se de que existem:
+
+```python
+# app/__init__.py
+# (pode estar vazio)
+
+# app/api/__init__.py
+# (pode estar vazio)
+
+# app/database/__init__.py
+# (pode estar vazio)
+
+# app/schemas/__init__.py
+# (conteúdo do passo 4)
+```
+
+### 7. **Alternativa: Importação relativa**
+
+Se ainda houver problemas, tente importação relativa:
+
+```python
+# app/api/glossario.py
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+try:
+    from app.schemas.glossario import (
+        GlossarioCreate,
+        GlossarioResponse
+    )
+except ImportError:
+    # Importação relativa como fallback
+    from ..schemas.glossario import (
+        GlossarioCreate, 
+        GlossarioResponse
+    )
+
+from app.database.connection import get_db
+```
+
+### 8. **Verificar se você está executando do diretório correto**
+
+Execute o uvicorn do diretório `backend/`:
+
+```bash
+# Certifique-se de estar em backend/
+cd backend/
+
+# Execute o servidor
+uvicorn app.main:app --reload
+```
+
+### 9. **Comando para testar as importações**
+
+```bash
+# No diretório backend/
+python -c "from app.schemas.glossario import GlossarioCreate; print('Schemas import OK')"
+```
+
+### 10. **Estrutura mínima se você não tem schemas ainda**
+
+Se você não precisa de schemas complexos ainda, crie um arquivo mínimo:
+
+```python
+# app/schemas/glossario.py
+from pydantic import BaseModel
+
+class GlossarioBase(BaseModel):
+    termo: str
+    definicao: str
+
+class GlossarioCreate(GlossarioBase):
+    pass
+
+class GlossarioResponse(GlossarioBase):
+    id: int
+    
+    class Config:
+        from_attributes = True
+```
+
+### 11. **Debug adicional**
+
+Se o problema persistir, adicione debug temporário:
+
+```python
+# No início de app/api/glossario.py
+import os
+import sys
+print("Working directory:", os.getcwd())
+print("Python path:", sys.path)
+print("Checking if schemas directory exists:", os.path.exists("app/schemas"))
+print("Checking if schemas/__init__.py exists:", os.path.exists("app/schemas/__init__.py"))
+print("Checking if schemas/glossario.py exists:", os.path.exists("app/schemas/glossario.py"))
+```
+
+A solução mais provável é criar o diretório `schemas/` com os arquivos necessários. Siga os passos 1-4 para resolver o problema.
