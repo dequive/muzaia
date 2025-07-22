@@ -151,6 +151,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     """Cria token JWT de acesso."""
+    from jose import jwt
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta

@@ -2,11 +2,11 @@
 """
 Sistema de autenticação OAuth2 federado com Google e Microsoft.
 """
-import jwt
+from jose import jwt
 import httpx
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import structlog
 from urllib.parse import urlencode
