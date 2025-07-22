@@ -1,0 +1,261 @@
+Este erro indica que o arquivo `app/schemas/__init__.py` não está exportando as classes `LLMResponse` e `GenerationParams` que são necessárias em `protocols.py`. Vamos resolver isso:
+
+## **Diagnóstico do Problema**
+
+O erro mostra que:
+1. `protocols.py` está tentando importar `LLMResponse` e `GenerationParams` de `app.schemas`
+2. Essas classes não estão sendo exportadas no `__init__.py` do schemas
+3. Provavelmente as classes não existem ou não estão no local correto
+
+## **Soluções**
+
+### 1. **Verificar o que existe atualmente em schemas**
+
+Primeiro, vamos ver o conteúdo atual do `app/schemas/__init__.py`:
+
+```bash
+# Ver o conteúdo atual
+cat /home/runner/workspace/backend/app/schemas/__init__.py
+```
+
+### 2. **Criar os schemas necessários para LLM**
+
+Crie o arquivo `app/schemas/llm.py`:
+
+```python
+# app/schemas/llm.py
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any, List
+from enum import Enum
+
+class LLMProvider(str, Enum):
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    GEMINI = "gemini"
+    LOCAL = "local"
+
+class GenerationParams(BaseModel):
+    """Parâmetros para geração de texto via LLM"""
+    max_tokens: Optional[int] = Field(default=1000, ge=1, le=4000)
+    temperature: Optional[float] = Field(default=0.7, ge=0.0, le=2.0)
+    top_p: Optional[float] = Field(default=1.0, ge=0.0, le=1.0)
+    top_k: Optional[int] = Field(default=None, ge=1)
+    frequency_penalty: Optional[float] = Field(default=0.0, ge=-2.0, le=2.0)
+    presence_penalty: Optional[float] = Field(default=0.0, ge=-2.0, le=2.0)
+    stop: Optional[List[str]] = Field(default=None)
+    stream: Optional[bool] = Field(default=False)
+
+class LLMRequest(BaseModel):
+    """Request para o LLM"""
+    prompt: str = Field(..., min_length=1)
+    system_prompt: Optional[str] = Field(default=None)
+    params: Optional[GenerationParams] = Field(default_factory=GenerationParams)
+    provider: Optional[LLMProvider] = Field(default=LLMProvider.OPENAI)
+    model: Optional[str] = Field(default=None)
+
+class LLMResponse(BaseModel):
+    """Resposta do LLM"""
+    content: str
+    provider: str
+    model: str
+    usage: Optional[Dict[str, Any]] = Field(default=None)
+    metadata: Optional[Dict[str, Any]] = Field(default=None)
+    success: bool = Field(default=True)
+    error: Optional[str] = Field(default=None)
+    
+class LLMError(BaseModel):
+    """Erro do LLM"""
+    message: str
+    provider: str
+    error_code: Optional[str] = Field(default=None)
+    details: Optional[Dict[str, Any]] = Field(default=None)
+```
+
+### 3. **Atualizar o `__init__.py` dos schemas**
+
+Atualize `app/schemas/__init__.py`:
+
+```python
+# app/schemas/__init__.py
+
+# Schemas do Glossário
+from .glossario import (
+    GlossarioBase,
+    GlossarioCreate,
+    GlossarioUpdate,
+    GlossarioResponse,
+    GlossarioList
+)
+
+# Schemas do LLM
+from .llm import (
+    LLMProvider,
+    GenerationParams,
+    LLMRequest,
+    LLMResponse,
+    LLMError
+)
+
+__all__ = [
+    # Glossário
+    "GlossarioBase",
+    "GlossarioCreate", 
+    "GlossarioUpdate",
+    "GlossarioResponse",
+    "GlossarioList",
+    
+    # LLM
+    "LLMProvider",
+    "GenerationParams",
+    "LLMRequest",
+    "LLMResponse",
+    "LLMError"
+]
+```
+
+### 4. **Se os arquivos de schema não existem, crie uma estrutura mínima**
+
+Caso você não tenha os arquivos ainda, crie primeiro uma estrutura básica:
+
+```python
+# app/schemas/base.py
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+class BaseSchema(BaseModel):
+    """Schema base para todos os modelos"""
+    
+    class Config:
+        from_attributes = True
+        validate_assignment = True
+```
+
+```python
+# app/schemas/glossario.py
+from pydantic import BaseModel
+from typing import Optional, List
+from datetime import datetime
+from .base import BaseSchema
+
+class GlossarioBase(BaseModel):
+    termo: str
+    definicao: str
+    categoria: Optional[str] = None
+
+class GlossarioCreate(GlossarioBase):
+    pass
+
+class GlossarioUpdate(BaseModel):
+    termo: Optional[str] = None
+    definicao: Optional[str] = None
+    categoria: Optional[str] = None
+
+class GlossarioResponse(GlossarioBase, BaseSchema):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+class GlossarioList(BaseModel):
+    items: List[GlossarioResponse]
+    total: int
+    page: int = 1
+    per_page: int = 10
+```
+
+### 5. **Verificar a estrutura de arquivos**
+
+Certifique-se de que a estrutura está assim:
+
+```
+backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   ├── factory.py
+│   │   └── protocols.py
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── glossario.py
+│   │   └── llm.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── glossario.py
+│   └── database/
+│       ├── __init__.py
+│       └── connection.py
+```
+
+### 6. **Alternativa: Importação condicional temporária**
+
+Se você quiser uma solução rápida temporária, modifique `protocols.py`:
+
+```python
+# app/core/protocols.py
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
+
+try:
+    from app.schemas import LLMResponse, GenerationParams
+except ImportError:
+    # Definições temporárias até os schemas serem criados
+    from pydantic import BaseModel
+    
+    class GenerationParams(BaseModel):
+        max_tokens: int = 1000
+        temperature: float = 0.7
+    
+    class LLMResponse(BaseModel):
+        content: str
+        provider: str
+        model: str
+        success: bool = True
+
+# Resto do seu código protocols.py...
+```
+
+### 7. **Teste as importações**
+
+```bash
+# No diretório backend/
+python -c "from app.schemas import LLMResponse, GenerationParams; print('LLM schemas import OK')"
+```
+
+### 8. **Verificar se todos os arquivos existem**
+
+```bash
+# Verificar estrutura
+ls -la app/schemas/
+cat app/schemas/__init__.py
+```
+
+### 9. **Se o problema persistir, debug passo a passo**
+
+```python
+# No início de protocols.py, adicione debug temporário:
+import os
+print("Current directory:", os.getcwd())
+print("Schemas directory exists:", os.path.exists("app/schemas"))
+print("Schemas files:", os.listdir("app/schemas") if os.path.exists("app/schemas") else "Not found")
+
+try:
+    import app.schemas
+    print("Available in app.schemas:", dir(app.schemas))
+except Exception as e:
+    print("Error importing app.schemas:", e)
+```
+
+### 10. **Comando para criar os arquivos rapidamente**
+
+```bash
+# No diretório backend/app/schemas/
+touch base.py llm.py
+
+# Ou copie e cole o conteúdo dos passos 2 e 4
+```
+
+A solução mais direta é seguir os passos 2 e 3 para criar o arquivo `llm.py` e atualizar o `__init__.py` com as exportações necessárias.
