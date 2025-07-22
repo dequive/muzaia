@@ -143,10 +143,13 @@ export default function GlossarioPage() {
       setTermos(response.items || [])
       setTotalPages(response.pages || 1)
     } catch (error) {
-      const errorMessage = getApiErrorMessage(error)
-      console.error('Erro ao carregar termos:', errorMessage)
-      toast.error(`Erro ao carregar termos: ${errorMessage}`)
-      setTermos([])
+      console.error('❌ Glossario API Error:', {
+        error,
+        type: typeof error,
+        keys: error && typeof error === 'object' ? Object.keys(error) : [],
+        message: getApiErrorMessage(error)
+      })
+      toast.error(getApiErrorMessage(error))
     } finally {
       setLoading(false)
     }

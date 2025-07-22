@@ -529,20 +529,24 @@ class EnhancedApiClient {
           this.metrics.endRequest(error.config.metadata.requestId, undefined, error)
         }
 
-        // Log errors with better formatting
+        // Extract meaningful error information
         const errorInfo = {
           id: requestId,
           code: error?.code || 'UNKNOWN',
           status: error?.response?.status || 0,
           url: error?.config?.url || 'unknown',
-          message: error?.message || 'Unknown error',
+          message: this.extractErrorMessage(error),
           data: error?.response?.data || null
         }
         
-        // Only log if we have meaningful error info
-        if (errorInfo.message !== 'Unknown error' || errorInfo.status !== 0 || errorInfo.data) {
-          console.error('❌ API Error:', errorInfo)
-        }
+        // Always log API errors with proper formatting
+        console.error('❌ API Error:', {
+          status: errorInfo.status,
+          url: errorInfo.url,
+          message: errorInfo.message,
+          code: errorInfo.code,
+          ...(errorInfo.data && { data: errorInfo.data })
+        })
         
         // Also log the full error for debugging in development
         if (isDebug) {
@@ -567,6 +571,35 @@ class EnhancedApiClient {
    */
   private getAuthToken(): string | null {
     return localStorage.getItem('mozaia_token')
+  }
+
+  /**
+   * Extrai mensagem de erro da resposta da API
+   */
+  private extractErrorMessage(error: AxiosError): string {
+    // Try different sources for error message
+    if (error.response?.data) {
+      const data = error.response.data as any
+      
+      // Try common error message fields
+      const message = data.message || 
+                     data.error || 
+                     data.detail || 
+                     data.msg ||
+                     (typeof data === 'string' ? data : null)
+      
+      if (message && typeof message === 'string') {
+        return message
+      }
+      
+      // If data is an object but no standard message field
+      if (typeof data === 'object' && Object.keys(data).length > 0) {
+        return `Erro da API: ${JSON.stringify(data)}`
+      }
+    }
+    
+    // Fallback to error message or generic message
+    return error.message || 'Erro de conexão com a API'
   }
 
   /**
@@ -1262,15 +1295,22 @@ export const getApiErrorMessage = (error: any): string => {
       const message = data.message || 
                      data.error || 
                      data.detail || 
+                     data.msg ||
                      (typeof data === 'string' ? data : null)
       
-      if (message) {
+      if (message && typeof message === 'string') {
         return message
+      }
+      
+      // If we have data but no standard message field
+      if (typeof data === 'object' && Object.keys(data).length > 0) {
+        return `Erro da API (${error.response.status}): ${JSON.stringify(data)}`
       }
     }
     
-    // Fallback to error message or default
-    return error.message || 'Erro de conexão com a API'
+    // Add status code to message if available
+    const statusText = error.response?.status ? ` (${error.response.status})` : ''
+    return (error.message || 'Erro de conexão com a API') + statusText
   }
   
   if (error && typeof error === 'object') {
@@ -1278,7 +1318,7 @@ export const getApiErrorMessage = (error: any): string => {
     if (Object.keys(error).length === 0) {
       return 'Erro desconhecido - resposta vazia do servidor'
     }
-    return error.message || JSON.stringify(error) || 'Erro desconhecido'
+    return error.message || `Erro: ${JSON.stringify(error)}` || 'Erro desconhecido'
   }
   
   return error?.toString() || 'Erro desconhecido'
