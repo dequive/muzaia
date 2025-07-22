@@ -22,6 +22,62 @@ class LegalResponseGenerator:
     def __init__(self):
         self.search_engine = SemanticSearchEngine()
         self.min_confidence_threshold = 0.4
+        
+        # Tópicos jurídicos válidos
+        self.legal_keywords = [
+            # Direito Civil
+            "contrato", "contratos", "propriedade", "posse", "herança", "sucessão",
+            "casamento", "divórcio", "união", "família", "guarda", "pensão",
+            "danos", "responsabilidade civil", "obrigações", "direitos reais",
+            
+            # Direito Penal
+            "crime", "crimes", "penal", "criminal", "prisão", "cadeia", "multa",
+            "homicídio", "furto", "roubo", "violência", "agressão", "difamação",
+            
+            # Direito do Trabalho
+            "trabalho", "emprego", "salário", "férias", "despedimento",
+            "contrato trabalho", "direitos trabalhador", "sindicato",
+            
+            # Direito Administrativo
+            "administração pública", "funcionário público", "licença",
+            "autorização", "multa administrativa", "processo administrativo",
+            
+            # Direito Comercial
+            "empresa", "sociedade", "negócio", "comercial", "falência",
+            "concordata", "marca", "patente",
+            
+            # Direito Constitucional
+            "constituição", "direitos fundamentais", "liberdade", "igualdade",
+            "direitos humanos", "cidadania", "nacionalidade",
+            
+            # Direito Processual
+            "processo", "tribunal", "juiz", "advogado", "recurso", "sentença",
+            "execução", "citação", "audiência", "prova", "testemunha",
+            
+            # Direito Fiscal
+            "imposto", "taxa", "contribuição", "iva", "irps", "fiscal",
+            
+            # Termos jurídicos gerais
+            "lei", "leis", "código", "decreto", "regulamento", "artigo",
+            "direito", "direitos", "dever", "deveres", "obrigação", "legal",
+            "jurídico", "juridico", "legislação", "norma", "normas"
+        ]
+        
+        # Tópicos não jurídicos que devem ser rejeitados
+        self.non_legal_topics = [
+            "receita", "culinária", "cozinha", "comida", "prato",
+            "música", "filme", "cinema", "entretenimento", "jogo",
+            "futebol", "desporto", "desportos", "esporte",
+            "medicina", "saúde", "doença", "sintomas", "medicamento",
+            "programação", "código", "software", "computador",
+            "matemática", "cálculo", "física", "química",
+            "geografia", "história", "biologia", "ciência",
+            "clima", "tempo", "meteorologia", "previsão",
+            "viagem", "turismo", "hotel", "restaurante",
+            "moda", "roupa", "beleza", "cosmético",
+            "tecnologia", "telefone", "internet", "app"
+        ]
+        
         self.sensitive_topics = [
             "penal", "criminal", "prisão", "cadeia", "assassinato", "homicídio",
             "família", "divórcio", "guarda", "pensão alimentar",
@@ -36,6 +92,10 @@ class LegalResponseGenerator:
     ) -> Dict:
         """Gera resposta baseada no repositório legal."""
         try:
+            # 0. Validar se a pergunta é sobre temas jurídicos
+            if not self._is_legal_question(user_query):
+                return self._generate_non_legal_response(user_query)
+            
             # 1. Buscar conteúdo relevante
             matches = await self.search_engine.search_legal_content(
                 query=user_query,
@@ -63,10 +123,52 @@ class LegalResponseGenerator:
             logger.error(f"Erro ao gerar resposta legal: {e}")
             return self._generate_error_response()
     
+    def _is_legal_question(self, query: str) -> bool:
+        """Verifica se a pergunta é sobre temas jurídicos."""
+        query_lower = query.lower()
+        
+        # Verificar se contém tópicos não jurídicos (rejeitar imediatamente)
+        if any(topic in query_lower for topic in self.non_legal_topics):
+            return False
+        
+        # Verificar se contém pelo menos uma palavra-chave jurídica
+        has_legal_keyword = any(keyword in query_lower for keyword in self.legal_keywords)
+        
+        # Padrões adicionais que indicam questões jurídicas
+        legal_patterns = [
+            "posso fazer", "tenho direito", "é legal", "é ilegal",
+            "que diz a lei", "segundo a lei", "lei diz",
+            "é crime", "é permitido", "é obrigatório",
+            "meus direitos", "meus deveres", "posso processar",
+            "como proceder", "que fazer", "devo fazer",
+            "artigo", "código", "decreto", "regulamento"
+        ]
+        
+        has_legal_pattern = any(pattern in query_lower for pattern in legal_patterns)
+        
+        return has_legal_keyword or has_legal_pattern
+
     def _is_sensitive_topic(self, query: str) -> bool:
         """Verifica se o tema é sensível."""
         query_lower = query.lower()
         return any(topic in query_lower for topic in self.sensitive_topics)
+    
+    def _generate_non_legal_response(self, query: str) -> Dict:
+        """Resposta para perguntas não jurídicas."""
+        return {
+            "success": True,
+            "response": "Desculpe, mas sou um assistente jurídico especializado e só posso responder "
+                      "a questões relacionadas com direito e legislação moçambicana. "
+                      "Para outros assuntos, por favor consulte fontes especializadas apropriadas. "
+                      "\n\nPosso ajudá-lo com questões sobre direitos, deveres, legislação, "
+                      "contratos, procedimentos legais e outras matérias jurídicas.",
+            "sources": [],
+            "confidence": 1.0,
+            "requires_human": False,
+            "escalation_reason": "non_legal_topic",
+            "search_matches": 0,
+            "response_type": "topic_restriction"
+        }
     
     async def _generate_legal_response(self, query: str, matches: List[Dict]) -> Dict:
         """Gera resposta baseada nos matches encontrados."""

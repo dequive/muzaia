@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -49,8 +48,58 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
     scrollToBottom()
   }, [messages])
 
+  const validateLegalQuestion = (question: string): { isValid: boolean; reason?: string } => {
+    const query = question.toLowerCase().trim();
+
+    // Tópicos claramente não jurídicos
+    const nonLegalTopics = [
+      'receita', 'culinária', 'cozinha', 'comida', 'prato',
+      'música', 'filme', 'cinema', 'jogo',
+      'futebol', 'desporto', 'esporte',
+      'medicina', 'saúde', 'doença', 'sintomas',
+      'programação', 'código', 'software',
+      'matemática', 'física', 'química',
+      'clima', 'tempo', 'previsão',
+      'viagem', 'turismo', 'hotel'
+    ];
+
+    if (nonLegalTopics.some(topic => query.includes(topic))) {
+      return { 
+        isValid: false, 
+        reason: "Esta pergunta não parece ser sobre questões jurídicas. Por favor, faça perguntas sobre direitos, leis ou questões legais." 
+      };
+    }
+
+    // Indicadores de spam
+    const spamIndicators = ['comprar', 'vender', 'desconto', 'promoção', 'grátis', 'click'];
+    if (spamIndicators.some(spam => query.includes(spam))) {
+      return { 
+        isValid: false, 
+        reason: "Por favor, faça apenas perguntas relacionadas com questões jurídicas." 
+      };
+    }
+
+    return { isValid: true };
+  };
+
   const handleSendMessage = async () => {
-    if (!inputText.trim() || isLoading) return
+    if (!inputText.trim()) return;
+
+    // Validar se é pergunta jurídica
+    const validation = validateLegalQuestion(inputText);
+    if (!validation.isValid) {
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: validation.reason || "Pergunta não é sobre questões jurídicas.",
+        timestamp: new Date(),
+        requires_human: true,
+        escalation_reason: 'non_legal_topic'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      setInputText('');
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -82,7 +131,7 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
       }
 
       const data = await response.json()
-      
+
       // Atualizar conversation ID se for nova
       if (!currentConversationId) {
         setCurrentConversationId(data.conversa_id)
@@ -146,7 +195,7 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
           </div>
         </div>
       )}
-      
+
       <div className={`flex-1 ${message.type === 'user' ? 'max-w-md ml-auto' : 'max-w-4xl'}`}>
         <div className={`p-4 rounded-lg ${
           message.type === 'user' 
@@ -154,14 +203,14 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
             : 'bg-gray-50 border'
         }`}>
           <p className="whitespace-pre-wrap">{message.content}</p>
-          
+
           {/* Informações técnicas para respostas da IA */}
           {message.type === 'assistant' && (
             <div className="mt-3 space-y-2">
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <Clock className="w-3 h-3" />
                 <span>{message.processing_time}ms</span>
-                
+
                 {message.confidence !== undefined && (
                   <>
                     <Badge variant={getConfidenceBadgeColor(message.confidence)} className="text-xs">
@@ -169,7 +218,7 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
                     </Badge>
                   </>
                 )}
-                
+
                 {message.requires_human && (
                   <Badge variant="destructive" className="text-xs flex items-center gap-1">
                     <Users className="w-3 h-3" />
@@ -177,7 +226,7 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
                   </Badge>
                 )}
               </div>
-              
+
               {/* Fontes legais */}
               {message.sources && message.sources.length > 0 && (
                 <div className="mt-3">
@@ -190,7 +239,7 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
                     <BookOpen className="w-3 h-3 mr-1" />
                     Ver fontes legais ({message.sources.length})
                   </Button>
-                  
+
                   {showSources === message.id && (
                     <div className="mt-2 space-y-2">
                       {message.sources.map((source, index) => (
@@ -206,7 +255,7 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
                   )}
                 </div>
               )}
-              
+
               {/* Motivo de escalação */}
               {message.escalation_reason && (
                 <div className="mt-2 text-xs text-amber-600 flex items-center gap-1">
@@ -217,7 +266,7 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
             </div>
           )}
         </div>
-        
+
         <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
           {message.type === 'user' ? (
             <User className="w-3 h-3" />
@@ -229,6 +278,33 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
       </div>
     </div>
   )
+
+  const welcomeMessage: ChatMessage = {
+    id: 'welcome',
+    type: 'assistant',
+    content: `⚖️ **Assistente Jurídico Moçambicano**
+
+Sou especializado **exclusivamente** em questões jurídicas e legislação moçambicana.
+
+**Posso ajudar com:**
+• 📋 Direitos e deveres dos cidadãos
+• 📜 Interpretação de leis e códigos
+• ⚖️ Procedimentos legais e processuais
+• 📝 Contratos e obrigações
+• 👨‍👩‍👧‍👦 Direito de família (casamento, divórcio, herança)
+• 💼 Direito do trabalho
+• 🏛️ Direito penal e civil
+• 🏢 Direito comercial e administrativo
+
+**⚠️ Importante:** Respondo apenas a questões jurídicas. Para outros assuntos (medicina, culinária, desportos, etc.), consulte fontes especializadas apropriadas.
+
+Como posso ajudá-lo com questões legais hoje?`,
+    timestamp: new Date(),
+  };
+
+  useEffect(() => {
+    setMessages([welcomeMessage]);
+  }, []);
 
   return (
     <div className="flex flex-col h-full max-h-[800px]">
@@ -303,7 +379,7 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
             )}
           </Button>
         </div>
-        
+
         <div className="mt-2 text-xs text-gray-500 flex items-center gap-4">
           <span>💡 Pressione Enter para enviar, Shift+Enter para nova linha</span>
           {currentConversationId && (

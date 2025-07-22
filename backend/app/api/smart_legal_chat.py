@@ -21,10 +21,23 @@ router = APIRouter(prefix="/chat", tags=["smart-legal-chat"])
 
 class LegalChatRequest(BaseModel):
     """Request para chat legal."""
-    pergunta: str = Field(..., min_length=5, max_length=1000, description="Pergunta do utilizador")
+    pergunta: str = Field(..., min_length=5, max_length=1000, description="Pergunta jurídica do utilizador")
     conversa_id: Optional[str] = Field(None, description="ID da conversa (opcional)")
     contexto: Optional[Dict[str, Any]] = Field(None, description="Contexto adicional")
     jurisdicao_preferida: Optional[str] = Field("mozambique", description="Jurisdição preferida")
+    
+    @validator('pergunta')
+    def validate_legal_question(cls, v):
+        """Validação básica para garantir que é uma pergunta."""
+        if not v.strip():
+            raise ValueError("Pergunta não pode estar vazia")
+        
+        # Verificações básicas de spam/malícia
+        spam_indicators = ["comprar", "vender", "desconto", "promoção", "grátis", "click aqui"]
+        if any(spam in v.lower() for spam in spam_indicators):
+            raise ValueError("Pergunta parece não ser relacionada com questões jurídicas")
+        
+        return v
 
 
 class LegalChatResponse(BaseModel):
@@ -50,7 +63,7 @@ async def perguntar_legal(
         conversation_id = request.conversa_id or str(uuid.uuid4())
         
         logger.info(
-            "Nova pergunta legal",
+            "Nova pergunta recebida",
             question=request.pergunta[:100],
             conversation_id=conversation_id
         )
