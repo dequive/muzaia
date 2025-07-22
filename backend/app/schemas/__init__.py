@@ -21,9 +21,6 @@ from .llm import (
     LLMError
 )
 
-# Schemas principais (compatibilidade)
-from app.schemas import ModelResponse
-
 __all__ = [
     # Glossário
     "GlossarioTermoBase",
@@ -42,6 +39,5 @@ __all__ = [
     "GenerationParams",
     "LLMRequest",
     "LLMResponse",
-    "LLMError",
-    "ModelResponse"
+    "LLMError"
 ]
