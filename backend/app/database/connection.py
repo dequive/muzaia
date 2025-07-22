@@ -127,3 +127,9 @@ async def init_db():
 async def close_db():
     """Fecha conexões do banco de dados."""
     await db_manager.close()
+
+
+async def get_db():
+    """Dependency para obter sessão do banco de dados (compatibilidade)."""
+    async with db_manager.get_session() as session:
+        yield session
