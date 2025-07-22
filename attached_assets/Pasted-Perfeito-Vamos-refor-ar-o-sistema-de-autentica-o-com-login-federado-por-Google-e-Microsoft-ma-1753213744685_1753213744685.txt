@@ -1,0 +1,110 @@
+Perfeito. Vamos reforçar o sistema de autenticação com **login federado por Google e Microsoft**, mantendo uma base de utilizadores local (PostgreSQL) para perfis, permissões, e controlo de acesso ao sistema.
+
+---
+
+## ✅ Objectivos
+
+1. Suporte a **OAuth 2.0 federado**:
+
+   * Login com **Google** e/ou **Microsoft (Azure AD ou Microsoft 365)**;
+2. Gestão de sessão JWT segura;
+3. Sincronização com a **base local de utilizadores** (criação automática se não existir);
+4. Mecanismo de autorização com base em papéis (`admin`, `advogado`, `utilizador`, etc).
+
+---
+
+## 🧱 Arquitectura de Autenticação
+
+```
+          ┌──────────────────────┐
+          │     UTILIZADOR       │
+          └─────────┬────────────┘
+                    │
+        ┌───────────▼─────────────┐
+        │     Escolhe Login via   │
+        │ Google | Microsoft | Email │
+        └───────────┬─────────────┘
+                    ▼
+       ┌────────────────────────────┐
+       │     OAuth 2.0 Provider     │
+       │  Google / Microsoft Login  │
+       └──────────┬────────────────┘
+                  ▼
+       ┌────────────────────────────┐
+       │  Callback → FastAPI Backend│
+       └──────────┬────────────────┘
+                  ▼
+┌────────────────────────────────────────────┐
+│    Valida token, extrai info (email, nome) │
+│    - Cria conta local se não existir       │
+│    - Gera e devolve JWT (access + refresh) │
+└────────────────────────────────────────────┘
+                  ▼
+        ┌──────────────────────────┐
+        │  Frontend recebe JWT     │
+        │  Armazena no cookie/http │
+        └──────────────────────────┘
+```
+
+---
+
+## 🔐 Stack Técnica Recomendada
+
+| Componente           | Tecnologia                                                |
+| -------------------- | --------------------------------------------------------- |
+| Backend API          | `FastAPI` com `Authlib` ou `OAuth2`                       |
+| Login Google         | Google OAuth (via `https://accounts.google.com`)          |
+| Login Microsoft      | Microsoft Identity Platform (`login.microsoftonline.com`) |
+| Sessão               | JWT com `fastapi-users` ou custom middleware              |
+| Base de Utilizadores | PostgreSQL (SQLAlchemy / Tortoise ORM)                    |
+| Frontend             | Next.js 14 com `next-auth` (opcional) ou fetch manual     |
+| Tokens               | `access_token` curto + `refresh_token` com rotação        |
+
+---
+
+## 📦 Tabela de Utilizadores (`users`)
+
+```sql
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  avatar_url TEXT,
+  provider TEXT CHECK (provider IN ('google', 'microsoft', 'email')),
+  is_active BOOLEAN DEFAULT TRUE,
+  role TEXT CHECK (role IN ('admin', 'advogado', 'user')) DEFAULT 'user',
+  created_at TIMESTAMP DEFAULT now()
+);
+```
+
+---
+
+## 🔄 Fluxo: Login Google ou Microsoft
+
+1. Usuário clica “Entrar com Google / Microsoft”;
+2. É redireccionado para o provedor OAuth;
+3. Após consentimento, é redireccionado para `backend/api/auth/callback`;
+4. Backend valida o token e:
+
+   * Se o email ainda não existe → cria novo `users` com `provider = google|microsoft`;
+   * Gera JWTs e envia ao frontend;
+5. Frontend armazena token (cookie seguro) e redirecciona para dashboard.
+
+---
+
+## 🛡️ Segurança
+
+* Tokens com validade curta (`15min`) + refresh token rotativo (`7 dias`);
+* Revalidação de email se `provider=email`;
+* Política de bloqueio se múltiplos logins falhados (brute-force);
+* Login por e-mail (senha) opcional, com bcrypt + 2FA opcional.
+
+---
+
+## 📌 Ações Sugeridas
+
+1. Posso gerar o módulo de autenticação em `FastAPI`, com login Google/Microsoft pronto;
+2. Ou configurar a tabela e integração com o frontend;
+3. Ou gerar o fluxo completo incluindo testes de login, sessão e logout seguro.
+
+Como preferes avançar?

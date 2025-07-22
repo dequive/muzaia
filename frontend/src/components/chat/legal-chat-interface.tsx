@@ -51,31 +51,106 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
   const validateLegalQuestion = (question: string): { isValid: boolean; reason?: string } => {
     const query = question.toLowerCase().trim();
 
-    // Tópicos claramente não jurídicos
+    // Lista expandida de tópicos não jurídicos (deve ser rejeitado)
     const nonLegalTopics = [
-      'receita', 'culinária', 'cozinha', 'comida', 'prato',
-      'música', 'filme', 'cinema', 'jogo',
-      'futebol', 'desporto', 'esporte',
-      'medicina', 'saúde', 'doença', 'sintomas',
-      'programação', 'código', 'software',
-      'matemática', 'física', 'química',
-      'clima', 'tempo', 'previsão',
-      'viagem', 'turismo', 'hotel'
+      // Culinária
+      'receita', 'culinária', 'cozinha', 'comida', 'prato', 'cozinhar', 'tempero', 'ingredientes',
+      'sobremesa', 'almoço', 'jantar', 'café', 'bebida', 'restaurante',
+      
+      // Entretenimento
+      'música', 'filme', 'cinema', 'série', 'jogo', 'videojogo', 'netflix', 'youtube',
+      'teatro', 'concerto', 'artista', 'ator', 'cantor',
+      
+      // Desportos
+      'futebol', 'desporto', 'desportos', 'esporte', 'basquetebol', 'voleibol',
+      'natação', 'corrida', 'ginásio', 'exercício', 'treino',
+      
+      // Medicina/Saúde
+      'medicina', 'saúde', 'doença', 'sintomas', 'medicamento', 'remédio',
+      'médico', 'hospital', 'dor', 'febre', 'gripe', 'covid', 'vacina',
+      
+      // Tecnologia
+      'programação', 'código', 'software', 'computador', 'app', 'aplicação',
+      'website', 'internet', 'facebook', 'whatsapp', 'email', 'senha',
+      
+      // Ciências
+      'matemática', 'cálculo', 'física', 'química', 'biologia', 'geografia',
+      'história', 'astronomia', 'geologia',
+      
+      // Clima
+      'clima', 'tempo', 'meteorologia', 'previsão', 'chuva', 'sol', 'temperatura',
+      
+      // Viagem/Turismo
+      'viagem', 'turismo', 'hotel', 'voo', 'avião', 'praia', 'férias', 'destino',
+      
+      // Moda/Beleza
+      'moda', 'roupa', 'vestido', 'sapatos', 'beleza', 'cosmético', 'cabelo', 'perfume',
+      
+      // Automóveis (não jurídicos)
+      'carro', 'automóvel', 'conduzir', 'combustível', 'mecânico', 'pneu', 'motor',
+      
+      // Relacionamentos pessoais
+      'namoro', 'paquera', 'conquista', 'romance', 'amizade', 'festa', 'presente',
+      
+      // Hobbies
+      'jardinagem', 'pintura', 'desenho', 'fotografia', 'artesanato', 'puzzle'
     ];
 
+    // Rejeitar se contém qualquer tópico não jurídico
     if (nonLegalTopics.some(topic => query.includes(topic))) {
       return { 
         isValid: false, 
-        reason: "Esta pergunta não parece ser sobre questões jurídicas. Por favor, faça perguntas sobre direitos, leis ou questões legais." 
+        reason: "🚫 Esta pergunta não é sobre questões jurídicas.\n\n" +
+                "✅ Posso ajudar com:\n" +
+                "• Direitos e deveres legais\n" +
+                "• Leis e legislação\n" +
+                "• Contratos e procedimentos\n" +
+                "• Questões de direito civil, penal, trabalho\n\n" +
+                "Exemplo: \"Quais são os meus direitos como trabalhador?\""
       };
     }
 
-    // Indicadores de spam
-    const spamIndicators = ['comprar', 'vender', 'desconto', 'promoção', 'grátis', 'click'];
+    // Deve conter OBRIGATORIAMENTE pelo menos uma palavra jurídica
+    const requiredLegalKeywords = [
+      'lei', 'leis', 'direito', 'direitos', 'dever', 'deveres', 'legal', 'ilegal',
+      'jurídico', 'juridico', 'código', 'artigo', 'tribunal', 'juiz', 'advogado',
+      'processo', 'contrato', 'crime', 'penal', 'civil', 'obrigação', 'responsabilidade',
+      'multa', 'procedimento', 'legislação', 'constituição', 'norma'
+    ];
+
+    const hasLegalKeyword = requiredLegalKeywords.some(keyword => query.includes(keyword));
+
+    // Padrões específicos de perguntas jurídicas
+    const legalQuestionPatterns = [
+      'posso ser processado', 'tenho direito', 'é crime', 'é legal', 'é ilegal',
+      'segundo a lei', 'que diz a lei', 'posso processar', 'meus direitos',
+      'procedimento legal', 'como proceder'
+    ];
+
+    const hasLegalPattern = legalQuestionPatterns.some(pattern => query.includes(pattern));
+
+    if (!hasLegalKeyword && !hasLegalPattern) {
+      return {
+        isValid: false,
+        reason: "🔍 Pergunta deve ser especificamente sobre questões jurídicas.\n\n" +
+                "✅ Use palavras como: direito, lei, legal, contrato, crime, processo, etc.\n\n" +
+                "📝 Exemplos válidos:\n" +
+                "• \"É legal gravar conversas?\"\n" +
+                "• \"Meus direitos no trabalho\"\n" +
+                "• \"Como fazer um contrato?\""
+      };
+    }
+
+    // Spam e comercial
+    const spamIndicators = [
+      'comprar', 'vender', 'desconto', 'promoção', 'grátis', 'click',
+      'oferta', 'barato', 'ganhar dinheiro', 'investimento'
+    ];
+    
     if (spamIndicators.some(spam => query.includes(spam))) {
       return { 
         isValid: false, 
-        reason: "Por favor, faça apenas perguntas relacionadas com questões jurídicas." 
+        reason: "🚫 Apenas perguntas jurídicas são permitidas." 
       };
     }
 
@@ -282,23 +357,30 @@ export default function LegalChatInterface({ conversationId }: LegalChatInterfac
   const welcomeMessage: ChatMessage = {
     id: 'welcome',
     type: 'assistant',
-    content: `⚖️ **Assistente Jurídico Moçambicano**
+    content: `⚖️ **Assistente Jurídico Exclusivo - Moçambique**
 
-Sou especializado **exclusivamente** em questões jurídicas e legislação moçambicana.
+🎯 **ATENÇÃO: Respondo APENAS a questões jurídicas**
 
-**Posso ajudar com:**
-• 📋 Direitos e deveres dos cidadãos
-• 📜 Interpretação de leis e códigos
-• ⚖️ Procedimentos legais e processuais
-• 📝 Contratos e obrigações
-• 👨‍👩‍👧‍👦 Direito de família (casamento, divórcio, herança)
-• 💼 Direito do trabalho
-• 🏛️ Direito penal e civil
-• 🏢 Direito comercial e administrativo
+**✅ Posso ajudar com:**
+• 📋 **Direitos e deveres** dos cidadãos
+• 📜 **Leis e códigos** moçambicanos
+• ⚖️ **Procedimentos legais** (tribunais, processos)
+• 📝 **Contratos** e obrigações legais
+• 👨‍👩‍👧‍👦 **Direito de família** (casamento, divórcio, herança)
+• 💼 **Direito do trabalho** (contratos, despedimentos)
+• 🏛️ **Direito penal** (crimes, penalizações)
+• 🏢 **Direito comercial** e administrativo
 
-**⚠️ Importante:** Respondo apenas a questões jurídicas. Para outros assuntos (medicina, culinária, desportos, etc.), consulte fontes especializadas apropriadas.
+**🚫 NÃO respondo sobre:**
+Medicina, culinária, desportos, tecnologia, relacionamentos, música, cinema, moda, viagens, etc.
 
-Como posso ajudá-lo com questões legais hoje?`,
+**💡 Exemplos de perguntas VÁLIDAS:**
+• "É crime não pagar pensão alimentar?"
+• "Posso ser despedido sem justa causa?"
+• "Quais os meus direitos como consumidor?"
+• "Como fazer um testamento em Moçambique?"
+
+**Faça a sua pergunta JURÍDICA:**`,
     timestamp: new Date(),
   };
 

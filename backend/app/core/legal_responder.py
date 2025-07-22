@@ -124,29 +124,126 @@ class LegalResponseGenerator:
             return self._generate_error_response()
     
     def _is_legal_question(self, query: str) -> bool:
-        """Verifica se a pergunta é sobre temas jurídicos."""
+        """Verifica se a pergunta é EXCLUSIVAMENTE sobre temas jurídicos."""
         query_lower = query.lower()
         
-        # Verificar se contém tópicos não jurídicos (rejeitar imediatamente)
-        if any(topic in query_lower for topic in self.non_legal_topics):
-            return False
-        
-        # Verificar se contém pelo menos uma palavra-chave jurídica
-        has_legal_keyword = any(keyword in query_lower for keyword in self.legal_keywords)
-        
-        # Padrões adicionais que indicam questões jurídicas
-        legal_patterns = [
-            "posso fazer", "tenho direito", "é legal", "é ilegal",
-            "que diz a lei", "segundo a lei", "lei diz",
-            "é crime", "é permitido", "é obrigatório",
-            "meus direitos", "meus deveres", "posso processar",
-            "como proceder", "que fazer", "devo fazer",
-            "artigo", "código", "decreto", "regulamento"
+        # 1. Rejeitar imediatamente tópicos não jurídicos (lista expandida)
+        non_legal_expanded = [
+            # Culinária e alimentação
+            "receita", "culinária", "cozinha", "comida", "prato", "cozinhar", "ingredientes",
+            "tempero", "sobremesa", "almoço", "jantar", "café", "bebida", "restaurante",
+            
+            # Entretenimento
+            "música", "filme", "cinema", "série", "jogo", "videojogo", "netflix", "youtube",
+            "teatro", "concerto", "festival", "artista", "ator", "cantor",
+            
+            # Desportos
+            "futebol", "desporto", "desportos", "esporte", "basquetebol", "voleibol",
+            "natação", "corrida", "ginásio", "exercício", "treino", "maratona",
+            
+            # Medicina e saúde
+            "medicina", "saúde", "doença", "sintomas", "medicamento", "remédio",
+            "médico", "hospital", "dor", "febre", "gripe", "covid", "vacina",
+            
+            # Tecnologia e informática
+            "programação", "código", "software", "computador", "app", "aplicação",
+            "website", "internet", "facebook", "whatsapp", "email", "senha",
+            
+            # Ciências
+            "matemática", "cálculo", "física", "química", "biologia", "geografia",
+            "história", "astronomia", "geologia", "botânica",
+            
+            # Clima e meteorologia
+            "clima", "tempo", "meteorologia", "previsão", "chuva", "sol", "vento",
+            "temperatura", "estação", "inverno", "verão",
+            
+            # Viagens e turismo
+            "viagem", "turismo", "hotel", "voo", "avião", "praia", "férias",
+            "passaporte", "visto", "destino", "mala",
+            
+            # Moda e beleza
+            "moda", "roupa", "vestido", "sapatos", "beleza", "cosmético", "cabelo",
+            "maquilhagem", "perfume", "estilo",
+            
+            # Automóveis
+            "carro", "automóvel", "conduzir", "carta de condução", "combustível",
+            "mecânico", "pneu", "motor", "seguro automóvel",
+            
+            # Economia doméstica
+            "orçamento", "poupança", "investimento", "banco", "cartão de crédito",
+            "empréstimo", "hipoteca", "seguro", "pensão",
+            
+            # Educação geral
+            "escola", "universidade", "estudar", "exame", "nota", "professor",
+            "curso", "disciplina", "matemática", "português",
+            
+            # Hobbies e lazer
+            "jardinagem", "pintura", "desenho", "fotografia", "colecção", "artesanato",
+            "leitura", "livro", "revista", "puzzle",
+            
+            # Relacionamentos pessoais (não jurídicos)
+            "namoro", "paquera", "conquista", "romance", "amizade", "festa",
+            "aniversário", "presente", "surpresa"
         ]
         
-        has_legal_pattern = any(pattern in query_lower for pattern in legal_patterns)
+        # Verificação rigorosa de tópicos não jurídicos
+        for topic in non_legal_expanded:
+            if topic in query_lower:
+                return False
         
-        return has_legal_keyword or has_legal_pattern
+        # 2. Deve conter OBRIGATORIAMENTE pelo menos UMA palavra-chave jurídica específica
+        core_legal_keywords = [
+            # Termos jurídicos fundamentais
+            "lei", "leis", "direito", "direitos", "dever", "deveres", "legal", "ilegal",
+            "jurídico", "juridico", "legislação", "código", "artigo", "decreto",
+            "regulamento", "norma", "normas", "constituição",
+            
+            # Instituições jurídicas
+            "tribunal", "juiz", "advogado", "ministério público", "polícia",
+            "procurador", "notário", "conservatória", "registo",
+            
+            # Procedimentos legais
+            "processo", "procedimento", "recurso", "apelação", "sentença", "decisão",
+            "acórdão", "despacho", "citação", "audiência", "julgamento",
+            
+            # Áreas do direito
+            "penal", "civil", "criminal", "comercial", "administrativo", "laboral",
+            "trabalhista", "familiar", "sucessório", "fiscal", "tributário",
+            
+            # Documentos legais
+            "contrato", "contratos", "acordo", "testamento", "escritura", "certidão",
+            "alvará", "licença", "autorização", "registo",
+            
+            # Conceitos jurídicos
+            "responsabilidade", "obrigação", "obrigações", "propriedade", "posse",
+            "herança", "sucessão", "multa", "sanção", "penalização", "indemnização"
+        ]
+        
+        has_legal_keyword = any(keyword in query_lower for keyword in core_legal_keywords)
+        
+        # 3. Padrões que indicam questões especificamente jurídicas
+        specific_legal_patterns = [
+            "posso ser processado", "tenho direito a", "é crime", "é legal",
+            "é ilegal", "segundo a lei", "que diz a lei", "lei moçambicana",
+            "código penal", "código civil", "constituição de moçambique",
+            "posso processar", "como proceder legalmente", "meus direitos legais",
+            "procedimento legal", "base legal", "violação da lei"
+        ]
+        
+        has_specific_pattern = any(pattern in query_lower for pattern in specific_legal_patterns)
+        
+        # 4. A pergunta deve ser EXPLICITAMENTE jurídica
+        return (has_legal_keyword or has_specific_pattern) and self._contains_legal_question_structure(query_lower)
+    
+    def _contains_legal_question_structure(self, query_lower: str) -> bool:
+        """Verifica se tem estrutura de pergunta jurídica."""
+        legal_question_indicators = [
+            "posso", "devo", "tenho direito", "é obrigatório", "é permitido",
+            "como fazer", "que fazer", "procedimento para", "direitos",
+            "responsabilidade", "consequências", "violação", "infração"
+        ]
+        
+        return any(indicator in query_lower for indicator in legal_question_indicators)
 
     def _is_sensitive_topic(self, query: str) -> bool:
         """Verifica se o tema é sensível."""
@@ -157,11 +254,20 @@ class LegalResponseGenerator:
         """Resposta para perguntas não jurídicas."""
         return {
             "success": True,
-            "response": "Desculpe, mas sou um assistente jurídico especializado e só posso responder "
-                      "a questões relacionadas com direito e legislação moçambicana. "
-                      "Para outros assuntos, por favor consulte fontes especializadas apropriadas. "
-                      "\n\nPosso ajudá-lo com questões sobre direitos, deveres, legislação, "
-                      "contratos, procedimentos legais e outras matérias jurídicas.",
+            "response": "⚖️ **Sou exclusivamente um assistente jurídico**\n\n"
+                      "A sua pergunta não parece estar relacionada com questões legais ou jurídicas. "
+                      "Só posso responder a perguntas sobre:\n\n"
+                      "• 📜 **Leis e legislação moçambicana**\n"
+                      "• ⚖️ **Direitos e deveres dos cidadãos**\n"
+                      "• 📋 **Contratos e procedimentos legais**\n"
+                      "• 🏛️ **Direito penal, civil, trabalho, família**\n"
+                      "• 🏢 **Procedimentos administrativos e comerciais**\n\n"
+                      "**Exemplos de perguntas válidas:**\n"
+                      "• \"Posso ser despedido sem justa causa?\"\n"
+                      "• \"Quais são os meus direitos como trabalhador?\"\n"
+                      "• \"É crime não pagar pensão alimentar?\"\n"
+                      "• \"Como funciona o divórcio em Moçambique?\"\n\n"
+                      "Por favor, reformule a sua pergunta focando-se em aspectos jurídicos.",
             "sources": [],
             "confidence": 1.0,
             "requires_human": False,
