@@ -13,6 +13,7 @@ import structlog
 
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.api.glossario import router as glossario_router
 
 # Configurar logging
 setup_logging()
@@ -49,6 +50,9 @@ app.add_middleware(
 # Middleware de compressão
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+# Incluir routers
+app.include_router(glossario_router)
+
 
 @app.get("/")
 async def root():
@@ -76,7 +80,13 @@ async def test_integration():
     return {
         "status": "success",
         "message": "Backend conectado com sucesso!",
-        "backend_version": settings.PROJECT_VERSION
+        "backend_version": settings.PROJECT_VERSION,
+        "timestamp": "2024-01-26T10:00:00Z",
+        "endpoints": {
+            "health": "/health",
+            "glossario": "/api/glossario/",
+            "test": "/api/v1/test"
+        }
     }
 
 

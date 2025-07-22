@@ -541,46 +541,78 @@ class EnhancedApiClient {
           isNetworkError: !error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')
         }
         
-        // Always log API errors with proper formatting
-        console.error('❌ API Error Details:', {
+        // Create a safe logging object that won't serialize to empty
+        const safeLogData = {
           timestamp: new Date().toISOString(),
+          requestId: errorInfo.id,
           method: errorInfo.method,
           url: errorInfo.url,
-          baseURL: this.client.defaults.baseURL,
+          baseURL: this.client.defaults.baseURL || 'undefined',
+          fullUrl: `${this.client.defaults.baseURL}${errorInfo.url}`,
           status: errorInfo.status || 'No Response',
           code: errorInfo.code,
           message: errorInfo.message,
           isNetworkError: errorInfo.isNetworkError,
-          timeout: error?.config?.timeout,
-          headers: error?.config?.headers,
-          ...(errorInfo.data && { responseData: errorInfo.data })
-        })
+          timeout: error?.config?.timeout || 'undefined',
+          hasResponse: !!error.response,
+          hasConfig: !!error.config
+        }
+
+        // Add response data if available
+        if (errorInfo.data) {
+          safeLogData.responseData = typeof errorInfo.data === 'object' ? 
+            JSON.stringify(errorInfo.data) : 
+            String(errorInfo.data)
+        }
+        
+        // Always log API errors with safe formatting
+        console.error('❌ API Error Details:', safeLogData)
         
         // Additional specific error analysis
         if (errorInfo.isNetworkError) {
           console.error('🔍 Network Error Analysis:', {
+            issue: 'Network connection failed',
             possibleCauses: [
-              'Backend não está executando',
-              'URL da API incorreta',
+              'Backend não está executando na porta 8000',
+              'URL da API incorreta: ' + safeLogData.fullUrl,
               'Problemas de CORS',
               'Firewall bloqueando requisição',
               'Timeout da rede'
             ],
             suggestedActions: [
-              'Verificar se backend está na porta 8000',
-              'Confirmar URL base da API',
-              'Testar conectividade com curl'
-            ]
+              'Executar: curl http://0.0.0.0:8000/health',
+              'Verificar se backend workflow está rodando',
+              'Confirmar variáveis de ambiente'
+            ],
+            currentConfig: {
+              baseURL: safeLogData.baseURL,
+              timeout: safeLogData.timeout
+            }
           })
         }
         
         // Also log the full error for debugging in development
         if (isDebug) {
-          console.error('Full error object:', {
-            error,
-            stack: error?.stack,
-            config: error?.config
-          })
+          // Safe error object logging
+          const safeErrorLog = {
+            errorName: error?.name || 'Unknown',
+            errorMessage: error?.message || 'No message',
+            errorCode: error?.code || 'No code',
+            hasStack: !!error?.stack,
+            hasConfig: !!error?.config,
+            hasResponse: !!error?.response,
+            configUrl: error?.config?.url || 'undefined',
+            configMethod: error?.config?.method || 'undefined',
+            responseStatus: error?.response?.status || 'undefined',
+            responseStatusText: error?.response?.statusText || 'undefined'
+          }
+          
+          console.error('Full error analysis:', safeErrorLog)
+          
+          // Only log the actual error in debug if it exists
+          if (error) {
+            console.error('Raw error:', error.toString())
+          }
         }
 
         // Handle specific error cases

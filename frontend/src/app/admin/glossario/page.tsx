@@ -133,17 +133,33 @@ export default function GlossarioPage() {
       setLoading(true)
       
       // First check if backend is reachable
-      console.log('🔍 Tentando conectar ao backend em:', process.env.NEXT_PUBLIC_API_URL || 'http://0.0.0.0:8000')
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://0.0.0.0:8000'
+      console.log('🔍 Tentando conectar ao backend em:', apiUrl)
       
       // Quick health check before making the actual request
       const healthCheck = await checkApiHealth()
       if (!healthCheck.isHealthy) {
         console.warn('⚠️ Backend não está saudável:', healthCheck.details)
-        toast.error('Backend não está acessível. Verifique se está executando na porta 8000.')
-        healthCheck.details.suggestions.forEach(suggestion => {
-          toast.error(suggestion, { duration: 6000 })
+        
+        // Show detailed error information
+        toast.error(`Backend não acessível: ${healthCheck.details.error}`, { duration: 8000 })
+        
+        // Show each suggestion as a separate toast
+        healthCheck.details.suggestions.forEach((suggestion, index) => {
+          setTimeout(() => {
+            toast.error(`💡 Sugestão ${index + 1}: ${suggestion}`, { duration: 10000 })
+          }, index * 1000)
         })
+        
+        // Show current configuration
+        toast.error(`🔧 Configuração atual: URL=${apiUrl}, Timeout=${healthCheck.details.responseTime}ms`, { 
+          duration: 12000 
+        })
+        
         return
+      } else {
+        console.log('✅ Backend está saudável, tempo de resposta:', healthCheck.details.responseTime + 'ms')
+        toast.success(`Backend conectado! Tempo: ${healthCheck.details.responseTime}ms`)
       }
       
       const response = await glossarioApi.getTermos({
