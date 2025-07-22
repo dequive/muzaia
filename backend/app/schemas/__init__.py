@@ -18,11 +18,9 @@ from .llm import (
     GenerationParams,
     LLMRequest,
     LLMResponse,
-    LLMError
+    LLMError,
+    ModelResponse
 )
-
-# Import ModelResponse from the main schemas.py file
-from ..schemas import ModelResponse
 
 __all__ = [
     # Glossário

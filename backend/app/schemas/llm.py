@@ -1,7 +1,18 @@
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Optional, Dict, Any, List
 from enum import Enum
+
+
+class ModelResponse(BaseModel):
+    """Resposta individual de um modelo."""
+    model_name: str
+    response_text: str
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    processing_time: float
+    tokens_used: int = 0
+    cost: float = 0.0
+    error: Optional[str] = None
+
 
 class LLMProvider(str, Enum):
     OPENAI = "openai"
@@ -40,7 +51,7 @@ class LLMResponse(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(default=None)
     success: bool = Field(default=True)
     error: Optional[str] = Field(default=None)
-    
+
 class LLMError(BaseModel):
     """Erro do LLM"""
     message: str
