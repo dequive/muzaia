@@ -1,4 +1,3 @@
-
 # Schemas do Glossário
 from .glossario import (
     GlossarioTermoBase,
@@ -23,7 +22,7 @@ from .llm import (
 )
 
 # Schemas principais (compatibilidade)
-from ..schemas import ModelResponse
+from app.schemas import ModelResponse
 
 __all__ = [
     # Glossário
@@ -37,7 +36,7 @@ __all__ = [
     "CategoriaJuridica",
     "NivelTecnico",
     "StatusGlossario",
-    
+
     # LLM
     "LLMProvider",
     "GenerationParams",
