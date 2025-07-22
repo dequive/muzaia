@@ -1,4 +1,5 @@
 
+# Schemas do Glossário
 from .glossario import (
     GlossarioTermoBase,
     GlossarioTermoCreate,
@@ -12,7 +13,17 @@ from .glossario import (
     StatusGlossario
 )
 
+# Schemas do LLM
+from .llm import (
+    LLMProvider,
+    GenerationParams,
+    LLMRequest,
+    LLMResponse,
+    LLMError
+)
+
 __all__ = [
+    # Glossário
     "GlossarioTermoBase",
     "GlossarioTermoCreate",
     "GlossarioTermoUpdate",
@@ -22,5 +33,12 @@ __all__ = [
     "GlossarioStats",
     "CategoriaJuridica",
     "NivelTecnico",
-    "StatusGlossario"
+    "StatusGlossario",
+    
+    # LLM
+    "LLMProvider",
+    "GenerationParams",
+    "LLMRequest",
+    "LLMResponse",
+    "LLMError"
 ]

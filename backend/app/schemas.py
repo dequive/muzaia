@@ -39,19 +39,26 @@ class GenerationParams(BaseModel):
 
 class LLMResponse(BaseModel):
     """Resposta de um modelo LLM individual."""
-    text: str
+    content: str = Field(alias="text")  # Use content as primary, text as alias
+    text: Optional[str] = None  # Keep for backward compatibility
     model: str
+    provider: str = "unknown"
     tokens_used: Optional[int] = 0
     processing_time: Optional[float] = 0.0
     cost: Optional[float] = 0.0
     error: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
 
-    @validator('text')
-    def text_not_empty(cls, v):
+    @validator('content', pre=True)
+    def content_not_empty(cls, v):
         if not v or not v.strip():
-            raise ValueError('Text cannot be empty')
+            raise ValueError('Content cannot be empty')
         return v.strip()
+    
+    @validator('text', pre=True, always=True)
+    def set_text_from_content(cls, v, values):
+        # Set text from content if not provided
+        return v or values.get('content')
 
 
 class ModelResponse(BaseModel):
