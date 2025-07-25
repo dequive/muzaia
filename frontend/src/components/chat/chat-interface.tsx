@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -16,10 +17,13 @@ import {
   Edit3,
   Sparkles
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useChat } from '@/hooks/useChat'
 import { Message } from '@/types'
 
-export default function ChatInterface() {
+export function ChatInterface() {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -327,3 +331,5 @@ export default function ChatInterface() {
     </div>
   )
 }
+
+export default ChatInterface
