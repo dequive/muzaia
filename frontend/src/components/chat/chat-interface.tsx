@@ -327,8 +327,3 @@ export default function ChatInterface() {
     </div>
   )
 }
-```
-
-```tool_code
-# Analyze the code changes and generate the complete modified code.
-The code changes aim to update the chat interface with a modern design similar to Claude AI. This involves changes to the imports, the main component's structure, styling, and functionality.
