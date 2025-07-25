@@ -1,4 +1,3 @@
-# Analyze the code changes and generate the complete modified code.
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
