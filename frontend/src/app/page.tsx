@@ -1,288 +1,295 @@
 
 'use client'
 
-import { useState } from 'react'
+import React from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { 
   MessageSquare, 
-  Zap, 
   Shield, 
-  BarChart3, 
+  Zap, 
   Users, 
-  Globe,
+  BookOpen, 
   ArrowRight,
   CheckCircle,
-  Star,
-  Cpu,
-  TrendingUp,
   Sparkles,
-  Scale,
-  BookOpen,
-  Clock
+  Brain,
+  FileText,
+  Clock,
+  Star
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 
 const features = [
   {
-    icon: Sparkles,
-    title: 'IA Jurídica Especializada',
-    description: 'Algoritmos treinados especificamente para o direito moçambicano com precisão excepcional.',
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-50 dark:bg-blue-950',
-  },
-  {
-    icon: Scale,
-    title: 'Consenso Inteligente',
-    description: 'Sistema que combina múltiplos modelos LLM para respostas mais precisas e confiáveis.',
-    color: 'text-emerald-500',
-    bgColor: 'bg-emerald-50 dark:bg-emerald-950',
-  },
-  {
-    icon: Users,
-    title: 'Chat Híbrido',
-    description: 'Transição suave entre IA e advogados quando necessário para casos complexos.',
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-50 dark:bg-purple-950',
-  },
-  {
-    icon: BookOpen,
-    title: 'Repositório Legal',
-    description: 'Acesso instantâneo a leis, jurisprudência e documentos oficiais atualizados.',
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-50 dark:bg-orange-950',
+    icon: Brain,
+    title: "IA Avançada",
+    description: "Assistente jurídico inteligente com processamento de linguagem natural avançado"
   },
   {
     icon: Shield,
-    title: 'Segurança Máxima',
-    description: 'Proteção total dos dados com criptografia de ponta e conformidade legal.',
-    color: 'text-red-500',
-    bgColor: 'bg-red-50 dark:bg-red-950',
+    title: "Seguro",
+    description: "Dados protegidos com criptografia de ponta e conformidade LGPD"
+  },
+  {
+    icon: FileText,
+    title: "Documentos",
+    description: "Upload e análise inteligente de contratos, petições e documentos legais"
+  },
+  {
+    icon: Users,
+    title: "Colaborativo",
+    description: "Conecte-se com técnicos jurídicos especializados quando necessário"
   },
   {
     icon: Clock,
-    title: 'Disponível 24/7',
-    description: 'Assistência jurídica disponível a qualquer momento, sem horários limitados.',
-    color: 'text-indigo-500',
-    bgColor: 'bg-indigo-50 dark:bg-indigo-950',
+    title: "24/7",
+    description: "Disponível a qualquer hora para suas consultas jurídicas"
   },
-]
-
-const stats = [
-  { label: 'Precisão Legal', value: '98%', icon: TrendingUp },
-  { label: 'Tempo de Resposta', value: '<3s', icon: Zap },
-  { label: 'Disponibilidade', value: '99.9%', icon: Shield },
-  { label: 'Casos Processados', value: '10K+', icon: BarChart3 },
+  {
+    icon: Zap,
+    title: "Rápido",
+    description: "Respostas instantâneas baseadas na legislação moçambicana"
+  }
 ]
 
 const testimonials = [
   {
-    name: 'Dr. Carlos Macamo',
-    role: 'Advogado Sênior, Macamo & Associados',
-    content: 'O Mozaia transformou nossa prática jurídica. A qualidade das análises legais é impressionante e economizamos horas de pesquisa.',
-    rating: 5,
-    avatar: '👨‍💼',
+    name: "Dr. Carlos Manjate",
+    role: "Advogado Senior",
+    content: "O Muzaia revolucionou minha prática jurídica. Economia de tempo impressionante.",
+    rating: 5
   },
   {
-    name: 'Dra. Amélia Santos',
-    role: 'Procuradora da República',
-    content: 'Uma ferramenta indispensável para profissionais do direito. A precisão nas citações legais é excepcional.',
-    rating: 5,
-    avatar: '👩‍⚖️',
+    name: "Mariana Santos",
+    role: "Jurista Corporativa",
+    content: "Ferramenta essencial para pesquisa jurídica. Interface intuitiva e resultados precisos.",
+    rating: 5
   },
   {
-    name: 'João Tembe',
-    role: 'Estudante de Direito, UEM',
-    content: 'Como estudante, o Mozaia me ajuda a entender conceitos complexos e encontrar precedentes relevantes rapidamente.',
-    rating: 5,
-    avatar: '🎓',
-  },
+    name: "Prof. João Macamo",
+    role: "Docente de Direito",
+    content: "Excelente para ensino e pesquisa acadêmica. Recomendo aos meus estudantes.",
+    rating: 5
+  }
 ]
 
 export default function HomePage() {
-  const [email, setEmail] = useState('')
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-lg bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/50 dark:border-slate-700/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-xl flex items-center justify-center">
+              <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
-                  Mozaia
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-700 to-blue-900 bg-clip-text text-transparent">
+                  Muzaia Legal AI
                 </h1>
-                <p className="text-xs text-slate-600 dark:text-slate-400">IA Jurídica</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400">Assistente Jurídico Inteligente</p>
               </div>
             </div>
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link href="/chat" className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
+            
+            <nav className="hidden md:flex items-center space-x-8">
+              <Link href="/chat" className="text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition-colors">
                 Chat
               </Link>
-              <Link href="/chat-legal" className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
-                Legal
+              <Link href="/chat-legal" className="text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition-colors">
+                Consulta Legal
               </Link>
-              <Link href="/login" className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
-                Login
+              <Link href="/admin" className="text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition-colors">
+                Admin
               </Link>
             </nav>
+
+            <div className="flex items-center space-x-4">
+              <Link 
+                href="/chat" 
+                className="bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-800 hover:to-blue-900 text-white px-6 py-2 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                Começar
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto text-center max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <Badge variant="outline" className="mb-6 px-4 py-2">
-              <Sparkles className="h-4 w-4 mr-2" />
-              IA Jurídica Avançada para Moçambique
-            </Badge>
-            
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-slate-900 via-blue-900 to-emerald-900 dark:from-white dark:via-blue-100 dark:to-emerald-100 bg-clip-text text-transparent leading-tight">
-              Assistente Jurídico
-              <br />
-              <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
-                Inteligente
-              </span>
-            </h1>
-            
-            <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-300 mb-12 max-w-4xl mx-auto leading-relaxed">
-              Revolucione sua prática jurídica com IA especializada no direito moçambicano. 
-              Respostas precisas, análises profundas e suporte 24/7.
-            </p>
+      <section className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+          <div className="text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-700 dark:text-blue-300 text-sm font-medium mb-8">
+                <Sparkles className="h-4 w-4 mr-2" />
+                Powered by Advanced AI
+              </div>
+              
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-6">
+                <span className="bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 bg-clip-text text-transparent">
+                  Muzaia
+                </span>
+                <br />
+                <span className="text-slate-700 dark:text-slate-300">Legal AI</span>
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-400 mb-12 max-w-4xl mx-auto leading-relaxed">
+                Seu assistente jurídico especializado em direito moçambicano. 
+                <br className="hidden md:block" />
+                Posso ajudar com questões legais, processos e interpretação de leis.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Link href="/chat">
-                <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all">
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Começar Consulta
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              </Link>
-              <Link href="/chat-legal">
-                <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-2 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <Scale className="h-5 w-5 mr-2" />
-                  Chat Legal Especializado
-                </Button>
-              </Link>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
-              {stats.map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+                <Link 
+                  href="/chat"
+                  className="group bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-800 hover:to-blue-900 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 shadow-xl hover:shadow-2xl hover:transform hover:scale-105 flex items-center"
                 >
-                  <Card className="border-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm">
-                    <CardContent className="pt-6 text-center">
-                      <stat.icon className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                      <div className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</div>
-                      <div className="text-sm text-slate-600 dark:text-slate-400">{stat.label}</div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+                  Iniciar Conversa
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                
+                <Link 
+                  href="/chat-legal"
+                  className="group bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-8 py-4 rounded-2xl font-semibold text-lg border-2 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center"
+                >
+                  Consulta Especializada
+                  <MessageSquare className="ml-2 h-5 w-5" />
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Background decorative elements */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-indigo-400/10 rounded-full blur-3xl"></div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 bg-white/50 dark:bg-slate-900/50">
-        <div className="container mx-auto max-w-7xl">
+      <section className="py-20 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-slate-900 dark:text-white">
-              Recursos Avançados
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+              Por que escolher o Muzaia?
             </h2>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
-              Tecnologia de ponta desenvolvida especificamente para o contexto jurídico moçambicano
+            <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+              Tecnologia avançada para revolucionar sua prática jurídica
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="group p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-300/50 dark:hover:border-blue-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
               >
-                <Card className="h-full border-0 bg-white dark:bg-slate-800 hover:shadow-xl transition-all duration-300 group hover:-translate-y-2">
-                  <CardContent className="p-8">
-                    <div className={`w-16 h-16 ${feature.bgColor} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                      <feature.icon className={`h-8 w-8 ${feature.color}`} />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">
-                      {feature.title}
-                    </h3>
-                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="mb-6">
+                  <div className="h-12 w-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                  {feature.description}
+                </p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto max-w-7xl">
+      {/* Status Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-slate-900 dark:text-white">
-              Confiado por Profissionais
+            <div className="inline-flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full text-green-700 dark:text-green-300 text-sm font-medium mb-8">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+              Sistema Online
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
+                  <span className="text-lg font-semibold text-slate-900 dark:text-white">IA Avançada</span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400">Operacional</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
+                  <span className="text-lg font-semibold text-slate-900 dark:text-white">Seguro</span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400">Protegido</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
+                  <span className="text-lg font-semibold text-slate-900 dark:text-white">24/7</span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400">Disponível</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
+                  <span className="text-lg font-semibold text-slate-900 dark:text-white">Suporte</span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400">Técnicos Disponíveis</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+              O que dizem nossos usuários
             </h2>
-            <p className="text-xl text-slate-600 dark:text-slate-300">
-              Veja o que nossos usuários dizem sobre o Mozaia
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
               <motion.div
                 key={testimonial.name}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.2 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg"
               >
-                <Card className="h-full border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900">
-                  <CardContent className="p-8">
-                    <div className="flex items-center mb-4">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                      ))}
-                    </div>
-                    <p className="text-slate-700 dark:text-slate-300 mb-6 italic leading-relaxed">
-                      "{testimonial.content}"
-                    </p>
-                    <div className="flex items-center">
-                      <div className="text-3xl mr-4">{testimonial.avatar}</div>
-                      <div>
-                        <div className="font-semibold text-slate-900 dark:text-white">
-                          {testimonial.name}
-                        </div>
-                        <div className="text-sm text-slate-600 dark:text-slate-400">
-                          {testimonial.role}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="flex items-center mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
+                  ))}
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 mb-6 italic">
+                  "{testimonial.content}"
+                </p>
+                <div>
+                  <p className="font-semibold text-slate-900 dark:text-white">
+                    {testimonial.name}
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-500">
+                    {testimonial.role}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -290,75 +297,44 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-emerald-600">
-        <div className="container mx-auto text-center max-w-4xl">
+      <section className="py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
+            className="p-12 bg-gradient-to-r from-blue-700 to-blue-800 rounded-3xl shadow-2xl"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
-              Pronto para Revolucionar
-              <br />
-              sua Prática Jurídica?
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Pronto para revolucionar sua prática jurídica?
             </h2>
-            <p className="text-xl text-blue-100 mb-10 leading-relaxed">
-              Junte-se a centenas de profissionais que já transformaram sua eficiência com o Mozaia
+            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+              Junte-se a centenas de profissionais que já confiam no Muzaia para suas consultas jurídicas.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/chat">
-                <Button size="lg" variant="secondary" className="text-lg px-8 py-6 bg-white text-blue-600 hover:bg-blue-50">
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Começar Agora - Grátis
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-white text-white hover:bg-white/10">
-                  Fazer Login
-                </Button>
-              </Link>
-            </div>
+            <Link 
+              href="/chat"
+              className="inline-flex items-center bg-white text-blue-700 px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl hover:transform hover:scale-105"
+            >
+              Começar Agora
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
           </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 bg-slate-900 dark:bg-slate-950">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="col-span-2">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-xl flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">Mozaia</h3>
-                  <p className="text-sm text-slate-400">IA Jurídica para Moçambique</p>
-                </div>
+      <footer className="bg-slate-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-3 mb-4 md:mb-0">
+              <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-white" />
               </div>
-              <p className="text-slate-400 leading-relaxed">
-                Desenvolvido em Moçambique, para Moçambique. 
-                Tecnologia jurídica que entende o nosso contexto legal.
-              </p>
+              <span className="text-xl font-bold">Muzaia Legal AI</span>
             </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Produto</h4>
-              <ul className="space-y-2 text-slate-400">
-                <li><Link href="/chat" className="hover:text-white transition-colors">Chat IA</Link></li>
-                <li><Link href="/chat-legal" className="hover:text-white transition-colors">Chat Legal</Link></li>
-                <li><Link href="/admin" className="hover:text-white transition-colors">Admin</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Suporte</h4>
-              <ul className="space-y-2 text-slate-400">
-                <li><Link href="/login" className="hover:text-white transition-colors">Login</Link></li>
-                <li><a href="mailto:suporte@mozaia.mz" className="hover:text-white transition-colors">Contacto</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-slate-800 mt-8 pt-8 text-center text-slate-400">
-            <p>&copy; 2024 Mozaia. Feito com ❤️ em Moçambique.</p>
+            <p className="text-slate-400 text-sm">
+              © 2025 Muzaia. Assistente jurídico especializado em direito moçambicano.
+            </p>
           </div>
         </div>
       </footer>

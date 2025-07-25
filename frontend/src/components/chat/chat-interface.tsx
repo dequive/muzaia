@@ -1,12 +1,8 @@
+# Analyze the code changes and generate the complete modified code.
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { 
   Send, 
   Bot, 
@@ -332,3 +328,8 @@ export default function ChatInterface() {
     </div>
   )
 }
+```
+
+```tool_code
+# Analyze the code changes and generate the complete modified code.
+The code changes aim to update the chat interface with a modern design similar to Claude AI. This involves changes to the imports, the main component's structure, styling, and functionality.
