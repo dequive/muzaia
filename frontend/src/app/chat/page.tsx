@@ -46,12 +46,8 @@ function ChatPageContent() {
       </header>
 
       {/* Chat Interface */}
-      <main className="container mx-auto px-4 py-6 max-w-7xl">
-        <div className="h-[calc(100vh-120px)]">
-          <Card className="h-full border-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm shadow-xl">
-            <ChatInterface />
-          </Card>
-        </div>
+      <main className="h-screen bg-white dark:bg-slate-900">
+        <ChatInterface />
       </main>
     </div>
   )
