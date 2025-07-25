@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -123,13 +122,13 @@ export default function ChatInterface() {
       <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="flex items-center space-x-4">
           <div className="relative">
-            <div className="w-10 h-10  bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl flex items-center justify-center shadow-lg">
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Claude</h1>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Muzaia</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">Assistente jurídico especializado</p>
           </div>
         </div>
@@ -158,7 +157,7 @@ export default function ChatInterface() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-20 max-w-3xl mx-auto"
             >
-              <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-700 to-blue-900 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl">
                 <Sparkles className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-4xl font-light text-gray-900 dark:text-gray-100 mb-4">
@@ -185,7 +184,7 @@ export default function ChatInterface() {
                     {/* Avatar */}
                     <div className="flex-shrink-0">
                       {message.role === 'assistant' ? (
-                        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl flex items-center justify-center shadow-lg">
                           <Sparkles className="h-5 w-5 text-white" />
                         </div>
                       ) : (
@@ -199,7 +198,7 @@ export default function ChatInterface() {
                     <div className="flex-1 space-y-3 min-w-0">
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          {message.role === 'assistant' ? 'Claude' : 'Você'}
+                          {message.role === 'assistant' ? 'Muzaia' : 'Você'}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {new Date().toLocaleTimeString('pt-PT', { 
@@ -259,17 +258,17 @@ export default function ChatInterface() {
             >
               <div className="flex gap-6 py-8 px-6 -mx-6">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl flex items-center justify-center shadow-lg">
                     <Sparkles className="h-5 w-5 text-white" />
                   </div>
                 </div>
                 <div className="flex-1 space-y-3">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Claude</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Muzaia</div>
                   <div className="flex items-center gap-3">
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                     <span className="text-sm text-gray-600 dark:text-gray-400">Pensando...</span>
                   </div>
@@ -306,16 +305,16 @@ export default function ChatInterface() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Mensagem para Claude..."
+                placeholder="Mensagem para Muzaia..."
                 disabled={isLoading}
-                className="min-h-[60px] w-full resize-none rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4 pr-14 text-base placeholder:text-gray-400 focus:border-orange-400 dark:focus:border-orange-500 focus:outline-none focus:ring-0 shadow-lg focus:shadow-xl transition-all duration-300"
+                className="min-h-[60px] w-full resize-none rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4 pr-14 text-base placeholder:text-gray-400 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none focus:ring-0 shadow-lg focus:shadow-xl transition-all duration-300"
                 rows={1}
               />
               <Button 
                 type="submit" 
                 disabled={!input.trim() || isLoading}
                 size="sm"
-                className="absolute right-3 bottom-3 h-10 w-10 p-0 bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white disabled:opacity-50 disabled:hover:bg-orange-500 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                className="absolute right-3 bottom-3 h-10 w-10 p-0 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-50 disabled:hover:bg-blue-500 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -326,7 +325,7 @@ export default function ChatInterface() {
             </div>
           </form>
           <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
-            Claude pode cometer erros. Considere verificar informações importantes sobre questões legais.
+            Muzaia pode cometer erros. Considere verificar informações importantes sobre questões legais.
           </div>
         </div>
       </div>
