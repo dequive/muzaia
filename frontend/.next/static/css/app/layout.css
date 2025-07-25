@@ -403,7 +403,7 @@ textarea.chat-input {
 }
 
 @layer base {
-  /* Light theme variables - ChatGPT style */
+  /* Light theme variables - Claude style */
   :root {
     /* Base colors */
     --background: 0 0% 100%;
