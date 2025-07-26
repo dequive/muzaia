@@ -84,7 +84,7 @@ class CacheManager {
     this.provider = provider
     this.maxSize = maxSize
     this.defaultTTL = defaultTTL
-    
+
     // Clean expired entries periodically
     setInterval(() => this.cleanup(), 60000) // Every minute
   }
@@ -95,17 +95,17 @@ class CacheManager {
   private generateKey(config: AxiosRequestConfig): string {
     const { method = 'GET', url = '', params, data } = config
     const key = `${method.toUpperCase()}:${url}`
-    
+
     if (params) {
       const searchParams = new URLSearchParams(params).toString()
       return `${key}?${searchParams}`
     }
-    
+
     if (data && method.toUpperCase() !== 'GET') {
       const hash = this.hashObject(data)
       return `${key}:${hash}`
     }
-    
+
     return key
   }
 
@@ -140,12 +140,12 @@ class CacheManager {
         this.cache.delete(key)
       }
     }
-    
+
     // Remove entradas mais antigas se exceder o tamanho máximo
     if (this.cache.size > this.maxSize) {
       const entries = Array.from(this.cache.entries())
       entries.sort((a, b) => a[1].timestamp - b[1].timestamp)
-      
+
       const toRemove = entries.slice(0, entries.length - this.maxSize)
       toRemove.forEach(([key]) => this.cache.delete(key))
     }
@@ -157,12 +157,12 @@ class CacheManager {
   get<T>(config: AxiosRequestConfig): T | null {
     const key = this.generateKey(config)
     const entry = this.cache.get(key)
-    
+
     if (!entry || !this.isValid(entry)) {
       this.cache.delete(key)
       return null
     }
-    
+
     return entry.data
   }
 
@@ -176,7 +176,7 @@ class CacheManager {
       timestamp: Date.now(),
       ttl: ttl || this.defaultTTL
     }
-    
+
     this.cache.set(key, entry)
   }
 
@@ -226,14 +226,14 @@ class MetricsManager {
       url: config.url || '',
       startTime: Date.now()
     }
-    
+
     this.metrics.push(metric)
-    
+
     // Remove métricas antigas se exceder o limite
     if (this.metrics.length > this.maxMetrics) {
       this.metrics = this.metrics.slice(-this.maxMetrics)
     }
-    
+
     return requestId
   }
 
@@ -243,7 +243,7 @@ class MetricsManager {
   endRequest(requestId: string, response?: AxiosResponse, error?: AxiosError): void {
     const metric = this.metrics.find(m => m.requestId === requestId)
     if (!metric) return
-    
+
     metric.endTime = Date.now()
     metric.duration = metric.endTime - metric.startTime
     metric.status = response?.status || error?.response?.status
@@ -261,14 +261,14 @@ class MetricsManager {
   } {
     const completedMetrics = this.metrics.filter(m => m.endTime)
     const errorMetrics = this.metrics.filter(m => m.error || (m.status && m.status >= 400))
-    
+
     const totalDuration = completedMetrics.reduce((sum, m) => sum + (m.duration || 0), 0)
     const averageResponseTime = completedMetrics.length > 0 ? totalDuration / completedMetrics.length : 0
-    
+
     const now = Date.now()
     const lastMinute = now - 60000
     const recentRequests = this.metrics.filter(m => m.startTime > lastMinute)
-    
+
     return {
       totalRequests: this.metrics.length,
       averageResponseTime,
@@ -328,7 +328,7 @@ class QueueManager {
 
     while (this.queue.length > 0) {
       const item = this.queue.shift()!
-      
+
       try {
         // Check if request is too old
         if (Date.now() - item.timestamp > 5 * 60 * 1000) { // 5 minutes
@@ -401,7 +401,7 @@ class EnhancedApiClient {
     this.cache = new CacheManager(this.options.cacheProvider)
     this.metrics = new MetricsManager()
     this.queue = new QueueManager()
-    
+
     this.client = this.createClient()
   }
 
@@ -540,7 +540,7 @@ class EnhancedApiClient {
           data: error?.response?.data || null,
           isNetworkError: !error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')
         }
-        
+
         // Create a safe logging object that won't serialize to empty
         const safeLogData = {
           timestamp: new Date().toISOString(),
@@ -564,10 +564,10 @@ class EnhancedApiClient {
             JSON.stringify(errorInfo.data) : 
             String(errorInfo.data)
         }
-        
+
         // Always log API errors with safe formatting
         console.error('❌ API Error Details:', safeLogData)
-        
+
         // Additional specific error analysis
         if (errorInfo.isNetworkError) {
           console.error('🔍 Network Error Analysis:', {
@@ -590,7 +590,7 @@ class EnhancedApiClient {
             }
           })
         }
-        
+
         // Also log the full error for debugging in development
         if (isDebug) {
           try {
@@ -608,9 +608,9 @@ class EnhancedApiClient {
               responseStatus: error?.response?.status || 'undefined',
               responseStatusText: error?.response?.statusText || 'undefined'
             }
-            
+
             console.error('Full error analysis:', safeErrorLog)
-            
+
             // Only log the actual error in debug if it exists
             if (error) {
               console.error('Raw error:', error)
@@ -648,40 +648,40 @@ class EnhancedApiClient {
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
       return 'Falha na conexão com o servidor. Verifique se o backend está executando na porta 8000.'
     }
-    
+
     if (error.code === 'ECONNREFUSED') {
       return 'Conexão recusada. O servidor backend não está acessível.'
     }
-    
+
     if (error.code === 'ECONNABORTED') {
       return 'Timeout da requisição. O servidor demorou muito para responder.'
     }
-    
+
     // Try different sources for error message from response
     if (error.response?.data) {
       const data = error.response.data as any
-      
+
       // Try common error message fields
       const message = data.message || 
                      data.error || 
                      data.detail || 
                      data.msg ||
                      (typeof data === 'string' ? data : null)
-      
+
       if (message && typeof message === 'string') {
         return message
       }
-      
+
       // If data is an object but no standard message field
       if (typeof data === 'object' && Object.keys(data).length > 0) {
         return `Erro da API (${error.response.status}): ${JSON.stringify(data)}`
       }
     }
-    
+
     // Add status code to message if available
     const statusText = error.response?.status ? ` (Status: ${error.response.status})` : ''
     const baseMessage = error.message || 'Erro de conexão com a API'
-    
+
     return `${baseMessage}${statusText}`
   }
 
@@ -694,12 +694,12 @@ class EnhancedApiClient {
     const key = `${config.method}:${config.url}`
     const now = Date.now()
     const lastRequest = this.rateLimiter.get(key) || 0
-    
+
     // Minimum 100ms between same requests
     if (now - lastRequest < 100) {
       return true
     }
-    
+
     this.rateLimiter.set(key, now)
     return false
   }
@@ -769,13 +769,13 @@ class EnhancedApiClient {
       error.code === 'ECONNABORTED' ||
       error.message === 'Network Error'
     )
-    
+
     const isServerError = error.response && 
       error.response.status >= 500 && 
       error.response.status < 600
-    
+
     const isTimeout = error.code === 'ECONNABORTED'
-    
+
     return isNetworkError || isServerError || isTimeout
   }
 
@@ -785,7 +785,7 @@ class EnhancedApiClient {
   private async retryRequest(error: AxiosError): Promise<AxiosResponse> {
     const config = error.config!
     const retryCount = ((config as any).__retryCount || 0) + 1
-    
+
     // Add retry count to config
     ;(config as any).__retryCount = retryCount
 
@@ -878,7 +878,7 @@ class EnhancedApiClient {
     try {
       while (true) {
         const { done, value } = await reader.read()
-        
+
         if (done) break
 
         const chunk = decoder.decode(value, { stream: true })
@@ -889,7 +889,7 @@ class EnhancedApiClient {
             try {
               const data = JSON.parse(line.slice(6))
               yield data
-              
+
               if (data.is_final) {
                 return
               }
@@ -972,12 +972,12 @@ export const authApi = {
       email, 
       password 
     })
-    
+
     // Store token
     if (response.token) {
       localStorage.setItem('mozaia_token', response.token)
     }
-    
+
     return response
   },
 
@@ -987,12 +987,12 @@ export const authApi = {
       password, 
       name 
     })
-    
+
     // Store token
     if (response.token) {
       localStorage.setItem('mozaia_token', response.token)
     }
-    
+
     return response
   },
 
@@ -1007,11 +1007,11 @@ export const authApi = {
 
   refreshToken: async () => {
     const response = await api.post<{ token: string }>('/auth/refresh')
-    
+
     if (response.token) {
       localStorage.setItem('mozaia_token', response.token)
     }
-    
+
     return response
   },
 
@@ -1227,11 +1227,11 @@ export const uploadApi = {
   ): Promise<Array<{ url: string; filename: string; size: number; type: string }>> => {
     const formData = new FormData()
     files.forEach(file => formData.append('files', file))
-    
+
     if (options?.folder) {
       formData.append('folder', options.folder)
     }
-    
+
     if (options?.public !== undefined) {
       formData.append('public', String(options.public))
     }
@@ -1334,7 +1334,7 @@ export const analyticsApi = {
     sessionId?: string
   }) => {
     if (!config.features.analytics) return
-    
+
     return api.post('/api/v1/analytics/events', {
       ...event,
       timestamp: new Date().toISOString(),
@@ -1393,22 +1393,22 @@ export const getApiErrorMessage = (error: any): string => {
                      data.detail || 
                      data.msg ||
                      (typeof data === 'string' ? data : null)
-      
+
       if (message && typeof message === 'string') {
         return message
       }
-      
+
       // If we have data but no standard message field
       if (typeof data === 'object' && Object.keys(data).length > 0) {
         return `Erro da API (${error.response.status}): ${JSON.stringify(data)}`
       }
     }
-    
+
     // Add status code to message if available
     const statusText = error.response?.status ? ` (${error.response.status})` : ''
     return (error.message || 'Erro de conexão com a API') + statusText
   }
-  
+
   if (error && typeof error === 'object') {
     // Check if it's an empty object
     if (Object.keys(error).length === 0) {
@@ -1416,7 +1416,7 @@ export const getApiErrorMessage = (error: any): string => {
     }
     return error.message || `Erro: ${JSON.stringify(error)}` || 'Erro desconhecido'
   }
-  
+
   return error?.toString() || 'Erro desconhecido'
 }
 
@@ -1431,11 +1431,11 @@ export const checkApiHealth = async (): Promise<{
 }> => {
   const startTime = Date.now()
   const suggestions: string[] = []
-  
+
   try {
     await systemApi.getHealth()
     const responseTime = Date.now() - startTime
-    
+
     return {
       isHealthy: true,
       details: {
@@ -1446,7 +1446,7 @@ export const checkApiHealth = async (): Promise<{
     }
   } catch (error: any) {
     const responseTime = Date.now() - startTime
-    
+
     // Analyze error and provide suggestions
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
       suggestions.push(
@@ -1467,14 +1467,14 @@ export const checkApiHealth = async (): Promise<{
         'Aumentar timeout da requisição'
       )
     }
-    
+
     console.error('API health check failed:', {
       error: error.message,
       code: error.code,
       responseTime,
       suggestions
     })
-    
+
     return {
       isHealthy: false,
       details: {
