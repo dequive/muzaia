@@ -1,23 +1,43 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  trailingSlash: true,
   output: 'standalone',
-  
-  images: {
-    unoptimized: true,
-    domains: [
-      'avatars.githubusercontent.com',
-    ],
-    formats: ['image/avif', 'image/webp'],
-  },
-
   experimental: {
     typedRoutes: true,
   },
 
-  // Headers removed - not compatible with static export
-  allowedDevOrigins: ['*', '68f4a38c-dc7e-4477-a5d0-2a575a69b246-00-1wr0h8c4r1ujt.spock.replit.dev'],
+  // Production optimizations
+  compress: true,
+  poweredByHeader: false,
+
+  // Security headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin',
+          },
+        ],
+      },
+    ]
+  },
+
+  // Performance
+  swcMinify: true,
+  images: {
+    unoptimized: false,
+    formats: ['image/webp', 'image/avif'],
+  },
 }
 
 module.exports = nextConfig

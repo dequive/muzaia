@@ -53,10 +53,22 @@ class LLMSettings(BaseModel):
 class Settings(BaseSettings):
     """Configurações principais da aplicação."""
 
-    # Informações básicas da aplicação
+    # Configurações do projeto
     PROJECT_NAME: str = "Mozaia Backend API"
     PROJECT_VERSION: str = "1.0.0"
-    PROJECT_DESCRIPTION: str = "API para sistema de chat híbrido com IA e técnicos"
+    DEBUG: bool = False
+    NODE_ENV: str = "production"
+
+    # Security
+    SECRET_KEY: str = "your-super-secret-key-change-in-production"
+    ALLOWED_HOSTS: list[str] = ["*"]
+    CORS_ORIGINS: list[str] = [
+        "https://68f4a38c-dc7e-4477-a5d0-2a575a69b246-00-1wr0h8c4r1ujt.spock.replit.dev",
+        "https://localhost:5000",
+        "https://127.0.0.1:5000"
+    ]
+
+    # Informações básicas da aplicação
     APP_NAME: str = "Mozaia LLM Orchestrator"
     APP_VERSION: str = "2.0.0"
     ENVIRONMENT: str = "development"
@@ -64,13 +76,11 @@ class Settings(BaseSettings):
     # Configurações do servidor
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    DEBUG: bool = True
 
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./mozaia.db"
 
     # Security
-    SECRET_KEY: str = "your-secret-key-change-in-production-please-32-chars-minimum"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
@@ -110,6 +120,7 @@ class Settings(BaseSettings):
 
     # Logging
     LOG_LEVEL: str = "INFO"
+    PROJECT_DESCRIPTION: str = "API para sistema de chat híbrido com IA e técnicos"
 
     class Config:
         env_file = ".env"

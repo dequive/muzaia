@@ -92,10 +92,18 @@ async def health():
 
 
 if __name__ == "__main__":
+    import uvicorn
+    import os
+
+    # Configurações para produção
+    is_production = os.getenv("NODE_ENV") == "production"
+
     uvicorn.run(
-        "main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG,
-        log_level=settings.LOG_LEVEL.lower()
+        "app.main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 8000)),
+        reload=not is_production,
+        workers=4 if is_production else 1,
+        access_log=True,
+        log_level="info" if is_production else "debug"
     )
