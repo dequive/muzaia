@@ -593,34 +593,30 @@ class EnhancedApiClient {
         
         // Also log the full error for debugging in development
         if (isDebug) {
-          // Safe error object logging
-          const safeErrorLog = {
-            errorName: error?.name || 'Unknown',
-            errorMessage: error?.message || 'No message',
-            errorCode: error?.code || 'No code',
-            errorStack: error?.stack ? 'Present' : 'None'
-          }
-          console.error('Debug error details:', safeErrorLog)
-        }
-            errorCode: error?.code || 'No code',
-            hasStack: !!error?.stack,
-            hasConfig: !!error?.config,
-            hasResponse: !!error?.response,
-            configUrl: error?.config?.url || 'undefined',
-            configMethod: error?.config?.method || 'undefined',
-            responseStatus: error?.response?.status || 'undefined',
-            responseStatusText: error?.response?.statusText || 'undefined'
-          }
-          
-          console.error('Full error analysis:', safeErrorLog)
-          
-          // Only log the actual error in debug if it exists
-          if (error) {
-            console.error('Raw error:', error)
-          }
-        } catch (logError) {
-          console.error('Error logging failed:', logError)
-        }or.toString())
+          try {
+            // Safe error object logging
+            const safeErrorLog = {
+              errorName: error?.name || 'Unknown',
+              errorMessage: error?.message || 'No message',
+              errorCode: error?.code || 'No code',
+              errorStack: error?.stack ? 'Present' : 'None',
+              hasStack: !!error?.stack,
+              hasConfig: !!error?.config,
+              hasResponse: !!error?.response,
+              configUrl: error?.config?.url || 'undefined',
+              configMethod: error?.config?.method || 'undefined',
+              responseStatus: error?.response?.status || 'undefined',
+              responseStatusText: error?.response?.statusText || 'undefined'
+            }
+            
+            console.error('Full error analysis:', safeErrorLog)
+            
+            // Only log the actual error in debug if it exists
+            if (error) {
+              console.error('Raw error:', error)
+            }
+          } catch (logError) {
+            console.error('Error logging failed:', logError)
           }
         }
 
