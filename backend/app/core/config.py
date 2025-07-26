@@ -40,14 +40,14 @@ class LLMSettings(BaseModel):
     timeout_seconds: int = 30
 
     # Anthropic Claude
-    anthropic_api_key: str = ""
-    anthropic_model: str = "claude-3-5-sonnet-20241022"
-    anthropic_base_url: str = "https://api.anthropic.com"
+    anthropic_api_key: str = Field(default="", env="ANTHROPIC_API_KEY")
+    anthropic_model: str = Field(default="claude-3-5-sonnet-20241022", env="ANTHROPIC_MODEL")
+    anthropic_base_url: str = Field(default="https://api.anthropic.com", env="ANTHROPIC_BASE_URL")
 
     # Google Gemini
-    google_api_key: str = ""
-    gemini_model: str = "gemini-1.5-pro-latest"
-    gemini_base_url: str = "https://generativelanguage.googleapis.com"
+    google_api_key: str = Field(default="", env="GOOGLE_API_KEY")
+    gemini_model: str = Field(default="gemini-1.5-pro-latest", env="GEMINI_MODEL")
+    gemini_base_url: str = Field(default="https://generativelanguage.googleapis.com", env="GEMINI_BASE_URL")
 
 
 class Settings(BaseSettings):

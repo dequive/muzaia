@@ -187,11 +187,11 @@ class LLMFactory(AbstractLLMFactory):
 
     def _setup_default_providers(self) -> None:
         """Configura provedores padrão baseados nas configurações."""
-        
+
         # Importar classes dos modelos
         from app.models.claude_llm import ClaudeLLM
         from app.models.gemini_llm import GeminiLLM
-        
+
         # Registrar Claude (Anthropic)
         if settings.llm.anthropic_api_key:
             self._registry.register_provider(
@@ -211,7 +211,7 @@ class LLMFactory(AbstractLLMFactory):
                 }
             )
             logger.info("Provedor Anthropic Claude registrado")
-        
+
         # Registrar Gemini (Google)
         if settings.llm.google_api_key:
             self._registry.register_provider(
@@ -230,7 +230,7 @@ class LLMFactory(AbstractLLMFactory):
                 }
             )
             logger.info("Provedor Google Gemini registrado")
-        
+
         total_providers = len(self._registry.get_all_providers())
         if total_providers == 0:
             logger.warning("Nenhum provedor LLM configurado - verifique as API keys no arquivo .env")
@@ -328,7 +328,7 @@ class LLMFactory(AbstractLLMFactory):
                     timeout=final_config.get("timeout", settings.llm.timeout_seconds),
                     max_retries=final_config.get("max_retries", 3)
                 )
-            
+
             elif provider_name == "google":
                 # Gemini
                 instance = llm_class(
@@ -339,12 +339,12 @@ class LLMFactory(AbstractLLMFactory):
                     timeout=final_config.get("timeout", settings.llm.timeout_seconds),
                     max_retries=final_config.get("max_retries", 3)
                 )
-            
+
             else:
                 raise LLMError(f"Provedor '{provider_name}' não suportado")
-            
+
             return instance
-            
+
         except Exception as e:
             raise LLMError(f"Erro ao criar instância {model_name}: {str(e)}") from e
 
