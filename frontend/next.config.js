@@ -4,21 +4,15 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
-  
-  // Development optimizations
-  swcMinify: true,
-  
+
   // Image optimization
   images: {
     domains: ['localhost', '127.0.0.1', '0.0.0.0'],
-    formats: ['image/webp', 'image/avif']
+    formats: ['image/webp', 'image/avif'],
+    unoptimized: false,
   },
-  output: 'standalone',
-  
 
-  // Production optimizations
-  compress: true,
-  poweredByHeader: false,
+  output: 'standalone',
 
   // Security headers
   async headers() {
@@ -41,12 +35,6 @@ const nextConfig = {
         ],
       },
     ]
-  },
-
-  // Performance - swcMinify is now enabled by default in Next.js 15
-  images: {
-    unoptimized: false,
-    formats: ['image/webp', 'image/avif'],
   },
 
   // Enable experimental features
