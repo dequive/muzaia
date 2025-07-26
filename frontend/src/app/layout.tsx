@@ -18,7 +18,7 @@ import { Toaster } from 'sonner'
 import { cn } from '@/lib/utils'
 import { siteConfig } from '@/config/site'
 import { TailwindIndicator } from '@/components/tailwind-indicator'
-import '../styles/globals.css'
+import '@/styles/globals.css'
 
 // =============================================================================
 // FONTS
