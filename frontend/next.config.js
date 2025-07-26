@@ -40,6 +40,10 @@ const nextConfig = {
   // Enable experimental features
   experimental: {
     typedRoutes: true,
+    allowedDevOrigins: [
+      "*.spock.replit.dev",
+      "*.replit.dev"
+    ],
   },
 }
 
