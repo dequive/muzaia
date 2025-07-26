@@ -1483,10 +1483,6 @@ export const checkApiHealth = async (): Promise<{
         error: error.message,
         suggestions
       }
-    }nseTime,
-        error: error.message,
-        suggestions
-      }
     }
   }
 }
