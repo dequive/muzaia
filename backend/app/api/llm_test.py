@@ -156,6 +156,8 @@ async def test_llm(
             model=request.model,
             provider="unknown",
             processing_time=processing_time,
+            error_message=str(e)
+        )
             error=str(e)
         )
 

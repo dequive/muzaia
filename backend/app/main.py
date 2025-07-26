@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.core.logging import setup_logging
 from app.api.glossario import router as glossario_router
 from app.api.auth import router as auth_router
+from app.api.system_health import router as system_router
 
 # Configurar logging
 setup_logging()
@@ -53,6 +54,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Incluir routers
 app.include_router(glossario_router)
 app.include_router(auth_router)
+app.include_router(system_router)
 
 
 @app.get("/")

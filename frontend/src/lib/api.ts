@@ -598,6 +598,11 @@ class EnhancedApiClient {
             errorName: error?.name || 'Unknown',
             errorMessage: error?.message || 'No message',
             errorCode: error?.code || 'No code',
+            errorStack: error?.stack ? 'Present' : 'None'
+          }
+          console.error('Debug error details:', safeErrorLog)
+        }
+            errorCode: error?.code || 'No code',
             hasStack: !!error?.stack,
             hasConfig: !!error?.config,
             hasResponse: !!error?.response,
@@ -611,7 +616,11 @@ class EnhancedApiClient {
           
           // Only log the actual error in debug if it exists
           if (error) {
-            console.error('Raw error:', error.toString())
+            console.error('Raw error:', error)
+          }
+        } catch (logError) {
+          console.error('Error logging failed:', logError)
+        }or.toString())
           }
         }
 
@@ -1475,6 +1484,10 @@ export const checkApiHealth = async (): Promise<{
       details: {
         reachable: false,
         responseTime,
+        error: error.message,
+        suggestions
+      }
+    }nseTime,
         error: error.message,
         suggestions
       }

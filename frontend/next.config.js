@@ -1,5 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Performance optimizations
+  compress: true,
+  poweredByHeader: false,
+  generateEtags: true,
+  
+  // Development optimizations
+  swcMinify: true,
+  
+  // Image optimization
+  images: {
+    domains: ['localhost', '127.0.0.1', '0.0.0.0'],
+    formats: ['image/webp', 'image/avif']
+  },
   output: 'standalone',
   
 
