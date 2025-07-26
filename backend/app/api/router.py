@@ -1,4 +1,3 @@
-# Integrating smart legal chat functionality by adding its router and updating import statements.
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -135,6 +134,22 @@ api_router.include_router(handoff_router)
 api_router.include_router(admin_router)
 api_router.include_router(legal_repository_router)
 from app.api import websocket, technician, test_integration, professional_management, professional_auth, smart_legal_chat, glossario
+from app.api import (
+    llm_test,
+    smart_chat,
+    smart_legal_chat,
+    admin,
+    admin_metrics,
+    auth,
+    professional_auth,
+    professional_management,
+    handoff,
+    technician,
+    websocket,
+    glossario,
+    legal_repository,
+    multimodal
+)
 api_router.include_router(websocket.router)
 api_router.include_router(technician.router)
 api_router.include_router(test_integration.router)
