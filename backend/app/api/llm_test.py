@@ -43,6 +43,58 @@ class LLMTestResponse(BaseModel):
     metadata: Dict[str, Any] = {}
 
 
+
+@router.get("/config", response_model=Dict[str, Any])
+async def get_llm_config(factory: LLMFactory = Depends(get_llm_factory)):
+    """
+    Retorna a configuração atual dos modelos LLM.
+    """
+    try:
+        metrics = factory.get_metrics()
+        priority = factory.get_provider_priority()
+        
+        # Organizar informações por prioridade
+        providers_info = {}
+        for provider in factory._registry.get_all_providers():
+            provider_info = factory._registry.get_provider_info(provider)
+            provider_info["priority"] = priority.get(provider, 999)
+            provider_info["status"] = "✅ Disponível"
+            providers_info[provider] = provider_info
+        
+        # Ordenar por prioridade
+        sorted_providers = dict(sorted(providers_info.items(), key=lambda x: x[1]["priority"]))
+        
+        return {
+            "success": True,
+            "default_model": factory.get_default_model(),
+            "provider_priority": priority,
+            "providers": sorted_providers,
+            "metrics": {
+                "total_providers": metrics["total_providers"],
+                "total_models": metrics["total_model_patterns"],
+                "requests_total": metrics["total_created"]
+            },
+            "configuration": {
+                "primary": "Claude (Anthropic) - Modelo principal",
+                "fallback": "Gemini (Google) - Backup automático",
+                "strategy": "Claude primeiro, Gemini como fallback em caso de falha"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao obter configuração LLM: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "configuration": {
+                "primary": "Claude (Anthropic)",
+                "fallback": "Gemini (Google)",
+                "status": "Erro na configuração"
+            }
+        }
+
+
+
 async def get_llm_factory():
     """Dependency para obter factory LLM."""
     session = aiohttp.ClientSession()
@@ -61,9 +113,11 @@ async def test_llm(
     """
     Testa um modelo LLM específico.
     
-    Modelos disponíveis:
-    - claude-3-5-sonnet-20241022 (Claude 3.5 Sonnet)
-    - gemini-1.5-pro-latest (Gemini Pro 1.5)
+    Configuração atual:
+    - 🥇 PRINCIPAL: claude-3-5-sonnet-20241022 (Claude 3.5 Sonnet)
+    - 🥈 FALLBACK: gemini-1.5-pro-latest (Gemini Pro 1.5)
+    
+    Use 'default' ou 'auto' para usar o modelo principal automaticamente.
     """
     import time
     start_time = time.time()

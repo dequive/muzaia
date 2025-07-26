@@ -244,9 +244,10 @@ class LLMFactory(AbstractLLMFactory):
     ) -> AbstractLLM:
         """
         Cria instância de LLM para um modelo específico.
+        Claude é o provedor principal, Gemini é fallback.
 
         Args:
-            model_name: Nome do modelo (ex: 'llama3:8b')
+            model_name: Nome do modelo (ex: 'claude-3-5-sonnet-20241022')
             config: Configurações extras específicas
 
         Returns:
@@ -258,38 +259,60 @@ class LLMFactory(AbstractLLMFactory):
         start_time = asyncio.get_event_loop().time()
 
         try:
-            # Encontrar provedor para o modelo
+            # Sistema de prioridade: Claude primeiro, Gemini como fallback
+            primary_provider = "anthropic"
+            fallback_provider = "google"
+            
+            # Determinar provedor baseado no modelo ou usar sistema de prioridade
             provider_name = self._registry.get_provider_for_model(model_name)
+            
+            # Se modelo não especificado ou é genérico, usar Claude como padrão
+            if not provider_name or model_name in ["default", "auto"]:
+                provider_name = primary_provider
+                model_name = settings.llm.anthropic_model
+                logger.info(f"Usando modelo padrão Claude: {model_name}")
 
-            if not provider_name:
-                available_models = self.get_available_models()
-                raise LLMError(
-                    f"Modelo '{model_name}' não reconhecido. "
-                    f"Modelos disponíveis: {', '.join(available_models[:10])}..."
+            logger.debug(f"Tentando criar '{model_name}' usando provedor '{provider_name}'")
+
+            # Tentar criar com o provedor determinado
+            try:
+                instance = await self._create_with_fallback(
+                    provider_name, model_name, config, primary_provider, fallback_provider
+                )
+                
+                # Atualizar métricas
+                creation_time = asyncio.get_event_loop().time() - start_time
+                self._update_creation_metrics(provider_name, creation_time, True)
+
+                logger.info(
+                    f"LLM '{model_name}' criado com sucesso usando '{provider_name}' "
+                    f"em {creation_time:.2f}s"
                 )
 
-            logger.debug(f"Criando instância de '{model_name}' usando provedor '{provider_name}'")
+                return instance
 
-            # Verificar função de fábrica customizada
-            factory_func = self._registry.get_factory_function(provider_name)
-            if factory_func:
-                instance = await factory_func(model_name, self._session, config)
-            else:
-                # Criação padrão
-                instance = await self._create_standard_instance(
-                    provider_name, model_name, config
-                )
-
-            # Atualizar métricas
-            creation_time = asyncio.get_event_loop().time() - start_time
-            self._update_creation_metrics(provider_name, creation_time, True)
-
-            logger.info(
-                f"LLM '{model_name}' criado com sucesso usando '{provider_name}' "
-                f"em {creation_time:.2f}s"
-            )
-
-            return instance
+            except Exception as provider_error:
+                # Se falhou, tentar fallback apenas se não era o provedor principal
+                if provider_name != primary_provider and fallback_provider in self._registry.get_all_providers():
+                    logger.warning(f"Provedor '{provider_name}' falhou, tentando fallback para '{fallback_provider}'")
+                    
+                    try:
+                        fallback_model = settings.llm.gemini_model
+                        instance = await self._create_standard_instance(
+                            fallback_provider, fallback_model, config
+                        )
+                        
+                        creation_time = asyncio.get_event_loop().time() - start_time
+                        self._update_creation_metrics(fallback_provider, creation_time, True)
+                        
+                        logger.info(f"Fallback bem-sucedido: usando '{fallback_provider}' com modelo '{fallback_model}'")
+                        return instance
+                        
+                    except Exception as fallback_error:
+                        logger.error(f"Fallback também falhou: {fallback_error}")
+                        raise provider_error
+                else:
+                    raise provider_error
 
         except Exception as e:
             creation_time = asyncio.get_event_loop().time() - start_time
@@ -299,6 +322,24 @@ class LLMFactory(AbstractLLMFactory):
             if isinstance(e, LLMError):
                 raise
             raise LLMError(f"Erro interno ao criar modelo '{model_name}': {str(e)}") from e
+
+    async def _create_with_fallback(
+        self,
+        provider_name: str,
+        model_name: str,
+        config: Optional[Dict[str, Any]],
+        primary_provider: str,
+        fallback_provider: str
+    ) -> AbstractLLM:
+        """Cria instância com sistema de fallback automático."""
+        
+        # Verificar função de fábrica customizada
+        factory_func = self._registry.get_factory_function(provider_name)
+        if factory_func:
+            return await factory_func(model_name, self._session, config)
+        else:
+            # Criação padrão
+            return await self._create_standard_instance(provider_name, model_name, config)
 
     async def _create_standard_instance(
         self,
@@ -444,13 +485,42 @@ class LLMFactory(AbstractLLMFactory):
         except Exception:
             return False
 
+    def get_default_model(self) -> str:
+        """
+        Retorna o modelo padrão baseado na prioridade.
+        Claude (Anthropic) é preferencial, Gemini como fallback.
+        """
+        # Verificar se Claude está disponível
+        if settings.llm.anthropic_api_key and "anthropic" in self._registry.get_all_providers():
+            return settings.llm.anthropic_model
+        
+        # Fallback para Gemini
+        elif settings.llm.google_api_key and "google" in self._registry.get_all_providers():
+            return settings.llm.gemini_model
+        
+        # Se nenhum estiver disponível, retornar o primeiro disponível
+        available_models = self.get_available_models()
+        if available_models:
+            return available_models[0]
+        
+        raise LLMError("Nenhum modelo LLM disponível - verifique as configurações de API")
+
+    def get_provider_priority(self) -> Dict[str, int]:
+        """Retorna a ordem de prioridade dos provedores."""
+        return {
+            "anthropic": 1,  # Claude - Principal
+            "google": 2,     # Gemini - Fallback
+        }
+
     def get_metrics(self) -> Dict[str, Any]:
         """Obtém métricas da fábrica."""
         return {
             **self._creation_metrics,
             "total_providers": len(self._registry.get_all_providers()),
             "total_model_patterns": len(self._registry.get_all_models()),
-            "providers": list(self._registry.get_all_providers())
+            "providers": list(self._registry.get_all_providers()),
+            "default_model": self.get_default_model(),
+            "provider_priority": self.get_provider_priority()
         }
 
     def _update_creation_metrics(
