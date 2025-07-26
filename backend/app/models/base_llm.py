@@ -201,7 +201,6 @@ class BaseLLM(AbstractLLM, ABC):
             self.log.error(f"Erro na geração de resposta: {str(e)}", 
                           error_type=type(e).__name__, 
                           processing_time=processing_time)
-            raise geração após {processing_time:.3f}s: {e}")
             raise
 
     async def stream_generate(
